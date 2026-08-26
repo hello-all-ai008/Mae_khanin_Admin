@@ -1,0 +1,4 @@
+ALTER TABLE runners
+ADD COLUMN distance FLOAT,
+ADD COLUMN unit VARCHAR,
+ADD COLUMN cat_name VARCHAR;

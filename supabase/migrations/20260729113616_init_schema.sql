@@ -1,0 +1,108 @@
+-- Create ENUMs
+CREATE TYPE event_status AS ENUM ('DRAFT', 'PUBLISHED', 'COMPLETED');
+CREATE TYPE registration_status_enum AS ENUM ('PRE_REGISTERED', 'CHECKED_IN');
+CREATE TYPE station_type AS ENUM ('START', 'CP', 'FINISH');
+
+-- 1. EVENTS
+CREATE TABLE EVENTS (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    status event_status DEFAULT 'DRAFT'
+);
+
+-- 2. USERS
+CREATE TABLE USERS (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR NOT NULL,
+    email VARCHAR UNIQUE NOT NULL,
+    phone VARCHAR,
+    gender VARCHAR,
+    birth_date DATE,
+    nationality VARCHAR
+);
+
+-- 3. CATEGORIES
+CREATE TABLE CATEGORIES (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id UUID REFERENCES EVENTS(id) ON DELETE CASCADE,
+    name VARCHAR NOT NULL,
+    distance_km FLOAT NOT NULL,
+    unit VARCHAR DEFAULT 'km'
+);
+
+-- 4. RUNNERS
+CREATE TABLE RUNNERS (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id UUID REFERENCES EVENTS(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES USERS(id) ON DELETE SET NULL,
+    bib VARCHAR,
+    category_id UUID REFERENCES CATEGORIES(id) ON DELETE CASCADE,
+    rfid_tag VARCHAR,
+    registration_status registration_status_enum DEFAULT 'PRE_REGISTERED',
+    checked_in_at TIMESTAMP WITH TIME ZONE,
+    checked_in_by VARCHAR,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(event_id, bib)
+);
+
+-- 5. LOCATIONS
+CREATE TABLE LOCATIONS (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id UUID REFERENCES EVENTS(id) ON DELETE CASCADE,
+    name VARCHAR NOT NULL,
+    latitude FLOAT,
+    longitude FLOAT,
+    url VARCHAR
+);
+
+-- 6. STATIONS
+CREATE TABLE STATIONS (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id UUID REFERENCES EVENTS(id) ON DELETE CASCADE,
+    name VARCHAR NOT NULL,
+    type station_type NOT NULL,
+    sequence_order INT NOT NULL
+);
+
+-- 7. CHECKPOINT
+CREATE TABLE CHECKPOINT (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category_id UUID REFERENCES CATEGORIES(id) ON DELETE CASCADE,
+    station_id UUID REFERENCES STATIONS(id) ON DELETE CASCADE,
+    sequence_order INT NOT NULL,
+    cutoff_time TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 8. SCAN_LOGS
+CREATE TABLE SCAN_LOGS (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    runner_id UUID REFERENCES RUNNERS(id) ON DELETE CASCADE,
+    station_id UUID REFERENCES STATIONS(id) ON DELETE CASCADE,
+    location_id UUID REFERENCES LOCATIONS(id) ON DELETE SET NULL,
+    scan_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    is_valid BOOLEAN DEFAULT TRUE,
+    scanned_by VARCHAR,
+    note VARCHAR,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 9. ADMIN_USERS
+CREATE TABLE ADMIN_USERS (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR NOT NULL,
+    pin VARCHAR NOT NULL
+);
+
+-- 10. ACTION_LOGS
+CREATE TABLE ACTION_LOGS (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_id UUID REFERENCES ADMIN_USERS(id) ON DELETE CASCADE,
+    action_type VARCHAR NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

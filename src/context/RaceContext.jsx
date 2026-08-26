@@ -1,0 +1,747 @@
+import { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import ConfirmModal from '../components/ConfirmModal';
+
+const RaceContext = createContext();
+
+export const CHECKPOINTS = [
+  {id:'A1', name:'A1 Mae Kha Nin'},
+  {id:'A2', name:'A2 Doi Pha Daeng'},
+  {id:'A3', name:'A3 Huai Nam Sai'},
+];
+export const CATEGORIES = ['MKT10','MKT25','PST50'];
+
+const firstTH = ['สมชาย','วิภา','อนันต์','กมล','ธนพล','สุนิสา','ปรีชา','อรทัย','ณัฐพงษ์','จิราพร','เสริมศักดิ์','พิมพ์ชนก','วีระ','ศิริพร','ชัยวัฒน์','นภัสสร','ก้องภพ','อัญชลี','ภูมิ','ดวงใจ'];
+const lastTH  = ['ใจดี','ทิพย์พันธ์','แสงทอง','บุญมา','ศรีสุข','คำมูล','วงศ์ใหญ่','จันทร์เพ็ญ','อินทะวงศ์','สุขสวัสดิ์','ทองดี','ปัญญาดี','แก้วมณี','พรมมา','ตันติกุล','ไชยวงศ์','มาลัย','สุริยะ','บัวคำ','ธาราทิพย์'];
+const ageGroups = ['20-29','30-39','40-49','50-59'];
+
+// Seed Data
+function generateSeedData() {
+  let runners = [];
+  let scanLog = [];
+  let n = 0;
+  const plan=[{cat:'MKT10',base:1001,count:14},{cat:'MKT25',base:2001,count:12},{cat:'PST50',base:5001,count:12}];
+  plan.forEach(p=>{
+    for(let i=0;i<p.count;i++){
+      const g = Math.random()<.6?'M':'F';
+      runners.push({
+        bib:String(p.base+i),
+        name:firstTH[(n*7)%20]+' '+lastTH[(n*11)%20],
+        gender:g, age:ageGroups[n%4], nat:'THAI', cat:p.cat,
+        checkin:null, cps:{}, finish:null
+      });
+      n++;
+    }
+  });
+
+  const now = Date.now();
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  
+  runners.forEach((r,i)=>{
+    if(i%3!==0){ r.checkin = now - rnd(3.5,5)*3600e3; }
+  });
+  
+  runners.filter(r=>r.checkin).forEach((r,i)=>{
+    if(i%2===0){ r.cps['A1'] = r.checkin + rnd(.8,1.4)*3600e3; }
+    if(i%4===0){ r.cps['A2'] = r.checkin + rnd(1.8,2.4)*3600e3; }
+    if(i%5===0){ r.finish = r.checkin + rnd(2.6,4.2)*3600e3; }
+  });
+
+  // Seed log
+  const cpName = (id) => { const c=CHECKPOINTS.find(c=>c.id===id); return c?c.name:id };
+  runners.forEach(r=>{
+    if(r.checkin) scanLog.push({time:r.checkin,station:'Check-in',bib:r.bib,name:r.name,ok:true});
+    Object.entries(r.cps).forEach(([cp,t])=>scanLog.push({time:t,station:cpName(cp),bib:r.bib,name:r.name,ok:true}));
+    if(r.finish) scanLog.push({time:r.finish,station:'Finish',bib:r.bib,name:r.name,ok:true});
+  });
+  scanLog.sort((a,b)=>b.time-a.time);
+
+  return { runners, scanLog };
+}
+
+export function parseStartTime(startTimeStr, refTimestamp) {
+  if (!startTimeStr) return null;
+  if (!isNaN(startTimeStr) && typeof startTimeStr === 'number') return startTimeStr;
+  if (String(startTimeStr).includes('-') || String(startTimeStr).includes('/')) {
+    const d = new Date(startTimeStr);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+  const parts = String(startTimeStr).trim().split(':').map(Number);
+  if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+    const baseDate = refTimestamp ? new Date(refTimestamp) : new Date();
+    baseDate.setHours(parts[0] || 0, parts[1] || 0, parts[2] || 0, 0);
+    return baseDate.getTime();
+  }
+  return null;
+}
+
+export function RaceProvider({ children }) {
+  const [events, setEvents] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [runners, setRunners] = useState([]);
+  const [checkpoints, setCheckpoints] = useState(CHECKPOINTS);
+  const [scanLog, setScanLog] = useState([]);
+  const [loadingRunners, setLoadingRunners] = useState(false);
+  const [toastMsg, setToastMsg] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: '', message: '', resolve: null });
+
+  // ── Offline & Preload Data State ──
+  const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [isPreloading, setIsPreloading] = useState(false);
+  const [preloadProgress, setPreloadProgress] = useState(0);
+  const [preloadStatusText, setPreloadStatusText] = useState('');
+  const [lastSyncedTime, setLastSyncedTime] = useState(() => {
+    const saved = localStorage.getItem('trail_last_synced_time');
+    return saved ? parseInt(saved, 10) : null;
+  });
+
+  const [pendingSyncQueue, setPendingSyncQueue] = useState(() => {
+    try {
+      const saved = localStorage.getItem('trail_pending_sync_queue');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('trail_pending_sync_queue', JSON.stringify(pendingSyncQueue));
+  }, [pendingSyncQueue]);
+
+  useEffect(() => {
+    if (lastSyncedTime) {
+      localStorage.setItem('trail_last_synced_time', String(lastSyncedTime));
+    }
+  }, [lastSyncedTime]);
+
+  // Online / Offline Network Listeners
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      addToast('🌐 เชื่อมต่ออินเทอร์เน็ตแล้ว — กำลังเริ่มซิงค์ข้อมูล...', false);
+      syncPendingQueue();
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      addToast('⚠️ สัญญาณเน็ตขาดหาย — ระบบสลับเข้าโหมดออฟไลน์อัตโนมัติ (ยังสแกนได้ตามปกติ)', true);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [pendingSyncQueue]);
+
+  // Staff & Scanner Operator State
+  const [staffList, setStaffList] = useState(() => {
+    try {
+      const saved = localStorage.getItem('trail_staff_list');
+      return saved ? JSON.parse(saved) : [
+        { id: '1', name: 'แอดมิน (Admin)', role: 'ADMIN' },
+        { id: '2', name: 'เจ้าหน้าที่จุดสตาร์ท (Start Crew)', role: 'CHECKIN_CREW' },
+        { id: '3', name: 'Marshal จุด A1', role: 'MARSHAL' },
+        { id: '4', name: 'Marshal จุด A2', role: 'MARSHAL' },
+        { id: '5', name: 'กรรมการเส้นชัย (Finish Judge)', role: 'FINISH_JUDGE' }
+      ];
+    } catch {
+      return [
+        { id: '1', name: 'แอดมิน (Admin)', role: 'ADMIN' },
+        { id: '2', name: 'เจ้าหน้าที่จุดสตาร์ท (Start Crew)', role: 'CHECKIN_CREW' }
+      ];
+    }
+  });
+
+  const [currentOperator, setCurrentOperator] = useState(() => {
+    return localStorage.getItem('trail_current_operator') || 'แอดมิน (Admin)';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('trail_current_operator', currentOperator);
+  }, [currentOperator]);
+
+  useEffect(() => {
+    localStorage.setItem('trail_staff_list', JSON.stringify(staffList));
+  }, [staffList]);
+
+  // Fetch Events from Supabase on mount (with offline cache fallback)
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const { data, error } = await supabase.from('events').select('id, name').order('start_date', { ascending: false });
+        if (!error && data && data.length > 0) {
+          setEvents(data);
+          localStorage.setItem('trail_cached_events', JSON.stringify(data));
+          if (!selectedEventId) {
+            setSelectedEventId(data[0].id);
+          }
+        } else {
+          // Check cached events
+          const cached = localStorage.getItem('trail_cached_events');
+          if (cached) {
+            const evs = JSON.parse(cached);
+            setEvents(evs);
+            if (!selectedEventId && evs.length > 0) setSelectedEventId(evs[0].id);
+          } else {
+            const seed = generateSeedData();
+            setRunners(seed.runners);
+            setScanLog(seed.scanLog);
+          }
+        }
+      } catch (err) {
+        console.warn('Network offline or error fetching events, loading from cache:', err);
+        const cached = localStorage.getItem('trail_cached_events');
+        if (cached) {
+          const evs = JSON.parse(cached);
+          setEvents(evs);
+          if (!selectedEventId && evs.length > 0) setSelectedEventId(evs[0].id);
+        } else {
+          const seed = generateSeedData();
+          setRunners(seed.runners);
+          setScanLog(seed.scanLog);
+        }
+      }
+    }
+    fetchEvents();
+  }, []);
+
+  // Fetch Staff from Supabase
+  useEffect(() => {
+    async function fetchStaff() {
+      try {
+        const { data, error } = await supabase.from('staff').select('*').order('name', { ascending: true });
+        if (!error && data && data.length > 0) {
+          setStaffList(data);
+          localStorage.setItem('trail_staff_list', JSON.stringify(data));
+        }
+      } catch (err) {
+        console.warn('Fetch staff warning:', err);
+      }
+    }
+    fetchStaff();
+  }, [selectedEventId]);
+
+  // Pre-load all data into client memory and cache for ultra-fast offline scanning
+  const preloadEventData = async (targetEventId = selectedEventId) => {
+    if (!targetEventId) return;
+    setIsPreloading(true);
+    setPreloadProgress(10);
+    setPreloadStatusText('กำลังเชื่อมต่อฐานข้อมูล...');
+
+    try {
+      // Step 1: Categories & Checkpoint Mapping
+      setPreloadProgress(25);
+      setPreloadStatusText('กำลังดาวน์โหลดระยะทางและเวลา Cutoff...');
+      const { data: catData } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('event_id', targetEventId);
+
+      const loadedCats = catData || [];
+      setCategories(loadedCats);
+      localStorage.setItem(`trail_cached_categories_${targetEventId}`, JSON.stringify(loadedCats));
+
+      let mappedCheckpoints = [];
+      if (loadedCats.length > 0) {
+        const catIds = loadedCats.map(c => c.id).filter(Boolean);
+        const { data: cpData } = await supabase
+          .from('checkpoint')
+          .select(`
+            id, category_id, station_id, sequence_order, cutoff_time,
+            stations ( name, type )
+          `)
+          .in('category_id', catIds);
+        mappedCheckpoints = cpData || [];
+      }
+
+      const catMap = {};
+      loadedCats.forEach(c => {
+        const startCp = mappedCheckpoints.find(cp => 
+          cp.category_id === c.id && (cp.stations?.type === 'START' || cp.sequence_order === 1) && cp.cutoff_time
+        );
+        const effectiveStartTime = startCp?.cutoff_time || c.start_time || null;
+        const catObj = { ...c, start_time: effectiveStartTime };
+        if (c.name) catMap[c.name] = catObj;
+        if (c.id) catMap[c.id] = catObj;
+      });
+
+      // Step 2: Stations
+      setPreloadProgress(50);
+      setPreloadStatusText('กำลังดาวน์โหลดจุดตรวจ (Stations)...');
+      const { data: sData } = await supabase
+        .from('stations')
+        .select('*')
+        .eq('event_id', targetEventId)
+        .order('sequence_order', { ascending: true });
+
+      if (sData && sData.length > 0) {
+        const mappedStations = sData.map(s => ({ id: s.id, name: s.name, type: s.type }));
+        setCheckpoints(mappedStations);
+        localStorage.setItem(`trail_cached_stations_${targetEventId}`, JSON.stringify(mappedStations));
+      }
+
+      // Step 3: Runners
+      setPreloadProgress(75);
+      setPreloadStatusText('กำลังดาวน์โหลดรายชื่อนักวิ่งทั้งหมด...');
+      const { data: rData, error: rError } = await supabase
+        .from('runners')
+        .select('*')
+        .eq('event_id', targetEventId);
+
+      if (!rError && rData) {
+        const formatted = rData.map(r => {
+          const matchedCat = catMap[r.cat] || (r.category_id ? catMap[r.category_id] : null);
+          const checkinTime = r.checkin || (r.checked_in_at ? new Date(r.checked_in_at).getTime() : null);
+          const gunStartTime = matchedCat?.start_time ? parseStartTime(matchedCat.start_time, checkinTime) : null;
+
+          return {
+            ...r,
+            bib: r.bib || '',
+            name: r.name || '',
+            gender: r.gender || '',
+            cat: r.cat || '',
+            age: r.age || '',
+            nat: r.nat || '',
+            checkin: checkinTime,
+            gunStartTime: gunStartTime,
+            categoryStartTimeStr: matchedCat?.start_time ? (matchedCat.start_time.includes('T') ? new Date(matchedCat.start_time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : matchedCat.start_time) : null,
+            cps: r.cps || {},
+            finish: r.finish || null
+          };
+        });
+
+        setRunners(formatted);
+        localStorage.setItem(`trail_cached_runners_${targetEventId}`, JSON.stringify(formatted));
+      }
+
+      // Step 4: Finalize & Cache Staff
+      setPreloadProgress(90);
+      setPreloadStatusText('กำลังบันทึกลงหน่วยความจำแคช...');
+      const now = Date.now();
+      setLastSyncedTime(now);
+      localStorage.setItem(`trail_cached_synced_${targetEventId}`, String(now));
+
+      setPreloadProgress(100);
+      setPreloadStatusText(`✓ เตรียมข้อมูลนักวิ่ง ${rData?.length || 0} คน สำเร็จ! พร้อมสแกนออฟไลน์`);
+      addToast(`⚡ เตรียมข้อมูลนักวิ่ง ${rData?.length || 0} คน สำเร็จ! สแกนได้ทันทีโดยไม่ต้องต่อเน็ต`, false);
+
+      setTimeout(() => {
+        setIsPreloading(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Preload error:', err);
+      // Try loading from existing cache
+      const cachedRunners = localStorage.getItem(`trail_cached_runners_${targetEventId}`);
+      if (cachedRunners) {
+        const parsed = JSON.parse(cachedRunners);
+        setRunners(parsed);
+        setPreloadProgress(100);
+        setPreloadStatusText(`⚡ โหลดจากแคชเดิม ${parsed.length} คน (โหมดออฟไลน์)`);
+        addToast(`⚡ โหลดจากแคชเดิม ${parsed.length} คน (พร้อมใช้งานออฟไลน์)`, false);
+      } else {
+        setPreloadStatusText('⚠️ ไม่สามารถเชื่อมต่อได้ และยังไม่มีแคชในเครื่อง');
+        addToast('ไม่สามารถดาวน์โหลดข้อมูลได้ โปรดตรวจสอบสัญญาณเน็ต', true);
+      }
+      setTimeout(() => setIsPreloading(false), 3000);
+    }
+  };
+
+  // Sync Pending Offline Scans Queue to Supabase
+  const syncPendingQueue = async () => {
+    if (pendingSyncQueue.length === 0) {
+      addToast('ไม่มีข้อมูลค้างส่ง ข้อมูลเป็นปัจจุบันแล้ว ✓', false);
+      return;
+    }
+
+    const itemsToSync = [...pendingSyncQueue];
+    let syncedCount = 0;
+    const remainingQueue = [];
+
+    for (const item of itemsToSync) {
+      try {
+        if (item.type === 'CHECKIN') {
+          await supabase.from('runners').update({
+            registration_status: 'CHECKED_IN',
+            checked_in_at: new Date(item.time).toISOString(),
+            checked_in_by: item.operator
+          }).eq('id', item.runnerId);
+        } else if (item.type === 'CP') {
+          await supabase.from('runners').update({
+            cps: item.cps
+          }).eq('id', item.runnerId);
+        } else if (item.type === 'FINISH') {
+          await supabase.from('runners').update({
+            finish: item.time
+          }).eq('id', item.runnerId);
+        }
+        syncedCount++;
+      } catch (err) {
+        console.error('Sync item failed, keeping in queue:', item, err);
+        remainingQueue.push(item);
+      }
+    }
+
+    setPendingSyncQueue(remainingQueue);
+    if (syncedCount > 0) {
+      addToast(`✓ ซิงค์ข้อมูลขึ้นคลาวด์สำเร็จ ${syncedCount} รายการ`, false);
+    }
+  };
+
+  // Auto load cached data on selectedEventId change if available
+  useEffect(() => {
+    if (!selectedEventId) return;
+
+    // Load from cache first for instant 0ms UI rendering
+    const cachedRunners = localStorage.getItem(`trail_cached_runners_${selectedEventId}`);
+    if (cachedRunners) {
+      try {
+        const parsed = JSON.parse(cachedRunners);
+        setRunners(parsed);
+      } catch (e) {
+        console.warn('Cache parse error:', e);
+      }
+    }
+
+    const cachedStations = localStorage.getItem(`trail_cached_stations_${selectedEventId}`);
+    if (cachedStations) {
+      try {
+        setCheckpoints(JSON.parse(cachedStations));
+      } catch (e) {}
+    }
+
+    // Then perform normal background fetch
+    async function fetchEventData() {
+      setLoadingRunners(true);
+      try {
+        // 1. Fetch Categories
+        const { data: catData, error: catError } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('event_id', selectedEventId);
+
+        const loadedCats = (!catError && catData) ? catData : [];
+        setCategories(loadedCats);
+
+        // 1.1 Fetch Checkpoints mapped to categories for Start Gun Time
+        let mappedCheckpoints = [];
+        if (loadedCats.length > 0) {
+          const catIds = loadedCats.map(c => c.id).filter(Boolean);
+          const { data: cpData } = await supabase
+            .from('checkpoint')
+            .select(`
+              id, category_id, station_id, sequence_order, cutoff_time,
+              stations ( name, type )
+            `)
+            .in('category_id', catIds);
+          mappedCheckpoints = cpData || [];
+        }
+
+        const catMap = {};
+        loadedCats.forEach(c => {
+          const startCp = mappedCheckpoints.find(cp => 
+            cp.category_id === c.id && (cp.stations?.type === 'START' || cp.sequence_order === 1) && cp.cutoff_time
+          );
+          const effectiveStartTime = startCp?.cutoff_time || c.start_time || null;
+          const catObj = { ...c, start_time: effectiveStartTime };
+
+          if (c.name) catMap[c.name] = catObj;
+          if (c.id) catMap[c.id] = catObj;
+        });
+
+        // 2. Fetch Runners
+        const { data: rData, error: rError } = await supabase
+          .from('runners')
+          .select('*')
+          .eq('event_id', selectedEventId);
+
+        if (!rError && rData) {
+          const formatted = rData.map(r => {
+            const matchedCat = catMap[r.cat] || (r.category_id ? catMap[r.category_id] : null);
+            const checkinTime = r.checkin || (r.checked_in_at ? new Date(r.checked_in_at).getTime() : null);
+            const gunStartTime = matchedCat?.start_time ? parseStartTime(matchedCat.start_time, checkinTime) : null;
+
+            return {
+              ...r,
+              bib: r.bib || '',
+              name: r.name || '',
+              gender: r.gender || '',
+              cat: r.cat || '',
+              age: r.age || '',
+              nat: r.nat || '',
+              checkin: checkinTime,
+              gunStartTime: gunStartTime,
+              categoryStartTimeStr: matchedCat?.start_time ? (matchedCat.start_time.includes('T') ? new Date(matchedCat.start_time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : matchedCat.start_time) : null,
+              cps: r.cps || {},
+              finish: r.finish || null
+            };
+          });
+          setRunners(formatted);
+          localStorage.setItem(`trail_cached_runners_${selectedEventId}`, JSON.stringify(formatted));
+          setLastSyncedTime(Date.now());
+        }
+
+        // 3. Fetch Stations/Checkpoints
+        const { data: sData, error: sError } = await supabase
+          .from('stations')
+          .select('*')
+          .eq('event_id', selectedEventId)
+          .order('sequence_order', { ascending: true });
+
+        if (!sError && sData && sData.length > 0) {
+          const mappedStations = sData.map(s => ({ id: s.id, name: s.name, type: s.type }));
+          setCheckpoints(mappedStations);
+          localStorage.setItem(`trail_cached_stations_${selectedEventId}`, JSON.stringify(mappedStations));
+        }
+      } catch (err) {
+        console.warn('Background fetch error, using client cache:', err);
+      } finally {
+        setLoadingRunners(false);
+      }
+    }
+    fetchEventData();
+  }, [selectedEventId]);
+
+  const addToast = (msg, err = false) => {
+    setToastMsg({ msg, err, id: Date.now() });
+    setTimeout(() => setToastMsg(null), 2600);
+  };
+
+  const showConfirm = useCallback((title, message) => {
+    return new Promise((resolve) => {
+      setConfirmConfig({
+        isOpen: true,
+        title,
+        message,
+        resolve
+      });
+    });
+  }, []);
+
+  const handleConfirm = () => {
+    if (confirmConfig.resolve) confirmConfig.resolve(true);
+    setConfirmConfig({ ...confirmConfig, isOpen: false });
+  };
+
+  const handleCancel = () => {
+    if (confirmConfig.resolve) confirmConfig.resolve(false);
+    setConfirmConfig({ ...confirmConfig, isOpen: false });
+  };
+
+  const getCpName = (id) => {
+    const c = checkpoints.find(c => c.id === id);
+    return c ? c.name : id;
+  };
+
+  const findRunner = (bib) => runners.find(r => String(r.bib).trim() === String(bib).trim());
+
+  const addLog = (entry) => {
+    setScanLog(prev => [entry, ...prev].sort((a, b) => b.time - a.time));
+  };
+
+  const updateRunner = (updatedRunner) => {
+    setRunners(prev => prev.map(r => String(r.bib).trim() === String(updatedRunner.bib).trim() ? updatedRunner : r));
+  };
+
+  const addStaff = async (name, role = 'MARSHAL') => {
+    if (!name || !name.trim()) return;
+    const trimmed = name.trim();
+    const newStaff = { id: String(Date.now()), name: trimmed, role, status: 'ACTIVE' };
+    setStaffList(prev => [...prev, newStaff]);
+    setCurrentOperator(trimmed);
+    
+    try {
+      await supabase.from('staff').insert([{ name: trimmed, role, status: 'ACTIVE', event_id: selectedEventId || null }]);
+    } catch (err) {
+      console.warn('Supabase staff insert warning:', err);
+    }
+    addToast(`✓ เพิ่มเจ้าหน้าที่ "${trimmed}" เรียบร้อย`, false);
+  };
+
+  const processScan = (stationType, bib, stationId = null, operatorName = null) => {
+    const now = Date.now();
+    const r = findRunner(bib);
+    const operator = operatorName || currentOperator || 'Staff';
+    let result = { success: false, runner: r, now, message: '', stationName: '', operator };
+
+    if (!r) {
+      addLog({ time: now, station: stationType === 'CheckPoint' ? getCpName(stationId) : stationType, bib, name: 'ไม่พบในระบบ', ok: false, operator });
+      addToast(`ไม่พบ BIB ${bib} ในฐานข้อมูลงานนี้`, true);
+      result.message = 'NOT FOUND · ไม่พบในระบบ';
+      return result;
+    }
+
+    if (stationType === 'Check-in') {
+      result.stationName = 'Check-in';
+      if (r.checkin) {
+        result.message = `Already checked-in`;
+        addToast(`BIB ${r.bib} เช็คอินไปแล้ว`, true);
+        addLog({ time: now, station: 'Check-in', bib, name: r.name, ok: false, msg: 'ซ้ำ', operator });
+      } else {
+        const updated = { ...r, checkin: now, registration_status: 'CHECKED_IN', checked_in_by: operator };
+        updateRunner(updated);
+        result.success = true;
+        result.runner = updated;
+        addToast(`✓ Check-in สำเร็จ — BIB ${r.bib} ${r.name}`);
+        addLog({ time: now, station: 'Check-in', bib, name: r.name, ok: true, operator });
+
+        // Update Supabase or queue offline
+        if (r.id) {
+          if (!isOnline) {
+            setPendingSyncQueue(prev => [...prev, { id: 'queue_' + Date.now(), type: 'CHECKIN', runnerId: r.id, bib: r.bib, time: now, operator }]);
+          } else {
+            supabase.from('runners').update({
+              registration_status: 'CHECKED_IN',
+              checked_in_at: new Date(now).toISOString(),
+              checked_in_by: operator
+            }).eq('id', r.id).then(({ error }) => {
+              if (error) {
+                console.warn('Supabase checkin error, queueing offline:', error);
+                setPendingSyncQueue(prev => [...prev, { id: 'queue_' + Date.now(), type: 'CHECKIN', runnerId: r.id, bib: r.bib, time: now, operator }]);
+              }
+            });
+          }
+        }
+      }
+    } 
+    else if (stationType === 'CheckPoint') {
+      const cpName = getCpName(stationId);
+      result.stationName = cpName;
+      
+      if (!r.checkin) {
+        result.message = `ยังไม่ได้ Check-in ที่จุดสตาร์ท`;
+        addToast(`BIB ${r.bib} ยังไม่ผ่าน Check-in`, true);
+        addLog({ time: now, station: cpName, bib, name: r.name, ok: false, msg: 'ยังไม่เช็คอิน', operator });
+      } else if (r.cps && r.cps[stationId]) {
+        result.message = `Already scanned`;
+        addToast(`BIB ${r.bib} ผ่าน ${cpName} ไปแล้ว`, true);
+        addLog({ time: now, station: cpName, bib, name: r.name, ok: false, msg: 'ซ้ำ', operator });
+      } else {
+        const updated = { ...r, cps: { ...(r.cps || {}), [stationId]: now } };
+        updateRunner(updated);
+        result.success = true;
+        result.runner = updated;
+        addToast(`✓ ${cpName} — BIB ${r.bib} ${r.name}`);
+        addLog({ time: now, station: cpName, bib, name: r.name, ok: true, operator });
+
+        // Update Supabase or queue offline
+        if (r.id) {
+          if (!isOnline) {
+            setPendingSyncQueue(prev => [...prev, { id: 'queue_' + Date.now(), type: 'CP', runnerId: r.id, bib: r.bib, cps: updated.cps, stationId, operator }]);
+          } else {
+            supabase.from('runners').update({
+              cps: updated.cps
+            }).eq('id', r.id).then(({ error }) => {
+              if (error) {
+                console.warn('Supabase CP update error, queueing offline:', error);
+                setPendingSyncQueue(prev => [...prev, { id: 'queue_' + Date.now(), type: 'CP', runnerId: r.id, bib: r.bib, cps: updated.cps, stationId, operator }]);
+              }
+            });
+          }
+        }
+      }
+    }
+    else if (stationType === 'Finish') {
+      result.stationName = 'Finish';
+      if (!r.checkin) {
+        result.message = `ยังไม่ได้ Check-in — ไม่สามารถบันทึก Finish`;
+        addToast(`BIB ${r.bib} ยังไม่ผ่าน Check-in`, true);
+        addLog({ time: now, station: 'Finish', bib, name: r.name, ok: false, msg: 'ยังไม่เช็คอิน', operator });
+      } else if (r.finish) {
+        result.message = `Already finished`;
+        addToast(`BIB ${r.bib} เข้าเส้นชัยแล้ว (ยึดเวลาแรก)`, true);
+        addLog({ time: now, station: 'Finish', bib, name: r.name, ok: false, msg: 'ซ้ำ', operator });
+      } else {
+        const updated = { ...r, finish: now };
+        updateRunner(updated);
+        result.success = true;
+        result.runner = updated;
+        addToast(`🏁 Finish! BIB ${r.bib} ${r.name}`);
+        addLog({ time: now, station: 'Finish', bib, name: r.name, ok: true, operator });
+
+        // Update Supabase or queue offline
+        if (r.id) {
+          if (!isOnline) {
+            setPendingSyncQueue(prev => [...prev, { id: 'queue_' + Date.now(), type: 'FINISH', runnerId: r.id, bib: r.bib, time: now, operator }]);
+          } else {
+            supabase.from('runners').update({
+              finish: now
+            }).eq('id', r.id).then(({ error }) => {
+              if (error) {
+                console.warn('Supabase Finish update error, queueing offline:', error);
+                setPendingSyncQueue(prev => [...prev, { id: 'queue_' + Date.now(), type: 'FINISH', runnerId: r.id, bib: r.bib, time: now, operator }]);
+              }
+            });
+          }
+        }
+      }
+    }
+
+    return result;
+  };
+
+  const importRunners = (newRunners) => {
+    setRunners(prev => [...prev, ...newRunners]);
+    addToast(`✓ นำเข้าข้อมูลสำเร็จ ${newRunners.length} รายการ`);
+  };
+
+  const assignNewBibs = (assignments) => {
+    setRunners(prev => {
+      const assignmentMap = new Map(assignments.map(a => [a.oldBib, a.newBib]));
+      return prev.map(r => {
+        if (assignmentMap.has(r.bib)) {
+          return { ...r, bib: assignmentMap.get(r.bib) };
+        }
+        return r;
+      });
+    });
+    addToast(`✓ อัพเดตหมายเลข BIB ใหม่ ${assignments.length} รายการ`);
+  };
+
+  return (
+    <RaceContext.Provider value={{
+      events,
+      selectedEventId,
+      setSelectedEventId,
+      categories,
+      checkpoints,
+      loadingRunners,
+      runners,
+      scanLog,
+      staffList,
+      currentOperator,
+      setCurrentOperator,
+      addStaff,
+      toastMsg,
+      processScan,
+      addToast,
+      showConfirm,
+      getCpName,
+      importRunners,
+      updateRunner,
+      assignNewBibs,
+      // Offline & Preload Cache API
+      isOnline,
+      isPreloading,
+      preloadProgress,
+      preloadStatusText,
+      lastSyncedTime,
+      pendingSyncQueue,
+      preloadEventData,
+      syncPendingQueue
+    }}>
+      {children}
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+    </RaceContext.Provider>
+  );
+}
+
+export const useRace = () => useContext(RaceContext);
+

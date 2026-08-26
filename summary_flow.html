@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สรุประบบการลบข้อมูลและ Rebuild BIB</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap');
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 15px; margin-bottom: 30px; }
+        h2 { color: #2980b9; margin-top: 40px; font-size: 1.4em; }
+        .step { background: #ecf0f1; border-left: 5px solid #3498db; padding: 15px 20px; margin-bottom: 15px; border-radius: 4px; }
+        .step strong { color: #e74c3c; display: block; margin-bottom: 5px; }
+        .flow-container { display: flex; flex-direction: column; align-items: center; margin: 40px 0; background: #fafbfc; padding: 30px; border-radius: 8px; border: 1px dashed #bdc3c7; }
+        .box { background: #fff; border: 2px solid #34495e; padding: 15px 25px; border-radius: 8px; font-weight: bold; text-align: center; width: 100%; max-width: 450px; margin: 5px 0; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .box small { display: block; font-weight: normal; color: #7f8c8d; margin-top: 5px; font-size: 0.85em; }
+        .box.frontend { border-color: #27ae60; background: #eafaf1; }
+        .box.backend { border-color: #8e44ad; background: #f4ecf8; }
+        .arrow { font-size: 28px; color: #95a5a6; margin: 5px 0; }
+        .legend { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; }
+        .legend-item { display: flex; align-items: center; font-size: 0.9em; font-weight: bold; }
+        .legend-color { width: 15px; height: 15px; border-radius: 3px; margin-right: 8px; border: 2px solid; }
+        .legend-front .legend-color { background: #eafaf1; border-color: #27ae60; }
+        .legend-back .legend-color { background: #f4ecf8; border-color: #8e44ad; }
+        .note { background: #fff3cd; border-left: 5px solid #ffc107; padding: 20px; margin-top: 40px; font-size: 0.95em; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📌 สรุป Flow: ระบบยืนยันการลบข้อมูล และ Rebuild BIB</h1>
+        
+        <h2>💡 แนวคิดหลัก (Core Concept)</h2>
+        <p>เพื่อป้องกันการเผลอกดปุ่มผิด และสามารถตรวจสอบประวัติย้อนหลังได้ว่า <strong>"ใครเป็นคนทำรายการ"</strong> ระบบจึงออกแบบให้ต้องมีการยืนยันตัวตนด้วย <strong>รหัสส่วนตัว (PIN) + การพิมพ์อักษรตามภาพ (CAPTCHA)</strong> โดยทำงานร่วมกับฐานข้อมูล (Supabase)</p>
+
+        <h2>🔄 แผนผังการทำงาน (Workflow)</h2>
+        
+        <div class="legend">
+            <div class="legend-item legend-front"><div class="legend-color"></div> ทำงานฝั่งหน้าเว็บ (React)</div>
+            <div class="legend-item legend-back"><div class="legend-color"></div> ทำงานฝั่งเซิร์ฟเวอร์ (Supabase)</div>
+        </div>
+
+        <div class="flow-container">
+            <div class="box frontend">1. ผู้ใช้กดปุ่ม "ลบข้อมูล" หรือ "Rebuild BIB"</div>
+            <div class="arrow">⬇️</div>
+            <div class="box frontend">2. ระบบแสดงหน้าต่าง (Popup) ให้กรอกข้อมูล<br>
+                <small>- เลือก "ชื่อผู้ทำรายการ"<br>- กรอก "รหัส PIN"<br>- พิมพ์ตัวอักษร CAPTCHA ตามภาพ</small>
+            </div>
+            <div class="arrow">⬇️</div>
+            <div class="box frontend">3. ตรวจสอบอักษร CAPTCHA<br>
+                <small>ถ้าพิมพ์ผิด ให้กรอกใหม่ทันที (ไม่ต้องส่งไปให้ระบบหลังบ้านรอ)</small>
+            </div>
+            <div class="arrow">⬇️</div>
+            <div class="box backend">4. ส่ง "ชื่อ" และ "PIN" ไปตรวจสอบที่ฐานข้อมูล<br>
+                <small>ข้อมูลวิ่งผ่านอินเทอร์เน็ตไปที่ Supabase อย่างปลอดภัย</small>
+            </div>
+            <div class="arrow">⬇️</div>
+            <div class="box backend">5. ตรวจสอบความถูกต้อง (Authentication)<br>
+                <small>Supabase เช็คว่า PIN ตรงกับชื่อที่เลือกหรือไม่</small>
+            </div>
+            <div class="arrow">⬇️</div>
+            <div class="box backend">6. ดำเนินการ และ บันทึกประวัติ (Action & Log)<br>
+                <small>ทำการลบหรือ Rebuild ข้อมูล <strong>พร้อมบันทึกประวัติว่า "ใคร" ทำ ณ เวลานี้</strong></small>
+            </div>
+            <div class="arrow">⬇️</div>
+            <div class="box frontend">7. แจ้งเตือนผลลัพธ์บนหน้าจอ<br>
+                <small>แสดงข้อความ "สำเร็จ" หรือ "รหัสผ่านไม่ถูกต้อง"</small>
+            </div>
+        </div>
+
+        <h2>🤔 ทำไมต้องให้ Supabase (Backend) เข้ามาจัดการ?</h2>
+        <div class="step">
+            <strong>1. เพื่อความปลอดภัยของรหัสผ่าน (Security)</strong>
+            ถ้ารหัส PIN อยู่แค่ในหน้าเว็บ (Frontend) โค้ดจะถูกดาวน์โหลดไปที่เครื่องผู้ใช้ ทำให้คนอื่นสามารถแอบดู Source Code และรู้รหัสผ่านได้ จึงต้องส่งไปเช็คที่ฐานข้อมูล
+        </div>
+        <div class="step">
+            <strong>2. ข้อมูลต้องเป็นศูนย์กลาง (Centralized Data)</strong>
+            เมื่อมีการลบหรือ Rebuild ข้อมูลในระบบส่วนกลาง (Supabase) ต้องถูกอัปเดต เพื่อให้อุปกรณ์ของทีมงานคนอื่นๆ ตามจุด Checkpoint มองเห็นข้อมูลที่ถูกลบหรือรีเซ็ตพร้อมๆ กัน
+        </div>
+        <div class="step">
+            <strong>3. การเก็บประวัติถาวร (Persistent Logging)</strong>
+            ประวัติการลบจะต้องถูกเก็บบันทึกลงฐานข้อมูลอย่างถาวร เพื่อให้สามารถกลับมาตรวจสอบย้อนหลังได้ตลอดเวลา การทำแค่ในหน้าเว็บ ประวัติจะหายไปเมื่อปิดเว็บหรือรีเฟรชหน้า
+        </div>
+
+        <div class="note">
+            <strong>✨ สรุปข้อดีของวิธีนี้:</strong> ปลอดภัยสูง ป้องกันการกดผิดด้วย CAPTCHA รู้ตัวคนทำรายการชัดเจน และประหยัดค่าใช้จ่ายเพราะไม่ต้องใช้ระบบส่ง SMS OTP 
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Flow - TrailTime</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+    <style>
+        body {
+            font-family: 'IBM Plex Sans Thai', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f7f8f9;
+        }
+        .container {
+            background: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1, h2, h3 { color: #16181d; }
+        h1 { border-bottom: 2px solid #e6e9ed; padding-bottom: 10px; }
+        h2 { margin-top: 30px; color: #3346e0; }
+        .mermaid { margin: 30px 0; display: flex; justify-content: center; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #e6e9ed;
+            padding: 12px;
+            text-align: left;
+        }
+        th { background: #f7f8f9; font-weight: 600; }
+        .code { font-family: monospace; background: #f1f3f5; padding: 2px 6px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Database Flow & Schema (TrailTime)</h1>
+        
+        <h2>1. Entity Relationship Diagram (ERD)</h2>
+        <div class="mermaid">
+            erDiagram
+                RUNNERS {
+                    uuid id PK "รหัสอ้างอิงระบบ"
+                    string bib "nullable, UNIQUE - อาจว่างถ้ายังไม่ออกบิบ"
+                    string name "nullable จนกว่าจะเช็คอิน"
+                    string gender
+                    string age_group
+                    string nationality
+                    string category_id FK
+                    string rfid_tag "nullable, map ตอนเช็คอินหน้างาน"
+                    string registration_status "PRE_REGISTERED|CHECKED_IN"
+                    timestamp checked_in_at "nullable"
+                    string checked_in_by "nullable"
+                    timestamp created_at
+                    timestamp updated_at
+                }
+            
+                CATEGORIES {
+                    string id PK "e.g., MKT10"
+                    string name
+                    float distance_km
+                    string unit "e.g., km"
+                }
+                
+                LOCATIONS {
+                    string id PK "e.g., LOC_01"
+                    string name
+                    float latitude
+                    float longitude
+                    string url
+                }
+            
+                STATIONS {
+                    string id PK "e.g., START, A1"
+                    string name
+                    string type "START|CP|FINISH"
+                    int sequence_order
+                }
+
+                CHECKPOINT {
+                    uuid id PK
+                    string category_id FK
+                    string station_id FK
+                    int sequence_order "ลำดับของจุดนี้ สำหรับ category นี้โดยเฉพาะ"
+                    timestamp cutoff_time "nullable"
+                    timestamp created_at
+                    timestamp updated_at
+                }
+            
+                SCAN_LOGS {
+                    uuid id PK
+                    uuid runner_id FK
+                    string station_id FK
+                    string location_id FK
+                    timestamp scan_time
+                    boolean is_valid
+                    string scanned_by "nullable, ผู้/เครื่องที่ทำการสแกน เช่น staff สแกนบาร์โค้ด"
+                    string note
+                    timestamp created_at
+                    timestamp updated_at
+                }
+            
+                RUNNERS ||--o{ SCAN_LOGS : "has"
+                CATEGORIES ||--|{ RUNNERS : "contains"
+                STATIONS ||--o{ SCAN_LOGS : "records"
+                LOCATIONS ||--o{ SCAN_LOGS : "happens_at"
+                CATEGORIES ||--o{ CHECKPOINT : "defines_route"
+                STATIONS ||--o{ CHECKPOINT : "used_in"
+        </div>
+
+        <h2>2. Table Structures</h2>
+        
+        <h3>2.1 RUNNERS (ข้อมูลนักวิ่ง)</h3>
+        <table>
+            <tr><th>Field Name</th><th>Data Type</th><th>Description</th></tr>
+            <tr><td><span class="code">id</span></td><td>UUID (PK)</td><td>รหัสอ้างอิงนักวิ่งในระบบ (ใช้เป็น FK แทน bib เพราะ bib อาจว่างได้)</td></tr>
+            <tr><td><span class="code">bib</span></td><td>VARCHAR (nullable, UNIQUE)</td><td>หมายเลขบิบ (เช่น "1001") — อาจว่างได้ถ้ายังไม่ออกบิบให้</td></tr>
+            <tr><td><span class="code">name</span></td><td>VARCHAR (nullable)</td><td>ชื่อ-นามสกุล — อาจว่างได้ถ้าเป็นบิบที่พิมพ์/จองไว้ล่วงหน้าแต่ยังไม่ระบุตัวคนจนกว่าจะเช็คอิน</td></tr>
+            <tr><td><span class="code">gender</span></td><td>VARCHAR</td><td>เพศ (M/F)</td></tr>
+            <tr><td><span class="code">age_group</span></td><td>VARCHAR</td><td>รุ่นอายุ</td></tr>
+            <tr><td><span class="code">category_id</span></td><td>VARCHAR (FK)</td><td>รหัสระยะทาง (อ้างอิง CATEGORIES)</td></tr>
+            <tr><td><span class="code">rfid_tag</span></td><td>VARCHAR (nullable, UNIQUE)</td><td>รหัสชิป RFID — ไม่บังคับกรอกล่วงหน้า มักจะถูก map ตอนเช็คอินหน้างาน</td></tr>
+            <tr><td><span class="code">registration_status</span></td><td>ENUM</td><td>PRE_REGISTERED (จองบิบไว้ล่วงหน้า) | CHECKED_IN (มารับบิบ/ชิปแล้ว)</td></tr>
+            <tr><td><span class="code">checked_in_at</span></td><td>TIMESTAMP (nullable)</td><td>เวลาที่มาเช็คอินรับบิบ/ชิปที่หน้างาน</td></tr>
+            <tr><td><span class="code">checked_in_by</span></td><td>VARCHAR (nullable)</td><td>เจ้าหน้าที่/เคาน์เตอร์ที่ทำการเช็คอินให้</td></tr>
+            <tr><td><span class="code">updated_at</span></td><td>TIMESTAMP</td><td>เวลาที่แก้ไขข้อมูลล่าสุด</td></tr>
+        </table>
+
+        <h3>2.2 CATEGORIES (ระยะการแข่งขัน)</h3>
+        <table>
+            <tr><th>Field Name</th><th>Data Type</th><th>Description</th></tr>
+            <tr><td><span class="code">id</span></td><td>VARCHAR (PK)</td><td>ตัวย่อระยะ (เช่น "MKT10", "PST50")</td></tr>
+            <tr><td><span class="code">name</span></td><td>VARCHAR</td><td>ชื่อเต็มของระยะ</td></tr>
+            <tr><td><span class="code">distance_km</span></td><td>FLOAT</td><td>ระยะทาง</td></tr>
+            <tr><td><span class="code">unit</span></td><td>VARCHAR</td><td>หน่วยวัดระยะทาง (เช่น "km")</td></tr>
+        </table>
+
+        <h3>2.3 LOCATIONS (สถานที่จริง)</h3>
+        <table>
+            <tr><th>Field Name</th><th>Data Type</th><th>Description</th></tr>
+            <tr><td><span class="code">id</span></td><td>VARCHAR (PK)</td><td>รหัสสถานที่ (เช่น LOC_01)</td></tr>
+            <tr><td><span class="code">name</span></td><td>VARCHAR</td><td>ชื่อสถานที่</td></tr>
+            <tr><td><span class="code">latitude</span></td><td>FLOAT</td><td>ละติจูด</td></tr>
+            <tr><td><span class="code">longitude</span></td><td>FLOAT</td><td>ลองจิจูด</td></tr>
+            <tr><td><span class="code">url</span></td><td>VARCHAR</td><td>ลิงก์แผนที่ (เช่น Google Maps)</td></tr>
+        </table>
+
+        <h3>2.4 STATIONS (จุดสแกน)</h3>
+        <table>
+            <tr><th>Field Name</th><th>Data Type</th><th>Description</th></tr>
+            <tr><td><span class="code">id</span></td><td>VARCHAR (PK)</td><td>รหัสจุด (START, A1, FINISH)</td></tr>
+            <tr><td><span class="code">name</span></td><td>VARCHAR</td><td>ชื่อจุดสแกน</td></tr>
+            <tr><td><span class="code">type</span></td><td>ENUM</td><td>ประเภท (START, CHECKPOINT, FINISH)</td></tr>
+            <tr><td><span class="code">sequence_order</span></td><td>INT</td><td>ลำดับของจุด (global, ไม่ได้แยกตาม category)</td></tr>
+        </table>
+
+        <h3>2.5 CHECKPOINT (เส้นทางของแต่ละระยะ)</h3>
+        <p style="font-size: 14px; color: #555;">ตารางกลางที่กำหนดว่าระยะ (category) ไหนต้องผ่านจุด (station) ใดบ้าง ตามลำดับอะไร และมี cutoff time เมื่อไหร่ — เพราะแต่ละระยะมักไม่ผ่านจุดสแกนชุดเดียวกัน</p>
+        <table>
+            <tr><th>Field Name</th><th>Data Type</th><th>Description</th></tr>
+            <tr><td><span class="code">id</span></td><td>UUID (PK)</td><td>รหัสรายการ</td></tr>
+            <tr><td><span class="code">category_id</span></td><td>VARCHAR (FK)</td><td>ระยะการแข่งขัน (อ้างอิง CATEGORIES)</td></tr>
+            <tr><td><span class="code">station_id</span></td><td>VARCHAR (FK)</td><td>จุดสแกน (อ้างอิง STATIONS)</td></tr>
+            <tr><td><span class="code">sequence_order</span></td><td>INT</td><td>ลำดับของจุดนี้ สำหรับระยะนี้โดยเฉพาะ</td></tr>
+            <tr><td><span class="code">cutoff_time</span></td><td>TIMESTAMP (nullable)</td><td>เวลาตัดตัว ณ จุดนี้ สำหรับระยะนี้</td></tr>
+            <tr><td><span class="code">created_at</span></td><td>TIMESTAMP</td><td>เวลาที่สร้างรายการนี้</td></tr>
+            <tr><td><span class="code">updated_at</span></td><td>TIMESTAMP</td><td>เวลาที่แก้ไข (เช่น เลื่อน cutoff_time)</td></tr>
+        </table>
+
+        <h3>2.6 SCAN_LOGS (ประวัติการสแกน Check Point)</h3>
+        <table>
+            <tr><th>Field Name</th><th>Data Type</th><th>Description</th></tr>
+            <tr><td><span class="code">id</span></td><td>UUID (PK)</td><td>รหัสรายการ</td></tr>
+            <tr><td><span class="code">runner_id</span></td><td>UUID (FK)</td><td>อ้างอิงนักวิ่ง (RUNNERS.id)</td></tr>
+            <tr><td><span class="code">station_id</span></td><td>VARCHAR (FK)</td><td>จุดที่สแกน (อ้างอิง STATIONS)</td></tr>
+            <tr><td><span class="code">location_id</span></td><td>VARCHAR (FK)</td><td>สถานที่จริงที่สแกน</td></tr>
+            <tr><td><span class="code">scan_time</span></td><td>TIMESTAMP</td><td>เวลาที่สแกน</td></tr>
+            <tr><td><span class="code">is_valid</span></td><td>BOOLEAN</td><td>เช็คว่าถูกต้อง (ไม่ได้สแกนซ้ำ, ผ่านจุดตาม sequence ของ CHECKPOINT ครบ)</td></tr>
+            <tr><td><span class="code">scanned_by</span></td><td>VARCHAR (nullable)</td><td>ผู้ทำการสแกน เช่น ชื่อ/รหัสเจ้าหน้าที่ กรณีใช้เครื่องสแกนบาร์โค้ดแทนการแตะ RFID อัตโนมัติ</td></tr>
+            <tr><td><span class="code">note</span></td><td>VARCHAR</td><td>หมายเหตุการสแกนผิดพลาด</td></tr>
+            <tr><td><span class="code">created_at</span></td><td>TIMESTAMP</td><td>เวลาที่ record ถูกสร้างในระบบ</td></tr>
+            <tr><td><span class="code">updated_at</span></td><td>TIMESTAMP</td><td>เวลาที่แก้ไขล่าสุด (เช่น staff แก้ scan_time/is_valid ย้อนหลัง)</td></tr>
+        </table>
+
+        <h2>3. Data Flow</h2>
+
+        <ol>
+            <li><strong>Pre-race (จองบิบ):</strong> สร้างบิบใน <span class="code">RUNNERS</span> ผูกกับ <span class="code">category_id</span> ล่วงหน้าได้เลยแม้ยังไม่รู้ว่าใครจะได้ (name/rfid_tag เป็น null, registration_status = PRE_REGISTERED) พร้อมกำหนด <span class="code">LOCATIONS</span> และเส้นทางแต่ละระยะใน <span class="code">CHECKPOINT</span></li>
+            <li><strong>เช็คอินหน้างาน:</strong> นักวิ่งมารับบิบ -> กรอก/ยืนยัน <span class="code">name</span> และ map <span class="code">rfid_tag</span> เข้ากับบิบที่เคาน์เตอร์ -> อัปเดต <span class="code">registration_status</span> เป็น CHECKED_IN พร้อม <span class="code">checked_in_at</span></li>
+            <li><strong>Start:</strong> สแกนบิบที่จุดปล่อยตัว -> บันทึกลง <span class="code">SCAN_LOGS</span> พร้อมระบุ <span class="code">location_id</span></li>
+            <li><strong>Check Point:</strong> สแกนระหว่างทาง -> บันทึกลง <span class="code">SCAN_LOGS</span> (ระบบเช็คกับ <span class="code">CHECKPOINT</span> ว่าจุดนี้ถูกต้องตามลำดับของ category นั้น และผ่าน Start มาแล้วหรือยัง)</li>
+            <li><strong>Finish:</strong> สแกนเข้าเส้นชัย -> บันทึกเวลาลง <span class="code">SCAN_LOGS</span> -> คำนวณเวลาเพื่อแสดงผล</li>
+        </ol>
+    </div>
+</body>
+</html>

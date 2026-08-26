@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Flow - TrailTime</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+    <style>
+        body {
+            font-family: 'IBM Plex Sans Thai', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f7f8f9;
+        }
+        .container {
+            background: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1, h2, h3 { color: #16181d; }
+        h1 { border-bottom: 2px solid #e6e9ed; padding-bottom: 10px; }
+        h2 { margin-top: 30px; color: #3346e0; border-left: 4px solid #3346e0; padding-left: 10px;}
+        h3 { color: #2d3748; margin-top: 25px; }
+        .mermaid { margin: 30px 0; display: flex; justify-content: center; overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0 30px 0;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #e6e9ed;
+            padding: 12px;
+            text-align: left;
+        }
+        th { background: #f7f8f9; font-weight: 600; }
+        .code { font-family: monospace; background: #f1f3f5; padding: 2px 6px; border-radius: 4px; color: #e53e3e; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; background: #ebf4ff; color: #3182ce; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Database Flow & Schema (TrailTime) - <span style="color: #38a169; font-size: 0.8em;">Multiple Events Supported</span></h1>
+        <p>โครงสร้างฐานข้อมูลอัปเดตใหม่เพื่อรองรับการจัดงานวิ่งหลายๆ งานพร้อมกัน (Multiple Events) โดยมีการเพิ่มตาราง EVENTS และ USERS เพื่อแยกข้อมูลการจัดงานและข้อมูลส่วนตัวของนักวิ่งออกจากข้อมูลการสมัคร</p>
+        
+        <h2>1. Entity Relationship Diagram (ERD)</h2>
+        <div class="mermaid">
+            erDiagram
+                EVENTS {
+                    uuid id PK "รหัสงานวิ่ง"
+                    string name "ชื่อของงานวิ่ง"
+                    date start_date
+                    date end_date
+                    string status "DRAFT|PUBLISHED|COMPLETED"
+                }
+
+                USERS {
+                    uuid id PK "ข้อมูลนักวิ่งหลัก (ใช้ข้ามงานได้)"
+                    string name
+                    string email
+                    string phone
+                    string gender
+                    date birth_date
+                    string nationality
+                }
+
+                RUNNERS {
+                    uuid id PK "รหัสการสมัครในแต่ละงาน (Registration)"
+                    uuid event_id FK
+                    uuid user_id FK "nullable (ถ้าสมัครแบบไม่สร้าง Account)"
+                    string bib "nullable, UNIQUE ต่อ event"
+                    uuid category_id FK
+                    string rfid_tag "nullable, map ตอนเช็คอิน"
+                    string registration_status "PRE_REGISTERED|CHECKED_IN"
+                    timestamp checked_in_at "nullable"
+                    string checked_in_by "nullable"
+                    timestamp created_at
+                    timestamp updated_at
+                }
+            
+                CATEGORIES {
+                    uuid id PK "รหัสระยะวิ่ง"
+                    uuid event_id FK
+                    string name "e.g., MKT10"
+                    float distance_km
+                    string unit "e.g., km"
+                }
+                
+                LOCATIONS {
+                    uuid id PK
+                    uuid event_id FK
+                    string name
+                    float latitude
+                    float longitude
+                    string url
+                }
+            
+                STATIONS {
+                    uuid id PK
+                    uuid event_id FK
+                    string name
+                    string type "START|CP|FINISH"
+                    int sequence_order
+                }
+
+                CHECKPOINT {
+                    uuid id PK
+                    uuid category_id FK
+                    uuid station_id FK
+                    int sequence_order "ลำดับของจุดสำหรับ category นี้"
+                    timestamp cutoff_time "nullable"
+                    timestamp created_at
+                    timestamp updated_at
+                }
+            
+                SCAN_LOGS {
+                    uuid id PK
+                    uuid runner_id FK
+                    uuid station_id FK
+                    uuid location_id FK
+                    timestamp scan_time
+                    boolean is_valid
+                    string scanned_by "nullable"
+                    string note
+                    timestamp created_at
+                    timestamp updated_at
+                }
+
+                EVENTS ||--o{ CATEGORIES : "has_categories"
+                EVENTS ||--o{ STATIONS : "has_stations"
+                EVENTS ||--o{ LOCATIONS : "has_locations"
+                EVENTS ||--o{ RUNNERS : "has_registrations"
+                USERS ||--o{ RUNNERS : "registers_for"
+                RUNNERS ||--o{ SCAN_LOGS : "has"
+                CATEGORIES ||--|{ RUNNERS : "contains"
+                STATIONS ||--o{ SCAN_LOGS : "records"
+                LOCATIONS ||--o{ SCAN_LOGS : "happens_at"
+                CATEGORIES ||--o{ CHECKPOINT : "defines_route"
+                STATIONS ||--o{ CHECKPOINT : "used_in"
+        </div>
+
+        <h2>2. Table Structures</h2>
+        
+        <h3>2.1 EVENTS (งานวิ่ง) <span class="badge">NEW</span></h3>
+        <p style="font-size: 14px; color: #555;">ตารางหลักสำหรับจัดการงานวิ่งแต่ละงาน แยกข้อมูลไม่ให้ปะปนกัน</p>
+        <table>
+            <tr><th>Field Name</th><th>Data Type</th><th>Description</th></tr>
+            <tr><td><span class="code">id</span></td><td>UUID (PK)</td><td>รหัสงานวิ่ง</td></tr>
+            <tr><td><span class="code">name</span></td><td>VARCHAR</td><td>ชื่องาน (เช่น "Khao Yai Trail 2026")</td></tr>
+            <tr><td><span class="code">start_date</span></td><td>DATE</td><td>วันที่เริ่มจัดงาน</td></tr>
+            <tr><td><span class="code">end_date</span></td><td>DATE</td><td>วันสิ้นสุดงาน</td></tr>
+            <tr><td><span class="code">status</span></td><td>ENUM</td><td>สถานะงาน (DRAFT, PUBLISHED, COMPLETED)</td></tr>
+        </table>
+
+        <h3>2.2 USERS (ข้อมูลผู้ใช้งาน/นักวิ่งหลัก) <span class="badge">NEW</span></h3>
+        <p style="font-size: 14px; color: #555;">เก็บ Profile หลักของนักวิ่งที่สามารถนำไปใช้สมัครได้หลายๆ งานวิ่งในระบบ</p>
+        <table>
+            <tr><th>Field Name</th><th>Data Type</th><th>Description</th></tr>
+            <tr><td><span class="code">id</span></td><td>UUID (PK)</td><td>รหัสผู้ใช้งานระบบ</td></tr>
+            <tr><td><span class="code">name</span></td><td>VARCHAR</td><td>ชื่อ-นามสกุล</td></tr>
+            <tr><td><span class="code">email</span></td><td>VARCHAR</td><td>อีเมล (ใช้ Login)</td></tr>
+            <tr><td><span class="code">gender</span></td><td>VARCHAR</td><td>เพศ</td></tr>
+            <tr><td><span class="code">birth_date</span></td><td>DATE</td><td>วันเกิด (เพื่อคำนวณรุ่นอายุอัตโนมัติ)</td></tr>
+            <tr><td><span class="code">nationality</span></td><td>VARCHAR</td><td>สัญชาติ</td></tr>
+        </table>
+
+        <h3>2.3 RUNNERS (การสมัครแข่งขันของนักวิ่ง) <span class="badge">UPDATED</span></h3>
+        <p style="font-size: 14px; color: #555;">ตารางนี้ทำหน้าที่เหมือน <strong>Registrations (การสมัคร)</strong> โดย 1 User สามารถมีได้หลาย Record ถ่าสมัครหลายงาน</p>
+        <table>
+            <tr><th>Field Name</th><th>Data Type</th><th>Description</th></tr>
+            <tr><td><span class="code">id</span></td><td>UUID (PK)</td><td>รหัสการสมัครอ้างอิง (ใช้แทนการอ้างอิงด้วย bib)</td></tr>
+            <tr><td><span class="code">event_id</span></td><td>UUID (FK)</td><td>ระบุว่าสมัครของงานวิ่งไหน (EVENTS.id)</td></tr>
+            <tr><td><span class="code">user_id</span></td><td>UUID (FK, nullable)</td><td>ข้อมูลนักวิ่งหลัก (เผื่อกรณีระบบรับสมัครแบบไม่ต้องสร้าง User ได้)</td></tr>
+            <tr><td><span class="code">bib</span></td><td>VARCHAR (nullable)</td><td>หมายเลขบิบ (เช่น "1001") เป็น UNIQUE คู่กับ event_id</td></tr>
+            <tr><td><span class="code">category_id</span></td><td>UUID (FK)</td><td>รหัสระยะทางที่เลือกลง (อ้างอิง CATEGORIES)</td></tr>
+            <tr><td><span class="code">rfid_tag</span></td><td>VARCHAR (nullable)</td><td>รหัสชิป RFID UNIQUE คู่กับ event_id (ผูกตอนหน้างาน)</td></tr>
+            <tr><td><span class="code">registration_status</span></td><td>ENUM</td><td>PRE_REGISTERED | CHECKED_IN</td></tr>
+            <tr><td><span class="code">checked_in_at</span></td><td>TIMESTAMP (nullable)</td><td>เวลาที่เช็คอินรับอุปกรณ์</td></tr>
+        </table>
+
+        <h3>2.4 CATEGORIES, LOCATIONS, STATIONS <span class="badge">UPDATED</span></h3>
+        <p style="font-size: 14px; color: #555;">ตารางเหล่านี้ถูกเพิ่ม <span class="code">event_id</span> เพื่อให้ทราบว่าระยะวิ่ง, สถานที่ หรือจุดสแกนนี้ เป็นของงานวิ่งใด ป้องกันการดึงข้อมูลผิดงาน</p>
+        <table>
+            <tr><th>Table</th><th>Key Changes</th><th>Description</th></tr>
+            <tr><td><strong>CATEGORIES</strong></td><td>เปลี่ยน PK เป็น <span class="code">UUID</span>, เพิ่ม <span class="code">event_id</span></td><td>รหัสระยะวิ่ง เช่น "MKT10" อาจซ้ำกันได้ใน 2 งาน จึงต้องใช้ UUID + event_id กั้น</td></tr>
+            <tr><td><strong>LOCATIONS</strong></td><td>เปลี่ยน PK เป็น <span class="code">UUID</span>, เพิ่ม <span class="code">event_id</span></td><td>พิกัดสถานที่ต่างๆ ของแต่ละงานวิ่ง</td></tr>
+            <tr><td><strong>STATIONS</strong></td><td>เปลี่ยน PK เป็น <span class="code">UUID</span>, เพิ่ม <span class="code">event_id</span></td><td>จุดสแกน เช่น START, CP1, FINISH ของแต่ละงานวิ่ง</td></tr>
+        </table>
+
+        <h3>2.5 CHECKPOINT & SCAN_LOGS</h3>
+        <p style="font-size: 14px; color: #555;">เชื่อมโยงผ่าน ID ภายในระบบตามปกติ โครงสร้างเดิมแต่ปรับให้รองรับ UUID เป็นหลัก</p>
+        <table>
+            <tr><th>Table</th><th>Key Changes</th><th>Description</th></tr>
+            <tr><td><strong>CHECKPOINT</strong></td><td>เปลี่ยน FK ต่างๆ เป็น <span class="code">UUID</span></td><td>เส้นทางและ Cutoff Time ของแต่ละ Category ในงานนั้นๆ</td></tr>
+            <tr><td><strong>SCAN_LOGS</strong></td><td>เปลี่ยน FK ต่างๆ เป็น <span class="code">UUID</span></td><td>ประวัติการสแกนอ้างอิงไปที่ <span class="code">runner_id</span> (การสมัคร) โดยตรง ไม่ต้องพึ่งเบอร์บิบ</td></tr>
+        </table>
+
+        <h2>3. Data Flow (รองรับหลายงานวิ่ง)</h2>
+        <ol>
+            <li><strong>การสร้างงานวิ่ง (Event Setup):</strong> Admin สร้าง <span class="code">EVENTS</span> ใหม่ กำหนด <span class="code">CATEGORIES</span>, <span class="code">STATIONS</span> และผูก <span class="code">CHECKPOINT</span> ของงานนั้นๆ</li>
+            <li><strong>การสมัคร (Registration):</strong> นักวิ่ง <span class="code">USERS</span> กดสมัครงานวิ่ง ข้อมูลจะถูกสร้างใน <span class="code">RUNNERS</span> โดยผูกกับ <span class="code">event_id</span> และ <span class="code">category_id</span> (อาจจะยังไม่มี bib จนกว่าจะชำระเงินหรือระบุให้)</li>
+            <li><strong>เช็คอินหน้างาน:</strong> ค้นหาประวัติการสมัครในงานนั้น คอนเฟิร์มการมารับอุปกรณ์และทำการจับคู่ <span class="code">rfid_tag</span> เข้ากับ <span class="code">RUNNERS.id</span></li>
+            <li><strong>การแข่งขัน (Race Day):</strong> เวลาสแกนที่จุดต่างๆ ข้อมูลจะถูกบันทึกใน <span class="code">SCAN_LOGS</span> โดยระบบจะรู้ได้ทันทีว่า <span class="code">runner_id</span> นี้แข่งอยู่ในงานอะไร ระยะอะไร ทำให้สามารถตรวจสอบลำดับจุดสแกนได้อย่างถูกต้อง</li>
+        </ol>
+    </div>
+</body>
+</html>

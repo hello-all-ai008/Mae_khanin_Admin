@@ -1,0 +1,3 @@
+ALTER TABLE runners
+ADD COLUMN title VARCHAR,
+ADD COLUMN age_group VARCHAR;
