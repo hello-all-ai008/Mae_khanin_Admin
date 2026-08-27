@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สรุปสถานะการเชื่อมต่อฐานข้อมูล (Database Connection Status)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --primary: #0284c7;
+            --primary-bg: #e0f2fe;
+            --success: #16a34a;
+            --success-bg: #dcfce7;
+            --warning: #ca8a04;
+            --warning-bg: #fef9c3;
+            --danger: #dc2626;
+            --danger-bg: #fee2e2;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 40px 20px;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--surface);
+            padding: 48px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            font-size: 15px;
+            display: inline-flex;
+            align-items: center;
+            background: var(--primary-bg);
+            color: var(--primary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2 span {
+            background: var(--text-main);
+            color: white;
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .status-card {
+            background: #fdfdfd;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .status-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-title.success { color: var(--success); }
+        .status-title.warning { color: var(--warning); }
+        .status-title.danger { color: var(--danger); }
+
+        ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        li:last-child {
+            margin-bottom: 0;
+        }
+
+        code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+        }
+
+        strong {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 30px 20px; }
+            h1 { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>สรุปสถานะการเชื่อมต่อฐานข้อมูล</h1>
+        <div class="subtitle">อ้างอิงโครงสร้างจาก DatabaseFlow.jsx</div>
+
+        <!-- Section 1 -->
+        <div class="section">
+            <h2><span>1</span> หน้า EventManager.jsx (และ Setup Components ย่อย)</h2>
+            <p style="color: var(--text-muted); margin-top: -10px; margin-bottom: 20px;">หน้านี้เป็นศูนย์กลางในการตั้งค่างานวิ่งทั้งหมด (Event Setup)</p>
+            
+            <div class="status-card">
+                <div class="status-title success">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    จุดที่เชื่อมต่อกับ Database แล้ว
+                </div>
+                <ul>
+                    <li><strong>ตาราง <code>EVENTS</code>:</strong> เชื่อมต่อเรียบร้อยแล้ว มีการดึงข้อมูล (Select), สร้างงานใหม่ (Insert), แก้ไข (Update) และลบ (Delete) ผ่าน <code>supabase.from('events')</code></li>
+                    <li><strong>ตารางที่เกี่ยวข้องกับการตั้งค่างาน (Sub-setup):</strong>
+                        <ul>
+                            <li>การจัดการรุ่นระยะทาง (<code>CATEGORIES</code>), สถานที่ (<code>LOCATIONS</code>), จุดสแกน (<code>STATIONS</code>), จุดตรวจสอบ (<code>CHECKPOINT</code>) และเจ้าหน้าที่ (<code>STAFF</code>) มีการเรียกใช้งานผ่าน Supabase API เบื้องต้นแล้วในไฟล์ Setup ย่อย</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="status-card" style="background: var(--warning-bg); border-color: #fef08a;">
+                <div class="status-title warning">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    จุดที่ต้องระวัง / ยังไม่สมบูรณ์
+                </div>
+                <ul>
+                    <li><strong>ตาราง <code>STAFF</code>:</strong> ใน <code>StaffSetup.jsx</code> มีการดัก Error ไว้ว่าถ้า Insert ลงฐานข้อมูลไม่ได้ จะเปลี่ยนไปบันทึกลง <code>localStorage</code> แทน (Fallback) ดังนั้น<strong>ต้องมั่นใจว่าได้รัน SQL สร้างตาราง <code>staff</code> ใน Supabase แล้ว</strong> (ดูโค้ด SQL ได้ในหน้า Database Flow)</li>
+                    <li><strong>ตาราง <code>ACTION_LOGS</code>:</strong> ปัจจุบันยังไม่มีการบันทึกประวัติการทำรายการ (Action Logs) เมื่อมีการลบงานวิ่งหรือแก้ไขข้อมูลสำคัญ</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 2 -->
+        <div class="section">
+            <h2><span>2</span> หน้า StaffManager.jsx</h2>
+            <p style="color: var(--text-muted); margin-top: -10px; margin-bottom: 20px;">หน้าที่ใช้จัดการรายชื่อเจ้าหน้าที่/คนสแกน (เรียกใช้ <code>StaffSetup.jsx</code> ด้านในอีกที)</p>
+            
+            <div class="status-card">
+                <div class="status-title success">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    จุดที่เชื่อมต่อกับ Database แล้ว
+                </div>
+                <ul>
+                    <li><strong>ตาราง <code>EVENTS</code>:</strong> เชื่อมต่อเพื่อดึงรายชื่องานวิ่งมาแสดงใน Dropdown สำหรับกรองข้อมูลเจ้าหน้าที่ตามงาน (<code>supabase.from('events').select('id, name')</code>)</li>
+                    <li><strong>ตาราง <code>STAFF</code> & <code>STATIONS</code>:</strong> ดึงข้อมูลเจ้าหน้าที่และจุดสแกนมาแสดงเพื่อผูกเจ้าหน้าที่เข้ากับจุดสแกน</li>
+                </ul>
+            </div>
+
+            <div class="status-card" style="background: var(--warning-bg); border-color: #fef08a;">
+                <div class="status-title warning">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    จุดที่ต้องระวัง / ยังไม่สมบูรณ์
+                </div>
+                <ul>
+                    <li>เช่นเดียวกับ EventManager ต้องรัน SQL สร้างตาราง <code>STAFF</code> เพื่อให้ใช้งานเชื่อมกับ Database ได้ 100% โดยไม่พึ่งพา LocalStorage</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 3 -->
+        <div class="section">
+            <h2><span>3</span> ฟังก์ชัน importRunners (ใน RaceContext.jsx)</h2>
+            <p style="color: var(--text-muted); margin-top: -10px; margin-bottom: 20px;">ฟังก์ชันที่รับผิดชอบการนำเข้าข้อมูลนักวิ่งจากไฟล์ Excel/CSV</p>
+            
+            <div class="status-card" style="background: var(--danger-bg); border-color: #fecaca;">
+                <div class="status-title danger">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                    จุดที่ยังไม่ได้เชื่อมต่อ (ต้องทำเพิ่ม)
+                </div>
+                <ul>
+                    <li><strong>ปัจจุบัน:</strong> โค้ดยังทำงานแค่ใน Local State ของ React เท่านั้น (<code>setRunners(prev => [...prev, ...newRunners])</code>) ยังไม่มีการส่งข้อมูลขึ้น Supabase</li>
+                    <li><strong>ตารางที่ต้องเชื่อมต่อ:</strong>
+                        <ol style="margin-top: 10px; padding-left: 20px;">
+                            <li style="margin-bottom: 8px;"><strong>ตาราง <code>RUNNERS</code> (หลัก):</strong> ต้องเปลี่ยน/เพิ่มโค้ดให้ทำการ <code>supabase.from('runners').insert(newRunners)</code> เพื่อบันทึกรายชื่อเข้า Database</li>
+                            <li style="margin-bottom: 8px;"><strong>ความสัมพันธ์ (Foreign Keys):</strong> ก่อน Insert ข้อมูลลง <code>RUNNERS</code> ต้องตรวจสอบให้แน่ใจว่าได้ระบุ <code>event_id</code> และ <code>category_id</code> ถูกต้องตามตาราง <code>EVENTS</code> และ <code>CATEGORIES</code></li>
+                            <li style="margin-bottom: 0;"><strong>ตาราง <code>USERS</code> (ทางเลือก):</strong> หากระบบบังคับให้ทุกคนต้องมี Account อาจจะต้องเช็คและ Insert ลงตาราง <code>USERS</code> ก่อน แต่ตาม ERD กำหนดให้ <code>user_id</code> ใน <code>RUNNERS</code> เป็น nullable ได้ ดังนั้นสำหรับการ Import ไฟล์ Excel สามารถ Insert ข้อมูลลง <code>RUNNERS</code> ได้เลยโดยไม่ต้องผูก User</li>
+                        </ol>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
