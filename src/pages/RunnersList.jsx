@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { assertWriteOk } from '../lib/supabaseResult';
 import { useRace } from '../context/RaceContext';
 import AdvancedTable from '../components/AdvancedTable';
 import EditRunnerModal from '../components/EditRunnerModal';
@@ -74,8 +75,8 @@ export default function RunnersList() {
     const confirmed = await showConfirm('ยืนยันการลบ', `คุณต้องการลบข้อมูลของ ${name} ใช่หรือไม่?`);
     if (!confirmed) return;
     try {
-      const { error } = await supabase.from('runners').delete().eq('id', id);
-      if (error) throw error;
+      // `.select('id')` so an RLS-filtered DELETE (204, no error) is not reported as success.
+      assertWriteOk(await supabase.from('runners').delete().eq('id', id).select('id'));
       setRunners(prev => prev.filter(r => r.id !== id));
       addToast('ลบข้อมูลสำเร็จ', false);
     } catch (err) {
@@ -102,16 +103,15 @@ export default function RunnersList() {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('runners')
-        .delete()
-        .eq('event_id', selectedEventId);
-
-      if (error) throw error;
+      // Report the rows the database actually removed, not the rows on screen:
+      // RLS answers a fully filtered DELETE with 204 and no error.
+      const deleted = assertWriteOk(
+        await supabase.from('runners').delete().eq('event_id', selectedEventId).select('id')
+      );
 
       setRunners([]);
       setCategories([]);
-      addToast(`✓ ล้างรายชื่อนักวิ่งทั้งหมด (${runners.length} คน) เรียบร้อยแล้ว`, false);
+      addToast(`✓ ล้างรายชื่อนักวิ่งทั้งหมด (${deleted.length} คน) เรียบร้อยแล้ว`, false);
     } catch (err) {
       console.error('Clear runners error:', err);
       addToast(`ลบข้อมูลไม่สำเร็จ: ${err.message}`, true);

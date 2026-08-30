@@ -162,7 +162,9 @@ site_url = "http://127.0.0.1:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = ["https://127.0.0.1:3000"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
-jwt_expiry = 3600
+# 129600 = 36 hours: field staff work long trail events with patchy connectivity,
+# so the session must outlive the race rather than expire mid-course.
+jwt_expiry = 129600
 # JWT issuer URL. If not set, defaults to auth.external_url.
 # jwt_issuer = ""
 # Path to JWT signing key. DO NOT commit your signing keys file to git.
@@ -384,6 +386,22 @@ deno_version = 2
 
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
+
+# Per-function settings. The gateway rejects a request that carries no valid JWT
+# before the handler runs, so a function that must be reachable without a session
+# has to opt out here. Declaring it in config beats passing `--no-verify-jwt` on
+# every deploy, which only takes effect if whoever runs the deploy remembers it.
+#
+# Both functions below are the login flow itself: no caller JWT exists yet. They
+# carry their own hand-verified authorization invariants — read each function's
+# README before changing these. Any endpoint added later that runs *after* login
+# leaves verify_jwt at its default.
+
+[functions.staff-login]
+verify_jwt = false
+
+[functions.login-options]
+verify_jwt = false
 
 [analytics]
 enabled = true

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { assertWriteOk } from '../../lib/supabaseResult';
 import { useRace } from '../../context/RaceContext';
 import AdvancedTable from '../AdvancedTable';
 
@@ -65,26 +66,31 @@ export default function StationsSetup({ eventId }) {
     setIsSaving(true);
     try {
       if (formData.id) {
-        const { error } = await supabase
-          .from('stations')
-          .update({
-            name: formData.name,
-            type: formData.type,
-            sequence_order: parseInt(formData.sequence_order)
-          })
-          .eq('id', formData.id);
-        if (error) throw error;
+        // `.select('id')` so an RLS-filtered UPDATE (204, no error) is not reported as success.
+        assertWriteOk(
+          await supabase
+            .from('stations')
+            .update({
+              name: formData.name,
+              type: formData.type,
+              sequence_order: parseInt(formData.sequence_order)
+            })
+            .eq('id', formData.id)
+            .select('id')
+        );
         addToast('อัปเดตจุดตรวจสำเร็จ', false);
       } else {
-        const { error } = await supabase
-          .from('stations')
-          .insert([{
-            event_id: eventId,
-            name: formData.name,
-            type: formData.type,
-            sequence_order: parseInt(formData.sequence_order)
-          }]);
-        if (error) throw error;
+        assertWriteOk(
+          await supabase
+            .from('stations')
+            .insert([{
+              event_id: eventId,
+              name: formData.name,
+              type: formData.type,
+              sequence_order: parseInt(formData.sequence_order)
+            }])
+            .select('id')
+        );
         addToast('เพิ่มจุดตรวจสำเร็จ', false);
       }
 
@@ -106,8 +112,7 @@ export default function StationsSetup({ eventId }) {
     const confirmed = await showConfirm('ยืนยันการลบ', 'คุณต้องการลบจุดตรวจนี้ใช่หรือไม่?');
     if (!confirmed) return;
     try {
-      const { error } = await supabase.from('stations').delete().eq('id', id);
-      if (error) throw error;
+      assertWriteOk(await supabase.from('stations').delete().eq('id', id).select('id'));
       addToast('ลบจุดตรวจสำเร็จ', false);
       fetchStations();
       if (formData.id === id) handleClear();

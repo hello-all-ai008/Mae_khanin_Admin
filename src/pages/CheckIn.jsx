@@ -16,8 +16,8 @@ export default function CheckIn() {
   } = useRace();
   const [ledState, setLedState] = useState({ runner: null, message: '', warn: false });
 
-  const handleScan = (bib, operator = null) => {
-    const result = processScan('Check-in', bib, null, operator);
+  const handleScan = (bib) => {
+    const result = processScan('Check-in', bib);
     
     if (!result.success) {
       setLedState({ 

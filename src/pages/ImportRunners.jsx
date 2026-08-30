@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRace } from '../context/RaceContext';
 import { supabase } from '../lib/supabaseClient';
+import { assertWriteOk } from '../lib/supabaseResult';
 import AdvancedTable from '../components/AdvancedTable';
 import * as XLSX from 'xlsx';
 
@@ -70,8 +71,7 @@ export default function ImportRunners() {
         registration_status: 'PRE_REGISTERED'
       };
 
-      const { error } = await supabase.from('runners').insert([newRunner]);
-      if (error) throw error;
+      assertWriteOk(await supabase.from('runners').insert([newRunner]).select('id'));
 
       addToast('เพิ่มข้อมูลสำเร็จ', false);
       setFormData({ bib: '', cat: '', name: '', gender: '', age: '', nat: '' });
@@ -195,12 +195,9 @@ export default function ImportRunners() {
       // 4. Insert new categories
       if (newCatsToInsert.length > 0) {
         setMsg(`กำลังสร้าง Categories ใหม่ ${newCatsToInsert.length} รายการ...`);
-        const { data: insertedCats, error: insertCatsError } = await supabase
-          .from('categories')
-          .insert(newCatsToInsert)
-          .select('id, name');
-
-        if (insertCatsError) throw insertCatsError;
+        const insertedCats = assertWriteOk(
+          await supabase.from('categories').insert(newCatsToInsert).select('id, name')
+        );
         insertedCats.forEach(c => existingCatMap.set(c.name, c.id));
       }
 
@@ -225,15 +222,13 @@ export default function ImportRunners() {
         registration_status: 'PRE_REGISTERED'
       }));
 
-      // 6. Insert runners (Batch insert)
-      const { error: insertRunnersError } = await supabase
-        .from('runners')
-        .insert(runnersToInsert);
+      // 6. Insert runners (Batch insert). Count the rows the database kept.
+      const insertedRunners = assertWriteOk(
+        await supabase.from('runners').insert(runnersToInsert).select('id')
+      );
 
-      if (insertRunnersError) throw insertRunnersError;
-
-      setMsg(`✅ อัปโหลด Excel เข้า Database สำเร็จ ${runnersToInsert.length} รายการ!`);
-      addToast(`อัปโหลด Excel สำเร็จ ${runnersToInsert.length} รายการ`, false);
+      setMsg(`✅ อัปโหลด Excel เข้า Database สำเร็จ ${insertedRunners.length} รายการ!`);
+      addToast(`อัปโหลด Excel สำเร็จ ${insertedRunners.length} รายการ`, false);
 
       // Clear data after successful insert
       setData([]);

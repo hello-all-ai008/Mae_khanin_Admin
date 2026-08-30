@@ -1,0 +1,105 @@
+-- ============================================================================
+-- BOOTSTRAP THE FIRST GLOBAL ADMIN  --  NOT A MIGRATION. RUN ONCE, BY HAND.
+--
+-- This file deliberately lives OUTSIDE supabase/migrations/ and is not
+-- timestamp-named, so `supabase db push` will never pick it up. It must never
+-- run automatically: an auto-applied admin bootstrap is a backdoor.
+--
+-- WHY IT EXISTS
+-- Every write policy in 20260828100300 is gated on an ACTIVE ADMIN row in
+-- public.staff, and public.staff's own INSERT policy requires
+-- private.is_global_admin() for a row with event_id null. That is a closed
+-- loop: straight after the first `db push` nobody can create an event, and
+-- nobody can create the admin who could. The loop has to be broken once, from
+-- outside the Data API, by a human with service-role / SQL-editor access
+-- (which bypasses RLS).
+--
+-- NO CREDENTIALS IN THIS FILE. Every <placeholder> below is filled in at run
+-- time. Do not commit a filled-in copy. Do not paste a password, a PIN, a PIN
+-- hash, or a service-role key into this repository - see the workspace
+-- guardrails in CLAUDE.md.
+-- ============================================================================
+
+
+-- ----------------------------------------------------------------------------
+-- STEP 1 -- Create the auth account for the race director.
+--
+-- Do NOT insert into auth.users directly. Its password hashing, identity rows
+-- and confirmation columns are internal and change between Supabase releases;
+-- a hand-written row produces an account that cannot log in.
+--
+-- Use one of:
+--   a) Dashboard -> Authentication -> Users -> "Add user"
+--      Tick "Auto Confirm User". Choose a strong unique password and store it
+--      in the team password manager, not here.
+--   b) Admin API from a trusted shell (the key is read from the environment;
+--      never write it into a file):
+--
+--        curl -X POST "$SUPABASE_URL/auth/v1/admin/users" \
+--          -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+--          -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+--          -H "Content-Type: application/json" \
+--          -d '{"email":"<admin-email>","password":"<generated-password>","email_confirm":true}'
+--
+-- Then copy the resulting user id (uuid) for step 2.
+-- ----------------------------------------------------------------------------
+
+
+-- ----------------------------------------------------------------------------
+-- STEP 2 -- Confirm the account exists and grab its id.
+-- Run in the SQL editor (service role, so RLS does not apply).
+-- ----------------------------------------------------------------------------
+-- select id, email, created_at, email_confirmed_at
+-- from auth.users
+-- where email = '<admin-email>';
+
+
+-- ----------------------------------------------------------------------------
+-- STEP 3 -- Give that account a GLOBAL admin staff row.
+--
+-- event_id null = global: valid for every event, present and future. This is
+-- the only row in the system that has to be created out of band; from here on
+-- every other staff row can be created through the app by this admin.
+--
+-- Uncomment, replace both placeholders, run once.
+-- ----------------------------------------------------------------------------
+-- insert into public.staff (user_id, event_id, station_id, name, role, status)
+-- values (
+--   '<auth-user-uuid-from-step-2>',
+--   null,          -- global: do not set an event here
+--   null,
+--   '<display name, e.g. Race Director>',
+--   'ADMIN',
+--   'ACTIVE'
+-- );
+
+
+-- ----------------------------------------------------------------------------
+-- STEP 4 -- Verify. All three must be true before you stop.
+-- ----------------------------------------------------------------------------
+-- exactly one ACTIVE global admin, and it is the account you just created:
+-- select s.id, s.name, s.role, s.status, s.event_id, u.email
+-- from public.staff s
+-- join auth.users u on u.id = s.user_id
+-- where s.role = 'ADMIN' and s.event_id is null and s.status = 'ACTIVE';
+--
+-- the helper agrees (run while impersonating that user, or trust step 5):
+-- select private.is_global_admin();
+--
+-- log in as that account in the web app and create a test event. If the insert
+-- is rejected, the staff row is wrong - re-check event_id is null, status is
+-- 'ACTIVE', and user_id matches auth.users.id exactly.
+
+
+-- ----------------------------------------------------------------------------
+-- STEP 5 -- Aftercare.
+--   * Keep the number of global admins small. Everyone else should get an
+--     event-scoped row (event_id set), created through the app.
+--   * Field devices do not use this account. They authenticate with a PIN
+--     through the staff-login Edge Function against public.event_pins - see
+--     supabase/functions/staff-login/README.md.
+--   * Never demote or delete the last global admin. If you do, you are back to
+--     the closed loop at the top of this file and will have to run STEP 3
+--     again from the SQL editor.
+--   * Rotate the bootstrap password after the first successful login.
+-- ----------------------------------------------------------------------------

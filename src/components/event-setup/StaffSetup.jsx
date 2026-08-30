@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { assertWriteOk } from '../../lib/supabaseResult';
 import { useRace } from '../../context/RaceContext';
 import AdvancedTable from '../AdvancedTable';
 import { 
@@ -25,11 +26,68 @@ const ROLE_OPTIONS = [
   { value: 'VOLUNTEER', label: '🤝 อาสาสมัคร / เจ้าหน้าที่บริการ', color: '#64748b', bg: '#f8fafc' }
 ];
 
+const LOAD_FAILED_MESSAGE =
+  'โหลดรายชื่อเจ้าหน้าที่จากเซิร์ฟเวอร์ไม่สำเร็จ — ข้อมูลด้านล่างเป็นข้อมูลที่เก็บไว้ในเครื่องครั้งล่าสุด';
+const LOAD_FAILED_NO_CACHE_MESSAGE =
+  'โหลดรายชื่อเจ้าหน้าที่จากเซิร์ฟเวอร์ไม่สำเร็จ และยังไม่มีข้อมูลสำรองในเครื่อง';
+
+/**
+ * Reads the last known good staff roster from the browser. Cache only — it is
+ * written from confirmed server data, never from made-up rows.
+ * @returns {Array<object> | null} null when there is no usable cache
+ */
+function readCachedStaff() {
+  try {
+    const saved = localStorage.getItem('trail_staff_list');
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+  } catch (err) {
+    console.error('Cached staff list parse failed:', err);
+    return null;
+  }
+}
+
+/**
+ * Shown when the server genuinely returned no staff. Saying so is the point:
+ * the alternative was inventing a roster nobody created.
+ */
+function EmptyStaffState() {
+  return (
+    <div
+      className="card card-pad"
+      style={{
+        background: '#fff',
+        border: '1px dashed var(--line)',
+        borderRadius: '12px',
+        padding: '36px 24px',
+        textAlign: 'center'
+      }}
+    >
+      <Sparkles size={30} style={{ color: 'var(--ink-2)' }} />
+      <h4 style={{ margin: '12px 0 6px', fontSize: '15px', fontWeight: 700, color: 'var(--ink)' }}>
+        ยังไม่มีเจ้าหน้าที่ในระบบ
+      </h4>
+      <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink-2)', lineHeight: 1.7 }}>
+        เพิ่มเจ้าหน้าที่คนแรกได้จากฟอร์มด้านซ้าย
+        <br />
+        หากยังเข้าถึงข้อมูลไม่ได้เลย ให้ดูขั้นตอนสร้างผู้ดูแลระบบคนแรกที่ไฟล์{' '}
+        <code style={{ background: 'var(--bg-soft)', padding: '1px 6px', borderRadius: '5px', fontSize: '12px' }}>
+          supabase/BOOTSTRAP_FIRST_ADMIN.sql
+        </code>
+      </p>
+    </div>
+  );
+}
+
 export default function StaffSetup({ eventId }) {
   const { addToast, showConfirm, staffList: contextStaffList } = useRace();
   const [staffList, setStaffList] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [stations, setStations] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Starts true so the first paint never shows "no staff yet" before the fetch
+  // has had a chance to answer.
+  const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -62,6 +120,26 @@ export default function StaffSetup({ eventId }) {
     }
   };
 
+  // Falls back to the local cache only when the fetch actually failed. An empty
+  // result with no error is the legitimate "nobody seeded yet" state right after
+  // `db push` — answering it with invented rows made an unseeded event look
+  // fully staffed, and those rows blow up on edit because their ids are not uuids.
+  const applyCachedStaff = () => {
+    const cached = readCachedStaff();
+    if (cached) {
+      setStaffList(cached);
+      setLoadError(LOAD_FAILED_MESSAGE);
+      return;
+    }
+    if (Array.isArray(contextStaffList) && contextStaffList.length > 0) {
+      setStaffList(contextStaffList);
+      setLoadError(LOAD_FAILED_MESSAGE);
+      return;
+    }
+    setStaffList([]);
+    setLoadError(LOAD_FAILED_NO_CACHE_MESSAGE);
+  };
+
   const fetchStaff = async () => {
     setLoading(true);
     try {
@@ -70,32 +148,25 @@ export default function StaffSetup({ eventId }) {
         query = query.or(`event_id.eq.${eventId},event_id.is.null`);
       }
       const { data, error } = await query.order('name', { ascending: true });
-      
-      if (!error && data && data.length > 0) {
-        setStaffList(data);
-      } else {
-        const saved = localStorage.getItem('trail_staff_list');
-        const fallback = saved ? JSON.parse(saved) : (contextStaffList && contextStaffList.length > 0 ? contextStaffList : [
-          { id: '1', name: 'แอดมิน (Admin)', role: 'ADMIN', status: 'ACTIVE' },
-          { id: '2', name: 'เจ้าหน้าที่จุดสตาร์ท (Start Crew)', role: 'CHECKIN_CREW', status: 'ACTIVE' },
-          { id: '3', name: 'Marshal จุด A1', role: 'MARSHAL', status: 'ACTIVE' },
-          { id: '4', name: 'Marshal จุด A2', role: 'MARSHAL', status: 'ACTIVE' },
-          { id: '5', name: 'กรรมการเส้นชัย (Finish Judge)', role: 'FINISH_JUDGE', status: 'ACTIVE' }
-        ]);
-        setStaffList(fallback);
+
+      if (error) {
+        console.error('Fetch staff failed:', error);
+        addToast(LOAD_FAILED_MESSAGE, true);
+        applyCachedStaff();
+        return;
+      }
+
+      // No error: the server's answer is the truth, empty list included.
+      const rows = data || [];
+      setStaffList(rows);
+      setLoadError(null);
+      if (rows.length > 0) {
+        localStorage.setItem('trail_staff_list', JSON.stringify(rows));
       }
     } catch (err) {
-      console.warn('Staff fetch fallback:', err);
-      const saved = localStorage.getItem('trail_staff_list');
-      if (saved) {
-        setStaffList(JSON.parse(saved));
-      } else {
-        setStaffList([
-          { id: '1', name: 'แอดมิน (Admin)', role: 'ADMIN', status: 'ACTIVE' },
-          { id: '2', name: 'เจ้าหน้าที่จุดสตาร์ท (Start Crew)', role: 'CHECKIN_CREW', status: 'ACTIVE' },
-          { id: '3', name: 'Marshal จุด A1', role: 'MARSHAL', status: 'ACTIVE' }
-        ]);
-      }
+      console.error('Fetch staff failed:', err);
+      addToast(LOAD_FAILED_MESSAGE, true);
+      applyCachedStaff();
     } finally {
       setLoading(false);
     }
@@ -143,74 +214,35 @@ export default function StaffSetup({ eventId }) {
     setIsSaving(true);
     const targetEventId = formData.is_global ? null : (eventId || null);
 
+    const payload = {
+      name: formData.name.trim(),
+      role: formData.role,
+      phone: formData.phone.trim() || null,
+      station_id: formData.station_id || null,
+      status: formData.status,
+      event_id: targetEventId
+    };
+
+    // No localStorage "success" fallback here any more: writing a rejected record
+    // to the browser under a local_ id and showing a green toast made every
+    // RLS-blocked save look like it had been stored on the server.
     try {
       if (formData.id && !String(formData.id).startsWith('local_')) {
-        // Update in Supabase
-        const { error } = await supabase
-          .from('staff')
-          .update({
-            name: formData.name.trim(),
-            role: formData.role,
-            phone: formData.phone.trim() || null,
-            station_id: formData.station_id || null,
-            status: formData.status,
-            event_id: targetEventId
-          })
-          .eq('id', formData.id);
-
-        if (error) throw error;
+        // `.select('id')` turns an RLS-filtered UPDATE (204, no error) into a failure.
+        assertWriteOk(
+          await supabase.from('staff').update(payload).eq('id', formData.id).select('id')
+        );
         addToast(`✓ อัปเดตข้อมูลเจ้าหน้าที่ "${formData.name}" สำเร็จ`, false);
       } else {
-        // Insert new in Supabase
-        const { error } = await supabase
-          .from('staff')
-          .insert([{
-            name: formData.name.trim(),
-            role: formData.role,
-            phone: formData.phone.trim() || null,
-            station_id: formData.station_id || null,
-            status: formData.status,
-            event_id: targetEventId
-          }]);
-
-        if (error) {
-          // If table doesn't exist yet, save locally
-          console.warn('Supabase insert warning, updating local storage:', error);
-          const newLocal = {
-            id: 'local_' + Date.now(),
-            name: formData.name.trim(),
-            role: formData.role,
-            phone: formData.phone.trim(),
-            status: formData.status,
-            event_id: targetEventId
-          };
-          const updated = [...staffList.filter(s => s.id !== formData.id), newLocal];
-          setStaffList(updated);
-          localStorage.setItem('trail_staff_list', JSON.stringify(updated));
-        }
+        assertWriteOk(await supabase.from('staff').insert([payload]).select('id'));
         addToast(`✓ เพิ่มเจ้าหน้าที่ "${formData.name}" สำเร็จ`, false);
       }
 
       handleClear();
       fetchStaff();
     } catch (err) {
-      console.error(err);
-      // Fallback local update
-      const updatedItem = {
-        id: formData.id || ('local_' + Date.now()),
-        name: formData.name.trim(),
-        role: formData.role,
-        phone: formData.phone.trim(),
-        status: formData.status,
-        event_id: targetEventId
-      };
-      const updated = formData.id 
-        ? staffList.map(s => s.id === formData.id ? updatedItem : s)
-        : [...staffList, updatedItem];
-      setStaffList(updated);
-      localStorage.setItem('trail_staff_list', JSON.stringify(updated));
-      addToast(`✓ บันทึกข้อมูลเจ้าหน้าที่ "${formData.name}" เรียบร้อย`, false);
-      handleClear();
+      console.error('Save staff error:', err);
+      addToast(`บันทึกข้อมูลเจ้าหน้าที่ไม่สำเร็จ: ${err.message}`, true);
     } finally {
       setIsSaving(false);
     }
@@ -225,8 +257,9 @@ export default function StaffSetup({ eventId }) {
 
     try {
       if (staff.id && !String(staff.id).startsWith('local_')) {
-        await supabase.from('staff').delete().eq('id', staff.id);
+        assertWriteOk(await supabase.from('staff').delete().eq('id', staff.id).select('id'));
       }
+      // Local state only mirrors a confirmed server change.
       const updated = staffList.filter(s => s.id !== staff.id);
       setStaffList(updated);
       localStorage.setItem('trail_staff_list', JSON.stringify(updated));
@@ -234,7 +267,7 @@ export default function StaffSetup({ eventId }) {
       if (formData.id === staff.id) handleClear();
     } catch (err) {
       console.error('Delete staff error:', err);
-      addToast('ลบเจ้าหน้าที่ไม่สำเร็จ', true);
+      addToast(`ลบเจ้าหน้าที่ไม่สำเร็จ: ${err.message}`, true);
     }
   };
 
@@ -242,7 +275,9 @@ export default function StaffSetup({ eventId }) {
     const nextStatus = staff.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     try {
       if (staff.id && !String(staff.id).startsWith('local_')) {
-        await supabase.from('staff').update({ status: nextStatus }).eq('id', staff.id);
+        assertWriteOk(
+          await supabase.from('staff').update({ status: nextStatus }).eq('id', staff.id).select('id')
+        );
       }
       const updated = staffList.map(s => s.id === staff.id ? { ...s, status: nextStatus } : s);
       setStaffList(updated);
@@ -250,6 +285,7 @@ export default function StaffSetup({ eventId }) {
       addToast(`เปลี่ยนสถานะ "${staff.name}" เป็น ${nextStatus === 'ACTIVE' ? 'พร้อมใช้งาน' : 'ระงับชั่วคราว'}`, false);
     } catch (err) {
       console.error('Toggle status error:', err);
+      addToast(`เปลี่ยนสถานะไม่สำเร็จ: ${err.message}`, true);
     }
   };
 
@@ -597,13 +633,37 @@ export default function StaffSetup({ eventId }) {
             </div>
           </div>
 
-          <AdvancedTable
-            columns={columns}
-            data={filteredStaff}
-            loading={loading}
-            emptyMessage="ยังไม่มีรายชื่อเจ้าหน้าที่ กรุณาเพิ่มที่ฟอร์มด้านซ้าย"
-            pageSize={10}
-          />
+          {loadError && (
+            <div
+              role="alert"
+              style={{
+                marginBottom: '12px',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid #fecaca',
+                background: '#fef2f2',
+                color: '#b91c1c',
+                fontSize: '12.5px',
+                fontWeight: 600
+              }}
+            >
+              ⚠️ {loadError}
+            </div>
+          )}
+
+          {/* Only claim the roster is empty when the server actually said so —
+              a failed load is reported by the banner above instead. */}
+          {!loading && !loadError && staffList.length === 0 ? (
+            <EmptyStaffState />
+          ) : (
+            <AdvancedTable
+              columns={columns}
+              data={filteredStaff}
+              loading={loading}
+              emptyMessage="ยังไม่มีรายชื่อเจ้าหน้าที่ กรุณาเพิ่มที่ฟอร์มด้านซ้าย"
+              pageSize={10}
+            />
+          )}
         </div>
 
       </div>

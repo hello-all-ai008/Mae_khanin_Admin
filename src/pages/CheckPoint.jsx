@@ -26,8 +26,8 @@ export default function CheckPoint() {
 
   const currentCpId = selectedCp || (activeCpList[0]?.id || 'A1');
 
-  const handleScan = (bib, operator = null) => {
-    const result = processScan('CheckPoint', bib, currentCpId, operator);
+  const handleScan = (bib) => {
+    const result = processScan('CheckPoint', bib, currentCpId);
     
     if (!result.success) {
       setLedState({ 

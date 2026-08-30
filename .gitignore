@@ -25,6 +25,7 @@ dist-ssr
 
 .vercel
 .env*
+!.env.example
 *.xlsx
 *.csv
 check_headers.cjs

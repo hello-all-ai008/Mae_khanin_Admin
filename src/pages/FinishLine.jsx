@@ -25,8 +25,8 @@ export default function FinishLine() {
     return `${h}:${m}:${ss}`;
   };
 
-  const handleScan = (bib, operator = null) => {
-    const result = processScan('Finish', bib, null, operator);
+  const handleScan = (bib) => {
+    const result = processScan('Finish', bib);
     
     if (!result.success) {
       setLedState({ 

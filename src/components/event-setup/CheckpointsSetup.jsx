@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { assertWriteOk } from '../../lib/supabaseResult';
 import { useRace } from '../../context/RaceContext';
 import AdvancedTable from '../AdvancedTable';
 
@@ -142,26 +143,31 @@ export default function CheckpointsSetup({ eventId }) {
     setIsSaving(true);
     try {
       if (formData.id) {
-        const { error } = await supabase
-          .from('checkpoint')
-          .update({
-            station_id: formData.station_id,
-            sequence_order: parseInt(formData.sequence_order),
-            cutoff_time: parsedTimestamp
-          })
-          .eq('id', formData.id);
-        if (error) throw error;
+        // `.select('id')` so an RLS-filtered UPDATE (204, no error) is not reported as success.
+        assertWriteOk(
+          await supabase
+            .from('checkpoint')
+            .update({
+              station_id: formData.station_id,
+              sequence_order: parseInt(formData.sequence_order),
+              cutoff_time: parsedTimestamp
+            })
+            .eq('id', formData.id)
+            .select('id')
+        );
         addToast('✓ อัปเดต Checkpoint สำเร็จ', false);
       } else {
-        const { error } = await supabase
-          .from('checkpoint')
-          .insert([{
-            category_id: selectedCategoryId,
-            station_id: formData.station_id,
-            sequence_order: parseInt(formData.sequence_order),
-            cutoff_time: parsedTimestamp
-          }]);
-        if (error) throw error;
+        assertWriteOk(
+          await supabase
+            .from('checkpoint')
+            .insert([{
+              category_id: selectedCategoryId,
+              station_id: formData.station_id,
+              sequence_order: parseInt(formData.sequence_order),
+              cutoff_time: parsedTimestamp
+            }])
+            .select('id')
+        );
         addToast('✓ เพิ่ม Checkpoint สำเร็จ', false);
       }
 
@@ -183,8 +189,7 @@ export default function CheckpointsSetup({ eventId }) {
     const confirmed = await showConfirm('ยืนยันการลบ', `คุณต้องการลบ Checkpoint "${name || ''}" ออกจากระยะทางนี้ใช่หรือไม่?`);
     if (!confirmed) return;
     try {
-      const { error } = await supabase.from('checkpoint').delete().eq('id', id);
-      if (error) throw error;
+      assertWriteOk(await supabase.from('checkpoint').delete().eq('id', id).select('id'));
       addToast('ลบ Checkpoint สำเร็จ', false);
       fetchCheckpoints();
       if (formData.id === id) handleClear();
