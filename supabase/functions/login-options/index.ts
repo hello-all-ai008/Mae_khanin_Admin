@@ -81,7 +81,10 @@ async function loadUsableSlots(
   if (eventId) query = query.eq('event_id', eventId);
 
   const { data, error } = await query;
-  if (error) throw new Error('slot lookup failed');
+  if (error) {
+    console.error('loadUsableSlots failed:', error.message);
+    throw new Error('slot lookup failed');
+  }
   return (data ?? []) as PinSlotRow[];
 }
 
@@ -96,7 +99,10 @@ async function listEvents(client: ServiceClient): Promise<Record<string, unknown
     .in('id', eventIds)
     .order('start_date', { ascending: true });
 
-  if (error) throw new Error('event lookup failed');
+  if (error) {
+    console.error('listEvents failed:', error.message);
+    throw new Error('event lookup failed');
+  }
   return (data ?? []) as Record<string, unknown>[];
 }
 
@@ -118,7 +124,10 @@ async function listSlots(
       .select('id, name, type, sequence_order')
       .in('id', stationIds);
 
-    if (error) throw new Error('station lookup failed');
+    if (error) {
+      console.error('listSlots station lookup failed:', error.message);
+      throw new Error('station lookup failed');
+    }
     for (const station of (data ?? []) as StationRow[]) {
       stationsById.set(station.id, station);
     }
@@ -170,7 +179,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
   let client: ServiceClient;
   try {
     client = serviceRoleClient();
-  } catch {
+  } catch (err) {
+    console.error('serviceRoleClient init failed:', err instanceof Error ? err.message : err);
     return jsonResponse(request, { error: 'server_error' }, 500);
   }
 
@@ -181,7 +191,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
     // An unknown or empty event yields an empty list, never a distinct error:
     // this endpoint does not confirm which event ids exist.
     return jsonResponse(request, { event_id: eventId, slots: await listSlots(client, eventId) }, 200);
-  } catch {
+  } catch (err) {
+    console.error('login-options handler failed:', err instanceof Error ? err.message : err);
     return jsonResponse(request, { error: 'server_error' }, 500);
   }
 });
