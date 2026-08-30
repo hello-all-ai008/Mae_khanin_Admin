@@ -29,6 +29,7 @@ export default function PreloadDataCard({ eventId }) {
     preloadStatusText, 
     lastSyncedTime, 
     pendingSyncQueue, 
+    isSyncingQueue,
     preloadEventData, 
     syncPendingQueue 
   } = useRace();
@@ -163,9 +164,9 @@ export default function PreloadDataCard({ eventId }) {
               onClick={syncPendingQueue}
               className="btn"
               style={{ 
-                background: '#fef3c7', 
-                color: '#92400e', 
-                border: '1px solid #fde68a', 
+                background: isSyncingQueue ? '#eff6ff' : '#fef3c7', 
+                color: isSyncingQueue ? '#1d4ed8' : '#92400e', 
+                border: isSyncingQueue ? '1px solid #bfdbfe' : '1px solid #fde68a', 
                 padding: '6px 12px', 
                 fontSize: '12px', 
                 fontWeight: 700,
@@ -173,21 +174,22 @@ export default function PreloadDataCard({ eventId }) {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '5px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
               }}
-              title="กดเพื่อส่งข้อมูลที่สแกนค้างไว้ขึ้น Supabase เมื่อมีสัญญาณเน็ต"
+              title={isSyncingQueue ? "ระบบกำลังทยอยส่งข้อมูลขึ้นคลาวด์ในพื้นหลัง" : "กดเพื่อเร่งการส่งข้อมูลขึ้นคลาวด์"}
             >
-              <CloudUpload size={14} /> 
-              รอซิงค์คลาวด์ ({pendingSyncQueue.length})
+              <CloudUpload size={14} className={isSyncingQueue ? 'spin' : ''} /> 
+              {isSyncingQueue ? `กำลังส่งขึ้นคลาวด์ (${pendingSyncQueue.length})` : `รอซิงค์คลาวด์ (${pendingSyncQueue.length})`}
             </button>
           )}
 
           <button
             type="button"
             onClick={() => preloadEventData(eventId)}
-            title="รีเฟรชข้อมูลล่าสุด"
+            title="อัปเดตข้อมูลล่าสุด"
             className="btn btn-sm"
-            style={{ padding: '6px 8px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }}
+            style={{ padding: '6px 8px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', color: 'var(--ink)' }}
           >
             <RefreshCw size={14} className={isPreloading ? 'spin' : ''} />
           </button>
