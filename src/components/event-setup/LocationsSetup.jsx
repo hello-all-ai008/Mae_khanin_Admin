@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { assertWriteOk } from '../../lib/supabaseResult';
 import { useRace } from '../../context/RaceContext';
 import AdvancedTable from '../AdvancedTable';
 
@@ -74,12 +75,11 @@ export default function LocationsSetup({ eventId }) {
       };
 
       if (formData.id) {
-        const { error } = await supabase.from('locations').update(payload).eq('id', formData.id);
-        if (error) throw error;
+        // `.select('id')` so an RLS-filtered UPDATE (204, no error) is not reported as success.
+        assertWriteOk(await supabase.from('locations').update(payload).eq('id', formData.id).select('id'));
         addToast('อัปเดตสถานที่สำเร็จ', false);
       } else {
-        const { error } = await supabase.from('locations').insert([{ ...payload, event_id: eventId }]);
-        if (error) throw error;
+        assertWriteOk(await supabase.from('locations').insert([{ ...payload, event_id: eventId }]).select('id'));
         addToast('เพิ่มสถานที่สำเร็จ', false);
       }
       handleClear();
@@ -96,8 +96,7 @@ export default function LocationsSetup({ eventId }) {
     const confirmed = await showConfirm('ยืนยันการลบ', 'คุณต้องการลบสถานที่นี้ใช่หรือไม่?');
     if (!confirmed) return;
     try {
-      const { error } = await supabase.from('locations').delete().eq('id', id);
-      if (error) throw error;
+      assertWriteOk(await supabase.from('locations').delete().eq('id', id).select('id'));
       addToast('ลบสถานที่สำเร็จ', false);
       fetchLocations();
       if (formData.id === id) handleClear();

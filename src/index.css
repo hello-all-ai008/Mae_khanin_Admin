@@ -24,6 +24,7 @@ input,select{font-family:inherit}
 .nav-group-horizontal{display:flex;align-items:center;gap:4px;flex-shrink:0;}
 .nav-divider{width:1px;height:24px;background:var(--line);margin:0 4px;flex-shrink:0;}
 .navbar-mobile-toggle{display:none;}
+.navbar-right{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:16px;}
 
 /* Mobile Menu Styles */
 .mobile-menu-overlay{position:fixed;top:64px;left:0;right:0;bottom:0;background:var(--bg);z-index:90;transform:translateX(100%);transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);display:none;}
@@ -167,6 +168,8 @@ select.search{flex:none;width:auto}
   .app { flex-direction: column; }
   .navbar { height: 64px; padding: 0 16px; justify-content: space-between; }
   .navbar-center { display: none !important; }
+  /* Sign-out lives in the mobile menu instead, away from the scan hot zone. */
+  .navbar-right { display: none !important; }
   .navbar-mobile-toggle { display: flex; align-items: center; }
   .mobile-menu-overlay { display: block; top: 64px; }
   

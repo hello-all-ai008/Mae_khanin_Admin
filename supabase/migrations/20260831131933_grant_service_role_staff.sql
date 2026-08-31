@@ -1,0 +1,16 @@
+-- Fix: service_role could not read/write public.staff in production.
+--
+-- Confirmed 2026-08-30: the one-off admin-bootstrap function's staff insert
+-- returned "permission denied for table staff" via a service-role client -
+-- the identical failure class already found and fixed on public.event_pins
+-- in 20260830172913 (missing service_role grant on a table created in the
+-- 2026-08-28 auth/RLS migration batch, where ALTER DEFAULT PRIVILEGES did
+-- not carry over because migrations run as a role other than the one that
+-- default privilege was originally scoped to).
+--
+-- public.staff is not service-role-exclusive like event_pins - normal app
+-- writes go through `authenticated` with RLS - but service-role bootstrap
+-- and admin tooling (creating the first global admin, the one-off PIN
+-- bootstrap function) legitimately need direct access, same as any other
+-- service-role operation elsewhere in this schema.
+grant select, insert, update, delete on public.staff to service_role;

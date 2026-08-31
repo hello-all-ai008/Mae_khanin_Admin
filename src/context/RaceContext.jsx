@@ -1,6 +1,8 @@
 import { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from './AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
+import { isAuthError, writeFailureReason, writeErrorMessage } from '../lib/supabaseResult';
 
 const RaceContext = createContext();
 
@@ -76,6 +78,9 @@ export function parseStartTime(startTimeStr, refTimestamp) {
 }
 
 export function RaceProvider({ children }) {
+  const { session: authSession, staff: staffProfile } = useAuth();
+  // Every server read and write is keyed on this: no session means no data.
+  const sessionUserId = authSession?.user?.id || null;
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
   const [categories, setCategories] = useState([]);
@@ -145,93 +150,157 @@ export function RaceProvider({ children }) {
     };
   }, []);
 
-  // Staff & Scanner Operator State
+  // Staff & Scanner Operator State.
+  //
+  // The cache holds real rows fetched from the server and nothing else. There is
+  // deliberately no default roster: invented staff are indistinguishable from a
+  // seeded one on screen, so a race director would believe the setup step was
+  // done, and editing a fabricated row (id '1', not a uuid) fails against the
+  // real table. An empty list means "nobody has been seeded yet" — see
+  // supabase/BOOTSTRAP_FIRST_ADMIN.sql.
   const [staffList, setStaffList] = useState(() => {
     try {
       const saved = localStorage.getItem('trail_staff_list');
-      return saved ? JSON.parse(saved) : [
-        { id: '1', name: 'แอดมิน (Admin)', role: 'ADMIN' },
-        { id: '2', name: 'เจ้าหน้าที่จุดสตาร์ท (Start Crew)', role: 'CHECKIN_CREW' },
-        { id: '3', name: 'Marshal จุด A1', role: 'MARSHAL' },
-        { id: '4', name: 'Marshal จุด A2', role: 'MARSHAL' },
-        { id: '5', name: 'กรรมการเส้นชัย (Finish Judge)', role: 'FINISH_JUDGE' }
-      ];
-    } catch {
-      return [
-        { id: '1', name: 'แอดมิน (Admin)', role: 'ADMIN' },
-        { id: '2', name: 'เจ้าหน้าที่จุดสตาร์ท (Start Crew)', role: 'CHECKIN_CREW' }
-      ];
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.error('Cached staff list parse failed:', err);
+      return [];
     }
   });
 
-  const [currentOperator, setCurrentOperator] = useState(() => {
-    return localStorage.getItem('trail_current_operator') || 'แอดมิน (Admin)';
+  // The operator is derived from the signed-in staff record — it is never typed
+  // by the user, so nobody can sign a scan as somebody else. The last known value
+  // stays cached in localStorage purely so the field UI still has a name to show
+  // while offline; it is overwritten as soon as the session resolves.
+  const [cachedOperator, setCachedOperator] = useState(() => {
+    return localStorage.getItem('trail_current_operator') || '';
   });
 
+  const sessionOperator = staffProfile?.name || authSession?.user?.email || '';
+  const currentOperator = sessionOperator || cachedOperator;
+
   useEffect(() => {
-    localStorage.setItem('trail_current_operator', currentOperator);
-  }, [currentOperator]);
+    if (!sessionOperator) return;
+    localStorage.setItem('trail_current_operator', sessionOperator);
+    setCachedOperator(sessionOperator);
+  }, [sessionOperator]);
 
   useEffect(() => {
     localStorage.setItem('trail_staff_list', JSON.stringify(staffList));
   }, [staffList]);
 
-  // Fetch Events from Supabase on mount (with offline cache fallback)
+  // Demo data is for local development only. Seeding fake events or runners onto
+  // a real device is worse than showing an error: a marshal cannot tell them from
+  // the real start list.
+  const loadSeedDataForDev = () => {
+    if (!import.meta.env.DEV) return false;
+    const seed = generateSeedData();
+    setRunners(seed.runners);
+    setScanLog(seed.scanLog);
+    return true;
+  };
+
+  const applyCachedEvents = () => {
+    const cached = localStorage.getItem('trail_cached_events');
+    if (!cached) return false;
+    try {
+      const evs = JSON.parse(cached);
+      if (!Array.isArray(evs) || evs.length === 0) return false;
+      setEvents(evs);
+      setSelectedEventId(prev => prev || evs[0].id);
+      return true;
+    } catch (err) {
+      console.error('Cached events parse failed:', err);
+      return false;
+    }
+  };
+
+  // Events are fetched only once a session exists. Before sign-in every request is
+  // rejected by RLS, and the previous version answered that rejection with seed
+  // data — then never refetched, because the effect had an empty dependency array.
+  // Keying on the session id makes the fetch run again the moment login succeeds.
   useEffect(() => {
+    if (!sessionUserId) return undefined;
+    let isActive = true;
+
     async function fetchEvents() {
       try {
-        const { data, error } = await supabase.from('events').select('id, name').order('start_date', { ascending: false });
-        if (!error && data && data.length > 0) {
+        const { data, error } = await supabase
+          .from('events')
+          .select('id, name')
+          .order('start_date', { ascending: false });
+        if (!isActive) return;
+
+        if (error) {
+          console.error('Fetch events failed:', error);
+          if (isAuthError(error)) {
+            if (!applyCachedEvents()) {
+              addToast('ไม่มีสิทธิ์เข้าถึงข้อมูลงานวิ่ง กรุณาเข้าสู่ระบบใหม่อีกครั้ง', true);
+            }
+            return;
+          }
+          if (!applyCachedEvents() && !loadSeedDataForDev()) {
+            addToast('โหลดรายการงานวิ่งไม่สำเร็จ และยังไม่มีข้อมูลในเครื่อง', true);
+          }
+          return;
+        }
+
+        if (data && data.length > 0) {
           setEvents(data);
           localStorage.setItem('trail_cached_events', JSON.stringify(data));
-          if (!selectedEventId) {
-            setSelectedEventId(data[0].id);
-          }
-        } else {
-          // Check cached events
-          const cached = localStorage.getItem('trail_cached_events');
-          if (cached) {
-            const evs = JSON.parse(cached);
-            setEvents(evs);
-            if (!selectedEventId && evs.length > 0) setSelectedEventId(evs[0].id);
-          } else {
-            const seed = generateSeedData();
-            setRunners(seed.runners);
-            setScanLog(seed.scanLog);
-          }
+          setSelectedEventId(prev => prev || data[0].id);
+          return;
+        }
+
+        // Authenticated but nothing visible: RLS answers a denied SELECT with an
+        // empty list rather than an error, so this must not seed either.
+        if (!applyCachedEvents()) {
+          setEvents([]);
+          addToast('ไม่พบงานวิ่งที่บัญชีนี้เข้าถึงได้ กรุณาติดต่อผู้ดูแลระบบ', true);
         }
       } catch (err) {
-        console.warn('Network offline or error fetching events, loading from cache:', err);
-        const cached = localStorage.getItem('trail_cached_events');
-        if (cached) {
-          const evs = JSON.parse(cached);
-          setEvents(evs);
-          if (!selectedEventId && evs.length > 0) setSelectedEventId(evs[0].id);
-        } else {
-          const seed = generateSeedData();
-          setRunners(seed.runners);
-          setScanLog(seed.scanLog);
+        console.error('Network error fetching events:', err);
+        if (!isActive) return;
+        if (!applyCachedEvents() && !loadSeedDataForDev()) {
+          addToast('เชื่อมต่อฐานข้อมูลไม่ได้ และยังไม่มีข้อมูลงานวิ่งในเครื่อง', true);
         }
       }
     }
-    fetchEvents();
-  }, []);
 
-  // Fetch Staff from Supabase
+    fetchEvents();
+    return () => {
+      isActive = false;
+    };
+  }, [sessionUserId]);
+
+  // Staff list, same session gating: without a session this returns nothing useful.
   useEffect(() => {
+    if (!sessionUserId) return undefined;
+    let isActive = true;
+
     async function fetchStaff() {
       try {
         const { data, error } = await supabase.from('staff').select('*').order('name', { ascending: true });
-        if (!error && data && data.length > 0) {
+        if (!isActive) return;
+        if (error) {
+          console.error('Fetch staff failed:', error);
+          return;
+        }
+        if (data && data.length > 0) {
           setStaffList(data);
           localStorage.setItem('trail_staff_list', JSON.stringify(data));
         }
       } catch (err) {
-        console.warn('Fetch staff warning:', err);
+        console.error('Fetch staff failed:', err);
       }
     }
+
     fetchStaff();
-  }, [selectedEventId]);
+    return () => {
+      isActive = false;
+    };
+  }, [sessionUserId, selectedEventId]);
 
   // Pre-load all data into client memory and cache for ultra-fast offline scanning
   const preloadEventData = async (targetEventId = selectedEventId) => {
@@ -493,6 +562,15 @@ export function RaceProvider({ children }) {
     return () => clearInterval(timer);
   }, [processNextInQueue]);
 
+  // Deliberate, irreversible data loss — the escape hatch for a queue that can
+  // never sync (deleted runner row, an operator RLS permanently refuses, a stale
+  // id), which would otherwise pin the device to one signed-in operator forever.
+  // Callers MUST have an explicit operator confirmation and MUST log what they
+  // are dropping first; see SignOutButton.
+  const clearPendingSyncQueue = useCallback(() => {
+    setPendingSyncQueue([]);
+  }, []);
+
   // Auto load cached data on selectedEventId change if available
   useEffect(() => {
     if (!selectedEventId) return;
@@ -512,7 +590,9 @@ export function RaceProvider({ children }) {
     if (cachedStations) {
       try {
         setCheckpoints(JSON.parse(cachedStations));
-      } catch (e) {}
+      } catch (err) {
+        console.error('Cached stations parse error:', err);
+      }
     }
 
     // Then perform normal background fetch
@@ -648,25 +728,42 @@ export function RaceProvider({ children }) {
     setRunners(prev => prev.map(r => String(r.bib).trim() === String(updatedRunner.bib).trim() ? updatedRunner : r));
   };
 
+  // Adding a staff record never switches the current operator: the operator
+  // always comes from the signed-in session.
   const addStaff = async (name, role = 'MARSHAL') => {
-    if (!name || !name.trim()) return;
+    if (!name || !name.trim()) return null;
     const trimmed = name.trim();
-    const newStaff = { id: String(Date.now()), name: trimmed, role, status: 'ACTIVE' };
-    setStaffList(prev => [...prev, newStaff]);
-    setCurrentOperator(trimmed);
-    
+
     try {
-      await supabase.from('staff').insert([{ name: trimmed, role, status: 'ACTIVE', event_id: selectedEventId || null }]);
+      const result = await supabase
+        .from('staff')
+        .insert([{ name: trimmed, role, status: 'ACTIVE', event_id: selectedEventId || null }])
+        .select('*')
+        .single();
+
+      const failureReason = writeFailureReason(result);
+      if (failureReason) {
+        console.error('Staff insert rejected:', result.error);
+        addToast(`เพิ่มเจ้าหน้าที่ "${trimmed}" ไม่สำเร็จ: ${failureReason}`, true);
+        return null;
+      }
+
+      // Only mirror into local state once the database has the row.
+      setStaffList(prev => [...prev, result.data]);
+      addToast(`✓ เพิ่มเจ้าหน้าที่ "${trimmed}" เรียบร้อย`, false);
+      return result.data;
     } catch (err) {
-      console.warn('Supabase staff insert warning:', err);
+      console.error('Staff insert failed:', err);
+      addToast(`เพิ่มเจ้าหน้าที่ "${trimmed}" ไม่สำเร็จ: ${writeErrorMessage(err)}`, true);
+      return null;
     }
-    addToast(`✓ เพิ่มเจ้าหน้าที่ "${trimmed}" เรียบร้อย`, false);
   };
 
-  const processScan = (stationType, bib, stationId = null, operatorName = null) => {
+  const processScan = (stationType, bib, stationId = null) => {
     const now = Date.now();
     const r = findRunner(bib);
-    const operator = operatorName || currentOperator || 'Staff';
+    // Identity comes from the session only — callers cannot pass an operator name.
+    const operator = currentOperator || 'Staff';
     let result = { success: false, runner: r, now, message: '', stationName: '', operator };
 
     if (!r) {
@@ -803,7 +900,7 @@ export function RaceProvider({ children }) {
       scanLog,
       staffList,
       currentOperator,
-      setCurrentOperator,
+      currentStaff: staffProfile,
       addStaff,
       toastMsg,
       processScan,
@@ -822,7 +919,8 @@ export function RaceProvider({ children }) {
       pendingSyncQueue,
       isSyncingQueue,
       preloadEventData,
-      syncPendingQueue
+      syncPendingQueue,
+      clearPendingSyncQueue
     }}>
       {children}
       <ConfirmModal 

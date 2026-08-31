@@ -7,14 +7,19 @@ function sanitize(val, fallback = '') {
   return cleaned || fallback;
 }
 
-const DEFAULT_URL = 'https://fubrqdxhmhfntqgwdbae.supabase.co';
-const DEFAULT_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1YnJxZHhobWhmbnRxZ3dkYmFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMTk1MzgsImV4cCI6MjEwMDg5NTUzOH0.pGj5Xx9o-qvqzUkG1Dp_BOz0SDmsC1AiEpd5Br1cmPE';
+// Credentials come from the environment only — never hardcode them here.
+// Copy .env.example to .env.local and fill it in before running dev or build.
+function requireEnv(name) {
+  const raw = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env[name] : '';
+  const value = sanitize(raw);
+  if (!value) {
+    throw new Error(`${name} is not configured. Copy .env.example to .env.local and set it.`);
+  }
+  return value;
+}
 
-const rawUrl = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_SUPABASE_URL : '';
-const rawKey = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_SUPABASE_ANON_KEY : '';
-
-const SUPABASE_URL = sanitize(rawUrl, DEFAULT_URL);
-const SUPABASE_ANON_KEY = sanitize(rawKey, DEFAULT_ANON_KEY);
+const SUPABASE_URL = requireEnv('VITE_SUPABASE_URL');
+const SUPABASE_ANON_KEY = requireEnv('VITE_SUPABASE_ANON_KEY');
 
 // Custom safe fetch wrapper to guarantee no invalid non-ISO-8859-1 headers ever reach browser fetch
 const safeFetch = (input, init = {}) => {

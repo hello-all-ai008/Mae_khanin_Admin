@@ -16,16 +16,13 @@ import {
   Sparkles,
   Volume2,
   VolumeX,
-  UserCheck,
-  UserPlus
+  UserCheck
 } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useRace } from '../context/RaceContext';
-import { useNavigate } from 'react-router-dom';
 
 export default function ScannerInput({ onScan }) {
-  const navigate = useNavigate();
-  const { staffList, currentOperator, setCurrentOperator, addStaff, runners, lastSyncedTime } = useRace();
+  const { currentOperator, currentStaff, runners, lastSyncedTime } = useRace();
   const [bibInput, setBibInput] = useState('');
   
   // Camera State
@@ -127,7 +124,7 @@ export default function ScannerInput({ onScan }) {
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && bibInput.trim()) {
       playBeep();
-      onScan(bibInput.trim(), currentOperator);
+      onScan(bibInput.trim());
       setBibInput('');
     }
   };
@@ -259,7 +256,7 @@ export default function ScannerInput({ onScan }) {
           if (decodedText !== lastScanned.current) {
             lastScanned.current = decodedText;
             playBeep();
-            onScan(decodedText, currentOperator);
+            onScan(decodedText);
             setTimeout(() => {
               lastScanned.current = '';
             }, 2500);
@@ -353,35 +350,18 @@ export default function ScannerInput({ onScan }) {
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, color: 'var(--ink-2)' }}>
             <UserCheck size={14} /> ผู้สแกน:
           </span>
-          <select 
-            className="search"
-            value={currentOperator}
-            onChange={(e) => {
-              if (e.target.value === '__add_new__') {
-                const name = prompt('กรุณาระบุชื่อเจ้าหน้าที่/ผู้สแกนคนใหม่:');
-                if (name && name.trim()) addStaff(name.trim());
-              } else {
-                setCurrentOperator(e.target.value);
-              }
-            }}
-            style={{ padding: '4px 10px', fontSize: '12.5px', fontWeight: 600, borderRadius: '8px', minWidth: '150px' }}
+          {/* Read-only: the operator comes from the signed-in session and
+              cannot be switched by hand. */}
+          <span
+            title="ชื่อผู้สแกนมาจากบัญชีที่เข้าสู่ระบบ เปลี่ยนเองไม่ได้"
+            style={{ padding: '4px 10px', fontSize: '12.5px', fontWeight: 700, borderRadius: '8px', border: '1px solid var(--line)', background: 'var(--bg-soft)', color: 'var(--ink)' }}
           >
-            {staffList.map(st => (
-              <option key={st.id || st.name} value={st.name}>
-                👤 {st.name} {st.role ? `(${st.role})` : ''}
-              </option>
-            ))}
-            <option value="__add_new__">➕ [ เพิ่มชื่อเจ้าหน้าที่ใหม่... ]</option>
-          </select>
-
-          <button
-            type="button"
-            onClick={() => navigate('/staff')}
-            title="จัดการ/แก้ไขรายชื่อเจ้าหน้าที่"
-            style={{ padding: '4px 8px', fontSize: '11.5px', borderRadius: '6px', border: '1px solid var(--line)', background: 'var(--bg-soft)', color: 'var(--ink)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: 600 }}
-          >
-            ⚙️ จัดการ
-          </button>
+            👤 {currentOperator || '—'}
+            {currentStaff?.role ? ` (${currentStaff.role})` : ''}
+          </span>
+          {/* Sign-out deliberately does NOT live on the scanning screen: one stray
+              tap next to the scan field used to strand a field station for the rest
+              of the race. It now sits in the navbar behind a confirmation. */}
         </div>
 
         {/* Mini Readiness Status Indicator */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { assertWriteOk } from '../../lib/supabaseResult';
 import { useRace } from '../../context/RaceContext';
 import AdvancedTable from '../AdvancedTable';
 
@@ -73,22 +74,15 @@ export default function CategoriesSetup({ eventId }) {
       };
 
       if (formData.id) {
-        const { error } = await supabase
-          .from('categories')
-          .update(payload)
-          .eq('id', formData.id);
-
-        if (error) throw error;
+        // `.select('id')` so an RLS-filtered UPDATE (204, no error) is not reported as success.
+        assertWriteOk(
+          await supabase.from('categories').update(payload).eq('id', formData.id).select('id')
+        );
         addToast(`✓ อัปเดตระยะทาง "${formData.name}" สำเร็จ`, false);
       } else {
-        const { error } = await supabase
-          .from('categories')
-          .insert([{
-            event_id: eventId,
-            ...payload
-          }]);
-
-        if (error) throw error;
+        assertWriteOk(
+          await supabase.from('categories').insert([{ event_id: eventId, ...payload }]).select('id')
+        );
         addToast(`✓ เพิ่มระยะทาง "${formData.name}" สำเร็จ`, false);
       }
       handleClear();
@@ -105,8 +99,7 @@ export default function CategoriesSetup({ eventId }) {
     const confirmed = await showConfirm('ยืนยันการลบ', `คุณต้องการลบระยะทาง "${name || ''}" ใช่หรือไม่? ข้อมูลที่เกี่ยวข้องอาจได้รับผลกระทบ`);
     if (!confirmed) return;
     try {
-      const { error } = await supabase.from('categories').delete().eq('id', id);
-      if (error) throw error;
+      assertWriteOk(await supabase.from('categories').delete().eq('id', id).select('id'));
       addToast('ลบระยะทางสำเร็จ', false);
       fetchCategories();
       if (formData.id === id) handleClear();

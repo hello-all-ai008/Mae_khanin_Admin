@@ -1,27 +1,82 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  Users, 
-  UserPlus, 
+import {
+  Users,
+  UserPlus,
   UserCheck,
-  History, 
+  History,
   PenTool,
   Database,
   CalendarDays,
   Menu,
   X
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { canAccessRoute, roleLabel } from '../lib/roles';
+import SignOutButton from './SignOutButton';
+
+// Nav structure lives in data so the desktop bar, the mobile menu, and the role
+// filter cannot drift apart. Access itself is defined once in lib/roles.js.
+const NAV_GROUPS = [
+  {
+    id: 'overview',
+    title: 'MAIN MENU',
+    items: [
+      { to: '/events', label: 'จัดการงานวิ่ง', mobileLabel: 'จัดการงานวิ่ง', Icon: CalendarDays },
+      { to: '/staff', label: 'คนสแกน/จนท.', mobileLabel: 'คนสแกน/เจ้าหน้าที่', Icon: UserCheck },
+      { to: '/runners', label: 'นักวิ่ง', mobileLabel: 'รายชื่อนักวิ่ง', Icon: Users },
+      { to: '/import', label: 'นำเข้านักวิ่ง', mobileLabel: 'นำเข้านักวิ่ง', Icon: UserPlus },
+    ],
+  },
+  {
+    id: 'stations',
+    title: 'SCAN STATIONS',
+    items: [
+      { to: '/checkin', label: 'Start', mobileLabel: 'Check-in (Start)', dotColor: 'var(--start)' },
+      { to: '/checkpoint', label: 'CP', mobileLabel: 'Check Point', dotColor: 'var(--cp)' },
+      { to: '/finish', label: 'Finish', mobileLabel: 'Finish Line', dotColor: 'var(--finish)' },
+    ],
+  },
+  {
+    id: 'tools',
+    title: 'TOOLS & LOGS',
+    items: [
+      { to: '/log', label: 'Scan Log', mobileLabel: 'Scan Log', Icon: History },
+      { to: '/bib-canvas', label: 'BIB Canvas', mobileLabel: 'BIB Canvas Editor', Icon: PenTool },
+      { to: '/database-flow', label: 'DB Flow', mobileLabel: 'Database Flow', Icon: Database },
+    ],
+  },
+];
+
+const SECTION_HEADER_STYLE = {
+  fontSize: '12px',
+  fontWeight: 600,
+  color: 'var(--ink-2)',
+  letterSpacing: '0.05em',
+};
+
+const DOT_STYLE = { width: 10, height: 10, borderRadius: '50%' };
+
+function visibleGroups(role) {
+  return NAV_GROUPS.map(group => ({
+    ...group,
+    items: group.items.filter(item => canAccessRoute(role, item.to)),
+  })).filter(group => group.items.length > 0);
+}
 
 export default function Navbar() {
+  const { staff, role } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+    setIsMobileMenuOpen(prev => !prev);
   };
 
   const closeMenu = () => {
     setIsMobileMenuOpen(false);
   };
+
+  const groups = visibleGroups(role);
 
   return (
     <>
@@ -32,64 +87,33 @@ export default function Navbar() {
             <div><b>TrailTime</b><span>Race Timing System</span></div>
           </div>
         </div>
-        
+
         {/* Desktop Navbar Center */}
         <div className="navbar-center">
-          {/* ภาพรวม */}
-          <div className="nav-group-horizontal">
-            <NavLink to="/events" className={({isActive}) => `nav-item-h ${isActive ? 'active' : ''}`}>
-              <CalendarDays size={16} />
-              <span className="label">จัดการงานวิ่ง</span>
-            </NavLink>
-            <NavLink to="/staff" className={({isActive}) => `nav-item-h ${isActive ? 'active' : ''}`}>
-              <UserCheck size={16} />
-              <span className="label">คนสแกน/จนท.</span>
-            </NavLink>
-            <NavLink to="/runners" className={({isActive}) => `nav-item-h ${isActive ? 'active' : ''}`}>
-              <Users size={16} />
-              <span className="label">นักวิ่ง</span>
-            </NavLink>
-            <NavLink to="/import" className={({isActive}) => `nav-item-h ${isActive ? 'active' : ''}`}>
-              <UserPlus size={16} />
-              <span className="label">นำเข้านักวิ่ง</span>
-            </NavLink>
-          </div>
+          {groups.map((group, index) => (
+            <Fragment key={group.id}>
+              {index > 0 && <div className="nav-divider"></div>}
+              <div className="nav-group-horizontal">
+                {group.items.map(({ to, label, Icon, dotColor }) => (
+                  <NavLink key={to} to={to} className={({ isActive }) => `nav-item-h ${isActive ? 'active' : ''}`}>
+                    {Icon ? <Icon size={16} /> : <span className="dot" style={{ background: dotColor }}></span>}
+                    <span className="label">{label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </Fragment>
+          ))}
+        </div>
 
-          <div className="nav-divider"></div>
-
-          {/* จุดสแกน */}
-          <div className="nav-group-horizontal">
-            <NavLink to="/checkin" className={({isActive}) => `nav-item-h ${isActive ? 'active' : ''}`}>
-              <span className="dot" style={{background: 'var(--start)'}}></span>
-              <span className="label">Start</span>
-            </NavLink>
-            <NavLink to="/checkpoint" className={({isActive}) => `nav-item-h ${isActive ? 'active' : ''}`}>
-              <span className="dot" style={{background: 'var(--cp)'}}></span>
-              <span className="label">CP</span>
-            </NavLink>
-            <NavLink to="/finish" className={({isActive}) => `nav-item-h ${isActive ? 'active' : ''}`}>
-              <span className="dot" style={{background: 'var(--finish)'}}></span>
-              <span className="label">Finish</span>
-            </NavLink>
-          </div>
-
-          <div className="nav-divider"></div>
-
-          {/* รายงาน & Tools */}
-          <div className="nav-group-horizontal">
-            <NavLink to="/log" className={({isActive}) => `nav-item-h ${isActive ? 'active' : ''}`}>
-              <History size={16} />
-              <span className="label">Scan Log</span>
-            </NavLink>
-            <NavLink to="/bib-canvas" className={({isActive}) => `nav-item-h ${isActive ? 'active' : ''}`}>
-              <PenTool size={16} />
-              <span className="label">BIB Canvas</span>
-            </NavLink>
-            <NavLink to="/database-flow" className={({isActive}) => `nav-item-h ${isActive ? 'active' : ''}`}>
-              <Database size={16} />
-              <span className="label">DB Flow</span>
-            </NavLink>
-          </div>
+        {/* Signed-in identity + sign-out (desktop) */}
+        <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span
+            title="บัญชีที่กำลังเข้าสู่ระบบ"
+            style={{ fontSize: '12px', color: 'var(--ink-2)', fontWeight: 600, whiteSpace: 'nowrap' }}
+          >
+            👤 {staff?.name || '—'} · {roleLabel(role)}
+          </span>
+          <SignOutButton />
         </div>
 
         {/* Mobile Hamburger Button */}
@@ -103,54 +127,37 @@ export default function Navbar() {
       {/* Mobile Menu Overlay */}
       <div className={`mobile-menu-overlay ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="mobile-menu-content">
-          <div className="mobile-menu-header">
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-2)', letterSpacing: '0.05em' }}>MAIN MENU</span>
-          </div>
-          
-          <NavLink to="/events" className={({isActive}) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <CalendarDays size={18} /> จัดการงานวิ่ง
-          </NavLink>
-          <NavLink to="/staff" className={({isActive}) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <UserCheck size={18} /> คนสแกน/เจ้าหน้าที่
-          </NavLink>
-          <NavLink to="/runners" className={({isActive}) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <Users size={18} /> รายชื่อนักวิ่ง
-          </NavLink>
-          <NavLink to="/import" className={({isActive}) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <UserPlus size={18} /> นำเข้านักวิ่ง
-          </NavLink>
-
-          <div className="mobile-menu-divider"></div>
-          
-          <div className="mobile-menu-header">
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-2)', letterSpacing: '0.05em' }}>SCAN STATIONS</span>
-          </div>
-
-          <NavLink to="/checkin" className={({isActive}) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <span className="dot" style={{background: 'var(--start)', width: 10, height: 10, borderRadius: '50%'}}></span> Check-in (Start)
-          </NavLink>
-          <NavLink to="/checkpoint" className={({isActive}) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <span className="dot" style={{background: 'var(--cp)', width: 10, height: 10, borderRadius: '50%'}}></span> Check Point
-          </NavLink>
-          <NavLink to="/finish" className={({isActive}) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <span className="dot" style={{background: 'var(--finish)', width: 10, height: 10, borderRadius: '50%'}}></span> Finish Line
-          </NavLink>
+          {groups.map((group, index) => (
+            <div key={group.id}>
+              {index > 0 && <div className="mobile-menu-divider"></div>}
+              <div className="mobile-menu-header">
+                <span style={SECTION_HEADER_STYLE}>{group.title}</span>
+              </div>
+              {group.items.map(({ to, mobileLabel, Icon, dotColor }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}
+                  onClick={closeMenu}
+                >
+                  {Icon ? <Icon size={18} /> : <span className="dot" style={{ background: dotColor, ...DOT_STYLE }}></span>}
+                  {' '}{mobileLabel}
+                </NavLink>
+              ))}
+            </div>
+          ))}
 
           <div className="mobile-menu-divider"></div>
 
           <div className="mobile-menu-header">
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-2)', letterSpacing: '0.05em' }}>TOOLS & LOGS</span>
+            <span style={SECTION_HEADER_STYLE}>บัญชีผู้ใช้งาน</span>
           </div>
-
-          <NavLink to="/log" className={({isActive}) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <History size={18} /> Scan Log
-          </NavLink>
-          <NavLink to="/bib-canvas" className={({isActive}) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <PenTool size={18} /> BIB Canvas Editor
-          </NavLink>
-          <NavLink to="/database-flow" className={({isActive}) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <Database size={18} /> Database Flow
-          </NavLink>
+          <div style={{ padding: '8px 4px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '13px', color: 'var(--ink-2)', fontWeight: 600 }}>
+              👤 {staff?.name || '—'} · {roleLabel(role)}
+            </span>
+            <SignOutButton onDone={closeMenu} style={{ padding: '8px 14px', fontSize: '13px' }} />
+          </div>
         </div>
       </div>
     </>

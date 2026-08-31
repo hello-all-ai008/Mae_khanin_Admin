@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { assertWriteOk } from '../lib/supabaseResult';
 
 export default function EditRunnerModal({ isOpen, onClose, runner, onSave, eventId }) {
   const [formData, setFormData] = useState({
@@ -55,21 +56,23 @@ export default function EditRunnerModal({ isOpen, onClose, runner, onSave, event
     setIsSaving(true);
     
     try {
-      const { error } = await supabase
-        .from('runners')
-        .update({
-          bib: formData.bib,
-          name: formData.name,
-          cat: formData.cat,
-          gender: formData.gender,
-          age: formData.age,
-          nat: formData.nat,
-          registration_status: formData.registration_status
-        })
-        .eq('id', runner.id);
-        
-      if (error) throw error;
-      
+      // `.select('id')` so an RLS-filtered UPDATE (204, no error) is not reported as success.
+      assertWriteOk(
+        await supabase
+          .from('runners')
+          .update({
+            bib: formData.bib,
+            name: formData.name,
+            cat: formData.cat,
+            gender: formData.gender,
+            age: formData.age,
+            nat: formData.nat,
+            registration_status: formData.registration_status
+          })
+          .eq('id', runner.id)
+          .select('id')
+      );
+
       onSave({ ...runner, ...formData });
       onClose();
     } catch (err) {

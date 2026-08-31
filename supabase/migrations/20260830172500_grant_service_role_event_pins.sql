@@ -1,0 +1,26 @@
+-- Fix: service_role could not read/write public.event_pins in production.
+--
+-- Confirmed 2026-08-30: `login-options` (and, by the identical code path,
+-- `staff-login`) returned "permission denied for table event_pins" on their
+-- first real invocation against kjtbfzsgnsvkfjgayuys. Both functions query
+-- event_pins through a service-role client, expecting the platform default
+-- privilege grant to cover them.
+--
+-- That assumption was already known to be shaky - 20260828100000
+-- (create_staff_table) documents that ALTER DEFAULT PRIVILEGES is scoped to
+-- whichever role ran it (supabase_admin, at project provisioning), not to
+-- whatever role executes migrations, and re-grants `authenticated` on
+-- `staff` explicitly for that reason. event_pins' own creation migration
+-- (20260828100100) made the same fix for anon/authenticated (via
+-- `revoke all ... from anon, authenticated`, implicitly relying on the
+-- default for service_role) but never re-granted service_role explicitly.
+-- The default did not apply, and nothing exercised the service-role path
+-- until this session's local test.
+--
+-- event_pins is service-role-only by design (see its own migration's
+-- SECURITY note: "only the service role, which bypasses RLS, can read or
+-- write it"). RLS is enabled with zero policies, so anon/authenticated stay
+-- deny-all regardless of any grant - this statement does not change their
+-- access. service_role bypasses RLS but is still subject to table-level
+-- GRANT checks, which is exactly what was missing.
+grant select, insert, update, delete on public.event_pins to service_role;

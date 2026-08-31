@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRace } from '../context/RaceContext';
 import { supabase } from '../lib/supabaseClient';
+import { assertWriteOk } from '../lib/supabaseResult';
 import CategoriesSetup from '../components/event-setup/CategoriesSetup';
 import LocationsSetup from '../components/event-setup/LocationsSetup';
 import StationsSetup from '../components/event-setup/StationsSetup';
@@ -113,36 +114,37 @@ export default function EventManager() {
     try {
       if (formData.id) {
         // Update existing event
-        const { error } = await supabase
-          .from('events')
-          .update({
-            name: formData.name.trim(),
-            start_date: formData.start_date,
-            end_date: formData.end_date,
-            status: formData.status
-          })
-          .eq('id', formData.id);
-
-        if (error) throw error;
+        // `.select('id')` so an RLS-filtered UPDATE (204, no error) is not reported as success.
+        assertWriteOk(
+          await supabase
+            .from('events')
+            .update({
+              name: formData.name.trim(),
+              start_date: formData.start_date,
+              end_date: formData.end_date,
+              status: formData.status
+            })
+            .eq('id', formData.id)
+            .select('id')
+        );
         addToast(`✓ อัปเดตข้อมูลงาน "${formData.name}" สำเร็จ!`, false);
       } else {
         // Insert new event
-        const { data, error } = await supabase
-          .from('events')
-          .insert([{
-            name: formData.name.trim(),
-            start_date: formData.start_date,
-            end_date: formData.end_date,
-            status: formData.status
-          }])
-          .select('id, name, start_date, end_date, status')
-          .single();
+        const data = assertWriteOk(
+          await supabase
+            .from('events')
+            .insert([{
+              name: formData.name.trim(),
+              start_date: formData.start_date,
+              end_date: formData.end_date,
+              status: formData.status
+            }])
+            .select('id, name, start_date, end_date, status')
+            .single()
+        );
 
-        if (error) throw error;
         addToast(`✓ สร้างงานวิ่งใหม่ "${formData.name}" สำเร็จ!`, false);
-        if (data) {
-          handleSelectEvent(data, false);
-        }
+        handleSelectEvent(data, false);
       }
 
       fetchEvents();
@@ -162,12 +164,7 @@ export default function EventManager() {
     if (!confirmed) return;
 
     try {
-      const { error } = await supabase
-        .from('events')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      assertWriteOk(await supabase.from('events').delete().eq('id', id).select('id'));
       addToast(`✓ ลบงานวิ่ง "${name}" สำเร็จ`, false);
       
       if (formData.id === id) {
