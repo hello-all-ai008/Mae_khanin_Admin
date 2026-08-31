@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุปการเตรียมระบบขึ้น Production — งานวิ่ง Trail บ้านปง</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f1ece2;
+    --surface: #fbf8f2;
+    --surface-2: #ede6d8;
+    --text-main: #2c2620;
+    --text-muted: #7a7264;
+    --border: #ded4c0;
+    --primary: #b3742c;
+    --primary-bg: #f3e3c9;
+    --success: #4c7a4f;
+    --success-bg: #e2ecdd;
+    --warning: #a8752c;
+    --warning-bg: #f4e5c8;
+    --danger: #a4442f;
+    --danger-bg: #f3ddd6;
+    --purple: #6b5b95;
+    --purple-bg: #e9e3f2;
+    --mono-bg: #2c2620;
+    --mono-text: #f1ece2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+    line-height: 1.7;
+    padding: 40px 20px;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container {
+    max-width: 1020px;
+    margin: 0 auto;
+    background: var(--surface);
+    padding: 48px;
+    border-radius: 20px;
+    box-shadow: 0 10px 34px -12px rgba(44,38,32,0.18);
+    border: 1px solid var(--border);
+  }
+  header { margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 24px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; }
+  h1 { font-size: 27px; font-weight: 800; margin: 0 0 10px 0; }
+  .meta-tags { display: flex; flex-wrap: wrap; gap: 10px; font-size: 13px; margin-top: 14px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-weight: 700; }
+  .badge-green { background: var(--success-bg); color: var(--success); }
+  .badge-blue  { background: var(--primary-bg); color: var(--primary); }
+  .badge-purple{ background: var(--purple-bg); color: var(--purple); }
+  .badge-warn  { background: var(--warning-bg); color: var(--warning); }
+
+  .section { margin-bottom: 38px; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 16px 0; display: flex; align-items: center; gap: 10px; }
+  h2 .num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:8px; background:var(--primary); color:#fff; font-size:13px; }
+  h3 { font-size: 15px; font-weight: 700; margin: 20px 0 10px 0; color: var(--text-main); }
+  p { color: var(--text-main); }
+  .muted { color: var(--text-muted); }
+
+  .tldr {
+    background: var(--primary-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    font-size: 15px;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 10px 0 4px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--surface-2); font-weight: 700; font-size: 12.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  .status-ok { color: var(--success); font-weight: 700; }
+  .status-manual { color: var(--warning); font-weight: 700; }
+
+  code, .mono { font-family: 'SF Mono', Menlo, monospace; background: var(--surface-2); padding: 2px 7px; border-radius: 6px; font-size: 12.5px; }
+  .pin-dots { font-family: monospace; letter-spacing: 3px; color: var(--text-muted); }
+
+  .callout { border-radius: 12px; padding: 16px 18px; font-size: 13.5px; margin: 14px 0; border: 1px solid; }
+  .callout-warn { background: var(--warning-bg); border-color: #dcbb85; color: #6b4a17; }
+  .callout-danger { background: var(--danger-bg); border-color: #dda99a; color: #7a2f1e; }
+  .callout-info { background: var(--purple-bg); border-color: #cabfe0; color: #4a3d6b; }
+  .callout b { display:block; margin-bottom:4px; }
+
+  /* mockup */
+  .mockup-wrap { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; margin-top:18px; }
+  .phone {
+    width: 240px;
+    background: var(--mono-bg);
+    border-radius: 26px;
+    padding: 14px;
+    box-shadow: 0 14px 30px -10px rgba(44,38,32,0.35);
+  }
+  .phone-screen {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 16px 14px;
+    min-height: 300px;
+  }
+  .phone-title { font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+  .phone-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 14px; }
+  .phone-item { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 12px; font-weight: 600; display:flex; justify-content:space-between; align-items:center; }
+  .phone-item.selected { background: var(--primary-bg); border: 1.5px solid var(--primary); color: var(--primary); }
+  .pin-pad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; }
+  .pin-key { background: var(--surface-2); border-radius:8px; text-align:center; padding:10px 0; font-weight:700; font-size:13px; }
+  .pin-boxes { display:flex; gap:6px; justify-content:center; margin: 10px 0 14px; }
+  .pin-box { width:26px; height:32px; border-radius:6px; background: var(--surface-2); border:1.5px solid var(--border); }
+  .mockup-caption { text-align:center; font-size:12px; color:var(--text-muted); margin-top:8px; font-weight:600; }
+
+  .checklist { list-style:none; padding:0; margin:0; }
+  .checklist li { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .checklist li:last-child { border-bottom:none; }
+  .check-icon { flex-shrink:0; width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:#fff; }
+  .check-done { background: var(--success); }
+  .check-todo { background: var(--text-muted); }
+
+  footer { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); text-align:center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="eyebrow">Mae_khanin_Admin — สรุปดำเนินการ</div>
+    <h1>เตรียมระบบขึ้น Production สำหรับงานวิ่ง Trail บ้านปง</h1>
+    <p class="muted">งาน 12–13 กันยายน 2026 · วิ่ง Trail งานบ้านปง (Baanpong Trail)</p>
+    <div class="meta-tags">
+      <span class="badge badge-green">✓ Deployed to Production</span>
+      <span class="badge badge-blue">rohn-mu.vercel.app</span>
+      <span class="badge badge-purple">31 สิงหาคม 2026</span>
+      <span class="badge badge-warn">ยังมีงานที่ต้องทำต่อ</span>
+    </div>
+  </header>
+
+  <div class="section">
+    <div class="tldr">
+      <b>สรุปสั้น:</b> ระบบ Mae_khanin_Admin ขึ้น production แล้วที่ <code>https://rohn-mu.vercel.app</code>
+      (HTTP 200 ยืนยันแล้ว) พร้อม station จริง 4 จุด + PIN เจ้าหน้าที่จริงสำหรับงานวันที่ 12–13 ก.ย.
+      แก้ไข security gap ที่พบระหว่างทาง 3 จุด (CORS origin, rate limit, ฟังก์ชันทดสอบค้างระบบ)
+      งานที่เหลือทั้งหมดเป็นการทดสอบภาคสนามจริงก่อนวันงาน ไม่ใช่โค้ดหรือ config เพิ่มเติม
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">1</span> สิ่งที่ดำเนินการสำเร็จ</h2>
+    <table>
+      <tr><th style="width:36px">#</th><th>รายการ</th><th style="width:110px">สถานะ</th><th>รายละเอียด</th></tr>
+      <tr>
+        <td>1</td><td>ตรวจสอบหน้า <code>/events</code></td>
+        <td class="status-ok">✓ เชื่อมจริง</td>
+        <td>ยืนยันว่า <code>EventManager.jsx</code> เรียก Supabase จริง (CRUD ครบ) ไม่ใช่ mock data</td>
+      </tr>
+      <tr>
+        <td>2</td><td>สร้าง station จริง 4 จุด + PIN</td>
+        <td class="status-ok">✓ เสร็จ</td>
+        <td>Start, A1, A2, Finish พร้อม role และ PIN เฉพาะคน (ดูรายละเอียดหัวข้อ 2)</td>
+      </tr>
+      <tr>
+        <td>3</td><td>ล็อก CORS origin</td>
+        <td class="status-ok">✓ เสร็จ</td>
+        <td><code>STAFF_LOGIN_ALLOWED_ORIGIN</code> ตั้งเป็น <code>rohn-mu.vercel.app</code> + localhost</td>
+      </tr>
+      <tr>
+        <td>4</td><td>เพิ่ม rate limit การยืนยัน OTP</td>
+        <td class="status-ok">✓ เสร็จ</td>
+        <td>ทำผ่าน Dashboard โดยกอง — จุดเสี่ยงสูงสุดของระบบล็อกอินวันงาน</td>
+      </tr>
+      <tr>
+        <td>5</td><td>ยืนยันอายุ JWT (36 ชม.)</td>
+        <td class="status-ok">✓ เสร็จ</td>
+        <td>ทำผ่าน Dashboard โดยกอง</td>
+      </tr>
+      <tr>
+        <td>6</td><td>เก็บกวาดของทดสอบ</td>
+        <td class="status-ok">✓ เสร็จ</td>
+        <td>ลบฟังก์ชันทดสอบ + ปิดใช้งาน PIN ทดสอบ <span class="pin-dots">●●●●●●</span></td>
+      </tr>
+      <tr>
+        <td>7</td><td>ตั้งค่า Vercel + deploy production</td>
+        <td class="status-ok">✓ เสร็จ</td>
+        <td>ตั้งค่า env vars + deploy จริง ยืนยัน URL ใช้งานได้ (HTTP 200)</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">2</span> จุด (Station) และ PIN ที่ออกให้จริง</h2>
+    <table>
+      <tr><th>จุด</th><th>สถานที่</th><th>Role</th><th>PIN</th><th>วันหมดอายุ</th></tr>
+      <tr><td>Start</td><td>Baan Pong Subdistrict Municipality</td><td>CHECKIN_CREW</td><td class="pin-dots">●●●●●●</td><td>14 ก.ย. 2026 00:00</td></tr>
+      <tr><td>A1</td><td>Loha Prasat</td><td>MARSHAL</td><td class="pin-dots">●●●●●●</td><td>14 ก.ย. 2026 00:00</td></tr>
+      <tr><td>A2</td><td>Behind Suan Rotfai Resort</td><td>MARSHAL</td><td class="pin-dots">●●●●●●</td><td>14 ก.ย. 2026 00:00</td></tr>
+      <tr><td>Finish</td><td>Baan Pong Subdistrict Municipality</td><td>FINISH_JUDGE</td><td class="pin-dots">●●●●●●</td><td>14 ก.ย. 2026 00:00</td></tr>
+      <tr><td>— (ทุกจุด)</td><td>ทั้งงาน</td><td>ADMIN (กอง)</td><td class="pin-dots">●●●●●●</td><td>14 ก.ย. 2026 00:00</td></tr>
+    </table>
+    <div class="callout callout-danger">
+      <b>⚠ PIN จริงไม่ถูกบันทึกในไฟล์นี้โดยเจตนา</b>
+      PIN ทั้ง 5 ตัวถูกส่งให้กองในแชทแล้ว (ไม่ใช่ไฟล์ในระบบ — ไฟล์นี้จะเข้า git และอยู่ถาวร)
+      กรุณาส่งต่อให้เจ้าหน้าที่แต่ละคนโดยตรง อย่าส่งเป็นข้อความกลุ่ม
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">3</span> ตัวอย่างหน้าจอ (Mockup) — ขั้นตอนล็อกอินเจ้าหน้าที่</h2>
+    <div class="mockup-wrap">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="phone-title">เลือกงานวิ่ง</div>
+          <div class="phone-sub">ขั้นที่ 1 จาก 3</div>
+          <div class="phone-item selected">วิ่ง Trail งานบ้านปง<span>›</span></div>
+        </div>
+        <div class="mockup-caption">1. เลือกงาน</div>
+      </div>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="phone-title">เลือกจุดของคุณ</div>
+          <div class="phone-sub">ขั้นที่ 2 จาก 3</div>
+          <div class="phone-item">Start</div>
+          <div class="phone-item selected">A1 · Loha Prasat<span>✓</span></div>
+          <div class="phone-item">A2 · Suan Rotfai</div>
+          <div class="phone-item">Finish</div>
+        </div>
+        <div class="mockup-caption">2. เลือกจุด</div>
+      </div>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="phone-title">กรอกรหัส PIN</div>
+          <div class="phone-sub">A1 · Loha Prasat</div>
+          <div class="pin-boxes">
+            <div class="pin-box"></div><div class="pin-box"></div><div class="pin-box"></div>
+            <div class="pin-box"></div><div class="pin-box"></div><div class="pin-box"></div>
+          </div>
+          <div class="pin-pad">
+            <div class="pin-key">1</div><div class="pin-key">2</div><div class="pin-key">3</div>
+            <div class="pin-key">4</div><div class="pin-key">5</div><div class="pin-key">6</div>
+            <div class="pin-key">7</div><div class="pin-key">8</div><div class="pin-key">9</div>
+            <div class="pin-key"></div><div class="pin-key">0</div><div class="pin-key">⌫</div>
+          </div>
+        </div>
+        <div class="mockup-caption">3. กรอก PIN → เข้าระบบ</div>
+      </div>
+    </div>
+    <p class="muted" style="font-size:12.5px; text-align:center; margin-top:14px;">
+      ข้อมูลในภาพเป็นตัวอย่างเพื่อสื่อสารขั้นตอนเท่านั้น ไม่ใช่ภาพหน้าจอจริงของแอป
+    </p>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">4</span> สถานะระบบปัจจุบัน</h2>
+    <table>
+      <tr><th style="width:200px">รายการ</th><th>ค่า</th></tr>
+      <tr><td>Production URL</td><td><code>https://rohn-mu.vercel.app</code> (HTTP 200 ✓)</td></tr>
+      <tr><td>Vercel Project</td><td><code>rohn-admin</code> (ทีม hello-ai-s-projects)</td></tr>
+      <tr><td>Supabase Project</td><td><code>DB-Mae-khanin-Admin</code> (<span class="mono">kjtbfzsgnsvkfjgayuys</span>)</td></tr>
+      <tr><td>Event ID</td><td><span class="mono">38dd7b41-90c8-4052-8781-1ccc73ca020a</span></td></tr>
+      <tr><td>Station ทั้งหมด</td><td>4 จุด (Start, A1, A2, Finish)</td></tr>
+      <tr><td>PIN ที่ใช้งานอยู่</td><td>5 ตัว (4 station + 1 ADMIN)</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">5</span> เหตุการณ์ระหว่างทางที่ควรทราบ</h2>
+    <div class="callout callout-warn">
+      <b>สร้าง Vercel project ผิดตัวแล้วลบทิ้ง</b>
+      ตอน link project ครั้งแรก ระบบสร้าง project ใหม่ชื่อ <code>rohn-mu</code> ขึ้นมาโดยไม่ได้ตั้งใจ
+      (เข้าใจผิดว่าชื่อ project = ชื่อโดเมน) ตรวจพบทันที ลบ project ที่สร้างผิดออก แล้ว link เข้ากับ
+      <code>rohn-admin</code> ซึ่งเป็น project จริงที่ผูกโดเมน <code>rohn-mu.vercel.app</code> อยู่แล้ว
+      ไม่มีผลกระทบต่อของจริง
+    </div>
+    <div class="callout callout-info">
+      <b>ไฟล์ handoff ที่เคยดูเหมือนหาย</b>
+      ระหว่างตรวจ git status พบว่าไฟล์ handoff เก่า 2 ไฟล์ถูกทำเครื่องหมายว่าลบจาก working tree —
+      ที่จริงกองย้ายไปไว้ที่ <code>ai-whale/handoff/</code> (root ของ workspace) ตามธรรมเนียมใหม่แล้ว ไม่มีข้อมูลสูญหาย
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">6</span> สิ่งที่ยังต้องทำก่อนวันงาน</h2>
+    <ul class="checklist">
+      <li><span class="check-icon check-todo">!</span> ทดสอบล็อกอินจริงจากมือถือ 1 ครั้งบนเครือข่ายนอกออฟฟิศ (ไม่ใช่ localhost) — ยังไม่ได้ทำ</li>
+      <li><span class="check-icon check-todo">!</span> เปิดใช้งาน leaked-password protection ใน Supabase Auth (คำเตือนเดิม ยังไม่แก้)</li>
+      <li><span class="check-icon check-todo">!</span> ตัดสินใจเรื่อง checkpoint/event_id scoping — ยังไม่ได้ตัดสินใจ (มาจาก session ก่อนหน้า)</li>
+      <li><span class="check-icon check-todo">!</span> ออกแบบหน้าแสดงผลลัพธ์สาธารณะ (public results view) — ยังไม่ได้เริ่ม</li>
+      <li><span class="check-icon check-todo">!</span> วางแผนหมุนเวียน/ปิด PIN หลังงานจบ (PIN หมดอายุอัตโนมัติ 14 ก.ย. 00:00 อยู่แล้ว แต่ควรมีแผนสำรอง)</li>
+    </ul>
+  </div>
+
+  <footer>
+    จัดทำโดย Whale · 31 สิงหาคม 2026 · รายละเอียดเชิงเทคนิคฉบับเต็มดูที่ handoff (ภาษาอังกฤษ)
+  </footer>
+
+</div>
+</body>
+</html>
