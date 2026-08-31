@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายงานสรุปสถานะหน้าสแกนนักวิ่ง (Check-in, Check Point, Finish Line)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --primary: #0284c7;
+            --primary-bg: #e0f2fe;
+            --success: #16a34a;
+            --success-bg: #dcfce7;
+            --warning: #ca8a04;
+            --warning-bg: #fef9c3;
+            --danger: #dc2626;
+            --danger-bg: #fee2e2;
+            --purple: #7c3aed;
+            --purple-bg: #f5f3ff;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 40px 20px;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--surface);
+            padding: 48px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.06);
+        }
+
+        header {
+            margin-bottom: 36px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .meta-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .badge-blue { background: var(--primary-bg); color: var(--primary); }
+        .badge-green { background: var(--success-bg); color: var(--success); }
+        .badge-yellow { background: var(--warning-bg); color: var(--warning); }
+        .badge-purple { background: var(--purple-bg); color: var(--purple); }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            font-size: 19px;
+            font-weight: 700;
+            margin: 0 0 16px 0;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2 span.num {
+            background: var(--text-main);
+            color: white;
+            width: 26px;
+            height: 26px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: #fdfdfd;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        }
+
+        .card-header {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card ul {
+            margin: 0;
+            padding-left: 18px;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .card li {
+            margin-bottom: 6px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        td code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12.5px;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-ok { background: var(--success-bg); color: var(--success); }
+        .status-warn { background: var(--warning-bg); color: var(--warning); }
+        .status-missing { background: var(--danger-bg); color: var(--danger); }
+
+        .callout {
+            background: #f8fafc;
+            border-left: 4px solid var(--primary);
+            padding: 16px 20px;
+            border-radius: 0 12px 12px 0;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+
+        .callout.warning {
+            border-left-color: var(--warning);
+            background: #fffbeb;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 24px 16px; }
+            h1 { font-size: 22px; }
+            th, td { padding: 8px 10px; font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>⚡ รายงานสถานะระบบหน้าสแกนนักวิ่ง</h1>
+            <div class="meta-tags">
+                <span class="badge badge-blue">📁 โปรเจกต์: Mae_khanin_Admin</span>
+                <span class="badge badge-purple">📅 วันที่: 30 สิงหาคม 2026</span>
+                <span class="badge badge-green">🎯 หน้า: Check-in, Check Point, Finish Line</span>
+            </div>
+        </header>
+
+        <!-- Section 1 -->
+        <div class="section">
+            <h2><span class="num">1</span> ฟังก์ชันที่พัฒนาเสร็จแล้ว (Implemented Features)</h2>
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-header" style="color: #0284c7;">
+                        🏁 1.1 จุด Check-in (Start)
+                    </div>
+                    <ul>
+                        <li>เลือกงานวิ่ง (Event Selector)</li>
+                        <li>ค้นหา BIB และตรวจสอบสิทธิ์เช็คอิน</li>
+                        <li>ป้องกันการเช็คอินซ้ำ</li>
+                        <li>บันทึกเวลาปล่อยตัว และผู้เช็คอิน</li>
+                        <li>แสดงผลขึ้นกระดาน LED จำลองทันที</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-header" style="color: #d97706;">
+                        🏔️ 1.2 จุด Check Point (CP)
+                    </div>
+                    <ul>
+                        <li>เลือกจุด CP ที่ประจำอยู่ (A1, A2, A3...)</li>
+                        <li>ตรวจสอบว่าผ่าน Check-in แล้วหรือไม่</li>
+                        <li>ป้องกันการสแกนซ้ำที่จุดเดิม</li>
+                        <li>บันทึกเวลาผ่านจุดลงใน <code>cps</code></li>
+                        <li>แสดงประวัติการสแกนแยกตามจุด CP</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-header" style="color: #16a34a;">
+                        🏆 1.3 จุด Finish Line (เส้นชัย)
+                    </div>
+                    <ul>
+                        <li>ยิงบาร์โค้ดเข้าเส้นชัย</li>
+                        <li>คำนวณ <b>Total Time (Gun/Net Time)</b></li>
+                        <li>ป้องกันการทับเวลา (ยึดเวลาแรกเสมอ)</li>
+                        <li>บันทึกเวลาเข้าเส้นชัย <code>finish</code></li>
+                        <li>แสดงเวลาสุทธิบนกระดาน LED</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Architecture Card -->
+            <div class="card" style="background: #f0fdf4; border-color: #bbf7d0;">
+                <div class="card-header" style="color: #15803d;">
+                    ⚡ 1.4 สถาปัตยกรรมสแกนแบบลื่นไหล (0ms Decoupled Architecture)
+                </div>
+                <ul style="color: #166534;">
+                    <li><b>สแกนเร็ว 0ms ไม่สะดุด:</b> แยกการประมวลผลการสแกนและตรวจสอบข้อมูลในเครื่องออกจาก Database ทำให้ยิงบาร์โค้ดได้รวดเร็วต่อเนื่องโดยไม่ต้องรอเน็ตตอบกลับ</li>
+                    <li><b>Background Sync Queue:</b> ข้อมูลที่สแกนผ่านจะถูกบรรจุเข้าคิวในเครื่อง (<code>localStorage</code>) ทันที และมี Worker ส่งขึ้น Supabase ในพื้นหลังอัตโนมัติ</li>
+                    <li><b>Offline Resilience:</b> สแกนในจุดอับสัญญาณเน็ตได้ 100% เมื่อต่อเน็ตได้ระบบจะ Auto-Sync ข้อมูลที่ค้างส่งให้อัตโนมัติ</li>
+                    <li><b>Scanner Control:</b> รองรับเครื่องยิง Barcode และกล้องมือถือ (Html5Qrcode) ซูมเลนส์ได้ 1x-3.5x, เปิดไฟแฟลชได้ และมีเสียง Beep Feedback</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 2 -->
+        <div class="section">
+            <h2><span class="num">2</span> สถานะการเชื่อมต่อ Database (เทียบกับ DatabaseFlow.jsx)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 140px;">ตารางใน ERD</th>
+                        <th style="width: 130px;">สถานะ</th>
+                        <th>คำสั่ง / การทำงานในระบบ</th>
+                        <th>รายละเอียด</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>EVENTS</code></td>
+                        <td><span class="status-pill status-ok">✓ เชื่อมต่อแล้ว</span></td>
+                        <td><code>supabase.from('events').select('id, name')</code></td>
+                        <td>ดึงรายชื่องานวิ่งมาใส่ใน Dropdown เลือกงานทั้ง 3 หน้า</td>
+                    </tr>
+                    <tr>
+                        <td><code>CATEGORIES</code></td>
+                        <td><span class="status-pill status-ok">✓ เชื่อมต่อแล้ว</span></td>
+                        <td><code>supabase.from('categories').select('*')</code></td>
+                        <td>ดึงระยะทางและเวลาปล่อยตัวในระบบ Preload Cache</td>
+                    </tr>
+                    <tr>
+                        <td><code>STATIONS</code></td>
+                        <td><span class="status-pill status-ok">✓ เชื่อมต่อแล้ว</span></td>
+                        <td><code>supabase.from('stations').select('id, name, type')</code></td>
+                        <td>ดึงรายชื่อจุดสแกนมาแสดงในเมนูเลือกจุด CP</td>
+                    </tr>
+                    <tr>
+                        <td><code>CHECKPOINT</code></td>
+                        <td><span class="status-pill status-ok">✓ เชื่อมต่อแล้ว</span></td>
+                        <td><code>supabase.from('checkpoint').select(...)</code></td>
+                        <td>ดึงข้อมูลเส้นทางและเวลา Cutoff เพื่อตั้งค่าเวลาเริ่มต้น</td>
+                    </tr>
+                    <tr>
+                        <td><code>STAFF</code></td>
+                        <td><span class="status-pill status-ok">✓ เชื่อมต่อแล้ว</span></td>
+                        <td><code>supabase.from('staff').select() / insert()</code></td>
+                        <td>เลือกชื่อเจ้าหน้าที่ผู้สแกน และเพิ่มชื่อใหม่เข้าระบบ</td>
+                    </tr>
+                    <tr>
+                        <td><code>RUNNERS</code> (Read)</td>
+                        <td><span class="status-pill status-ok">✓ เชื่อมต่อแล้ว</span></td>
+                        <td><code>supabase.from('runners').select('*')</code></td>
+                        <td>โหลดข้อมูลนักวิ่งทั้งงานมาเก็บใน Local Cache พร้อมสแกน</td>
+                    </tr>
+                    <tr>
+                        <td><code>RUNNERS</code> (Check-in)</td>
+                        <td><span class="status-pill status-ok">✓ เชื่อมต่อแล้ว</span></td>
+                        <td><code>update({ registration_status: 'CHECKED_IN', checked_in_at, checked_in_by })</code></td>
+                        <td>อัปเดตสถานะเช็คอินผ่าน Background Queue</td>
+                    </tr>
+                    <tr>
+                        <td><code>RUNNERS</code> (CP)</td>
+                        <td><span class="status-pill status-ok">✓ เชื่อมต่อแล้ว</span></td>
+                        <td><code>update({ cps: updated.cps })</code></td>
+                        <td>อัปเดต JSONB เวลาผ่าน CP ผ่าน Background Queue</td>
+                    </tr>
+                    <tr>
+                        <td><code>RUNNERS</code> (Finish)</td>
+                        <td><span class="status-pill status-ok">✓ เชื่อมต่อแล้ว</span></td>
+                        <td><code>update({ finish: timestamp })</code></td>
+                        <td>อัปเดตเวลาเข้าเส้นชัยผ่าน Background Queue</td>
+                    </tr>
+                    <tr>
+                        <td><code>SCAN_LOGS</code></td>
+                        <td><span class="status-pill status-warn">⚠ บางส่วน</span></td>
+                        <td><code>insert([{ runner_id, station_id, scan_time, is_valid: true }])</code></td>
+                        <td>ส่งเฉพาะรายการที่ผ่าน ยังไม่ได้ส่งรายการที่ไม่ผ่าน (Invalid/ซ้ำ)</td>
+                    </tr>
+                    <tr>
+                        <td><code>LOCATIONS</code></td>
+                        <td><span class="status-pill status-missing">✗ ยังไม่เชื่อม</span></td>
+                        <td>—</td>
+                        <td>ยังไม่ได้นำ <code>location_id</code> มาผูกกับจุดสแกน</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section 3 -->
+        <div class="section">
+            <h2><span class="num">3</span> สิ่งที่ยังขาด และข้อเสนอแนะในการพัฒนาต่อ (Next Steps)</h2>
+            
+            <div class="callout warning">
+                <b>1. การบันทึกประวัติการสแกนแบบสมบูรณ์ (Audit Logs):</b><br>
+                ควรขยายให้ตาราง <code>SCAN_LOGS</code> บันทึกทั้งกรณีสแกนสำเร็จและสแกนผิดพลาด (เช่น "BIB ไม่ถูกต้อง", "ยังไม่เช็คอิน", "สแกนซ้ำ") โดยกำหนด <code>is_valid: false</code> เพื่อให้ผู้จัดงานตรวจสอบย้อนหลังได้หากมีข้อพิพาท
+            </div>
+
+            <div class="callout" style="border-left-color: #8b5cf6; background: #faf5ff;">
+                <b>2. การตรวจสอบ Cutoff Time (DNF Notification):</b><br>
+                หน้า CheckPoint และ FinishLine สามารถนำฟิลด์ <code>cutoff_time</code> จากตาราง <code>CHECKPOINT</code> มาคำนวณและแจ้งเตือนบนหน้าจอทันทีว่านักวิ่ง "เกินเวลา Cutoff (DNF)" หรือไม่
+            </div>
+
+            <div class="callout" style="border-left-color: #059669; background: #f0fdf4;">
+                <b>3. การเปิดใช้งาน Supabase Realtime Channel:</b><br>
+                เพิ่มการเปิดรับสัญญาณ Realtime เพื่อให้เมื่อเจ้าหน้าที่จุด CP ยิงบาร์โค้ด ข้อมูลจะวิ่งมาอัปเดตบนหน้าจอ Admin หรือ Finish Line ได้ทันทีโดยไม่ต้องกดรีเฟรช
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

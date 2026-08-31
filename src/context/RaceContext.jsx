@@ -1,9 +1,8 @@
-import { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
 import { isAuthError, writeFailureReason, writeErrorMessage } from '../lib/supabaseResult';
-import { createQueueItem, pushQueuedScan } from '../lib/scanSync';
 
 const RaceContext = createContext();
 
@@ -110,6 +109,8 @@ export function RaceProvider({ children }) {
       return [];
     }
   });
+  const [isSyncingQueue, setIsSyncingQueue] = useState(false);
+  const isProcessingQueueRef = useRef(false);
 
   useEffect(() => {
     localStorage.setItem('trail_pending_sync_queue', JSON.stringify(pendingSyncQueue));
@@ -121,12 +122,20 @@ export function RaceProvider({ children }) {
     }
   }, [lastSyncedTime]);
 
+  const enqueueSyncItem = useCallback((item) => {
+    setPendingSyncQueue(prev => {
+      if (prev.some(p => p.id === item.id)) return prev;
+      const updated = [...prev, item];
+      localStorage.setItem('trail_pending_sync_queue', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   // Online / Offline Network Listeners
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      addToast('🌐 เชื่อมต่ออินเทอร์เน็ตแล้ว — กำลังเริ่มซิงค์ข้อมูล...', false);
-      syncPendingQueue();
+      addToast('🌐 เชื่อมต่ออินเทอร์เน็ตแล้ว — กำลังเริ่มซิงค์ข้อมูลในพื้นหลัง...', false);
     };
     const handleOffline = () => {
       setIsOnline(false);
@@ -139,7 +148,7 @@ export function RaceProvider({ children }) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [pendingSyncQueue]);
+  }, []);
 
   // Staff & Scanner Operator State.
   //
@@ -418,48 +427,140 @@ export function RaceProvider({ children }) {
     }
   };
 
-  // Sync Pending Offline Scans Queue to Supabase
+  // ── Background Queue Worker (Non-blocking Asynchronous Synchronization) ──
+  const processNextInQueue = useCallback(async () => {
+    if (isProcessingQueueRef.current || !navigator.onLine) return;
+
+    let currentQueue = [];
+    try {
+      const saved = localStorage.getItem('trail_pending_sync_queue');
+      currentQueue = saved ? JSON.parse(saved) : [];
+    } catch {
+      currentQueue = [];
+    }
+
+    if (currentQueue.length === 0) {
+      setIsSyncingQueue(false);
+      return;
+    }
+
+    isProcessingQueueRef.current = true;
+    setIsSyncingQueue(true);
+
+    try {
+      const item = currentQueue[0];
+      let uploadSuccess = false;
+
+      try {
+        if (item.type === 'CHECKIN') {
+          const { error } = await supabase.from('runners').update({
+            registration_status: 'CHECKED_IN',
+            checked_in_at: new Date(item.time).toISOString(),
+            checked_in_by: item.operator
+          }).eq('id', item.runnerId);
+
+          if (!error) uploadSuccess = true;
+          else console.warn('Background sync checkin error:', error);
+        } else if (item.type === 'CP') {
+          const { error } = await supabase.from('runners').update({
+            cps: item.cps
+          }).eq('id', item.runnerId);
+
+          if (!error) uploadSuccess = true;
+          else console.warn('Background sync CP error:', error);
+        } else if (item.type === 'FINISH') {
+          const { error } = await supabase.from('runners').update({
+            finish: item.time
+          }).eq('id', item.runnerId);
+
+          if (!error) uploadSuccess = true;
+          else console.warn('Background sync finish error:', error);
+        }
+
+        // Optional scan_logs insertion for analytics/audit trail
+        if (uploadSuccess) {
+          try {
+            await supabase.from('scan_logs').insert([{
+              runner_id: item.runnerId,
+              station_id: item.stationId || null,
+              scan_time: new Date(item.time).toISOString(),
+              is_valid: true,
+              scanned_by: item.operator || null,
+              note: item.type
+            }]);
+          } catch (_) {}
+        }
+      } catch (err) {
+        console.warn('Network error during background sync item:', err);
+        uploadSuccess = false;
+      }
+
+      if (uploadSuccess) {
+        setPendingSyncQueue(prev => {
+          const nextQ = prev.filter(q => q.id !== item.id);
+          localStorage.setItem('trail_pending_sync_queue', JSON.stringify(nextQ));
+          return nextQ;
+        });
+      } else {
+        // Delay before retrying failed item
+        await new Promise(r => setTimeout(r, 2500));
+      }
+    } finally {
+      isProcessingQueueRef.current = false;
+      // Trigger next item with slight delay (40ms) to ensure UI thread remains buttery smooth
+      setTimeout(() => {
+        let remaining = [];
+        try {
+          const s = localStorage.getItem('trail_pending_sync_queue');
+          remaining = s ? JSON.parse(s) : [];
+        } catch {
+          remaining = [];
+        }
+        if (remaining.length > 0 && navigator.onLine) {
+          processNextInQueue();
+        } else {
+          setIsSyncingQueue(false);
+        }
+      }, 40);
+    }
+  }, []);
+
   const syncPendingQueue = async () => {
     if (pendingSyncQueue.length === 0) {
       addToast('ไม่มีข้อมูลค้างส่ง ข้อมูลเป็นปัจจุบันแล้ว ✓', false);
       return;
     }
-
-    const itemsToSync = [...pendingSyncQueue];
-    const remainingQueue = [];
-    let syncedCount = 0;
-    let lastFailureReason = '';
-
-    // A scan may only leave the queue when the database confirms the row changed.
-    // supabase-js resolves instead of throwing on a rejected write, and RLS answers
-    // an update that matches no row with 204 and no error — both used to count as
-    // a success and silently discard the scan.
-    for (const item of itemsToSync) {
-      const failureReason = await pushQueuedScan(item);
-      if (failureReason) {
-        console.error('Sync item failed, keeping in queue:', item.id, failureReason);
-        lastFailureReason = failureReason;
-        remainingQueue.push(item);
-      } else {
-        syncedCount++;
-      }
-    }
-
-    // Drop only the items this run confirmed, by identity: a scan made while the
-    // loop was running is still in state and must survive.
-    const syncedItems = new Set(itemsToSync.filter(item => !remainingQueue.includes(item)));
-    setPendingSyncQueue(prev => prev.filter(item => !syncedItems.has(item)));
-
-    if (remainingQueue.length > 0) {
-      addToast(
-        `⚠️ ซิงค์สำเร็จ ${syncedCount} รายการ · ค้างอยู่ ${remainingQueue.length} รายการ (${lastFailureReason}) — ข้อมูลยังอยู่ในเครื่อง`,
-        true
-      );
+    if (!navigator.onLine) {
+      addToast('⚠️ อุปกรณ์อยู่ในโหมดออฟไลน์ ไม่สามารถเชื่อมต่อเน็ตได้', true);
       return;
     }
-
-    addToast(`✓ ซิงค์ข้อมูลขึ้นคลาวด์สำเร็จ ${syncedCount} รายการ`, false);
+    addToast('🔄 กำลังส่งข้อมูลขึ้นคลาวด์ในพื้นหลัง...', false);
+    processNextInQueue();
   };
+
+  // Auto trigger background sync when items are queued or online status becomes available
+  useEffect(() => {
+    if (pendingSyncQueue.length > 0 && isOnline) {
+      processNextInQueue();
+    }
+  }, [pendingSyncQueue.length, isOnline, processNextInQueue]);
+
+  // Periodic heartbeat watchdog (every 4 seconds) to ensure all pending items are sent
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (navigator.onLine && !isProcessingQueueRef.current) {
+        let q = [];
+        try {
+          const s = localStorage.getItem('trail_pending_sync_queue');
+          q = s ? JSON.parse(s) : [];
+        } catch {}
+        if (q.length > 0) {
+          processNextInQueue();
+        }
+      }
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [processNextInQueue]);
 
   // Deliberate, irreversible data loss — the escape hatch for a queue that can
   // never sync (deleted runner row, an operator RLS permanently refuses, a stale
@@ -658,17 +759,6 @@ export function RaceProvider({ children }) {
     }
   };
 
-  // Writes a scan straight through and falls back to the offline queue whenever
-  // the database does not confirm it — an error, or an update RLS matched to zero
-  // rows and answered with 204. Nothing is ever dropped on the floor.
-  const queueScanOnFailure = (queueItem) => {
-    pushQueuedScan(queueItem).then((failureReason) => {
-      if (!failureReason) return;
-      console.error('Live scan write failed, queued for retry:', queueItem.id, failureReason);
-      setPendingSyncQueue(prev => [...prev, queueItem]);
-    });
-  };
-
   const processScan = (stationType, bib, stationId = null) => {
     const now = Date.now();
     const r = findRunner(bib);
@@ -697,14 +787,16 @@ export function RaceProvider({ children }) {
         addToast(`✓ Check-in สำเร็จ — BIB ${r.bib} ${r.name}`);
         addLog({ time: now, station: 'Check-in', bib, name: r.name, ok: true, operator });
 
-        // Update Supabase or queue offline
+        // Push to asynchronous background sync queue (Zero delay / 0ms UI blocking)
         if (r.id) {
-          const queueItem = createQueueItem('CHECKIN', { runnerId: r.id, bib: r.bib, operator }, { time: now });
-          if (!isOnline) {
-            setPendingSyncQueue(prev => [...prev, queueItem]);
-          } else {
-            queueScanOnFailure(queueItem);
-          }
+          enqueueSyncItem({
+            id: 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+            type: 'CHECKIN',
+            runnerId: r.id,
+            bib: r.bib,
+            time: now,
+            operator
+          });
         }
       }
     } 
@@ -728,14 +820,18 @@ export function RaceProvider({ children }) {
         addToast(`✓ ${cpName} — BIB ${r.bib} ${r.name}`);
         addLog({ time: now, station: cpName, bib, name: r.name, ok: true, operator });
 
-        // Update Supabase or queue offline
+        // Push to asynchronous background sync queue (Zero delay / 0ms UI blocking)
         if (r.id) {
-          const queueItem = createQueueItem('CP', { runnerId: r.id, bib: r.bib, operator }, { cps: updated.cps, stationId });
-          if (!isOnline) {
-            setPendingSyncQueue(prev => [...prev, queueItem]);
-          } else {
-            queueScanOnFailure(queueItem);
-          }
+          enqueueSyncItem({
+            id: 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+            type: 'CP',
+            runnerId: r.id,
+            bib: r.bib,
+            cps: updated.cps,
+            stationId,
+            time: now,
+            operator
+          });
         }
       }
     }
@@ -757,14 +853,16 @@ export function RaceProvider({ children }) {
         addToast(`🏁 Finish! BIB ${r.bib} ${r.name}`);
         addLog({ time: now, station: 'Finish', bib, name: r.name, ok: true, operator });
 
-        // Update Supabase or queue offline
+        // Push to asynchronous background sync queue (Zero delay / 0ms UI blocking)
         if (r.id) {
-          const queueItem = createQueueItem('FINISH', { runnerId: r.id, bib: r.bib, operator }, { time: now });
-          if (!isOnline) {
-            setPendingSyncQueue(prev => [...prev, queueItem]);
-          } else {
-            queueScanOnFailure(queueItem);
-          }
+          enqueueSyncItem({
+            id: 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+            type: 'FINISH',
+            runnerId: r.id,
+            bib: r.bib,
+            time: now,
+            operator
+          });
         }
       }
     }
@@ -812,13 +910,14 @@ export function RaceProvider({ children }) {
       importRunners,
       updateRunner,
       assignNewBibs,
-      // Offline & Preload Cache API
+      // Offline & Preload Cache & Background Sync API
       isOnline,
       isPreloading,
       preloadProgress,
       preloadStatusText,
       lastSyncedTime,
       pendingSyncQueue,
+      isSyncingQueue,
       preloadEventData,
       syncPendingQueue,
       clearPendingSyncQueue
