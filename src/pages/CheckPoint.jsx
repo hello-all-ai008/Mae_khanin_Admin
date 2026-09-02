@@ -5,16 +5,17 @@ import ScannerInput from '../components/ScannerInput';
 import PreloadDataCard from '../components/PreloadDataCard';
 
 export default function CheckPoint() {
-  const { 
-    events, 
-    selectedEventId, 
-    setSelectedEventId, 
-    runners, 
-    loadingRunners, 
-    checkpoints, 
-    processScan, 
-    scanLog, 
-    getCpName 
+  const {
+    events,
+    selectedEventId,
+    setSelectedEventId,
+    runners,
+    loadingRunners,
+    checkpoints,
+    processScan,
+    scanLog,
+    getCpName,
+    currentStaff
   } = useRace();
   const [ledState, setLedState] = useState({ runner: null, message: '', warn: false });
   const [selectedCp, setSelectedCp] = useState('');
@@ -24,7 +25,16 @@ export default function CheckPoint() {
     return checkpoints && checkpoints.length > 0 ? checkpoints : CHECKPOINTS;
   }, [checkpoints]);
 
-  const currentCpId = selectedCp || (activeCpList[0]?.id || 'A1');
+  // Staff assigned to one station (station_id set) must stay locked to it —
+  // only staff with no fixed station (e.g. roaming admin) get the free picker.
+  const lockedStationId = currentStaff?.station_id || null;
+  const isStationLocked = Boolean(
+    lockedStationId && activeCpList.some(cp => cp.id === lockedStationId)
+  );
+
+  const currentCpId = isStationLocked
+    ? lockedStationId
+    : (selectedCp || (activeCpList[0]?.id || 'A1'));
 
   const handleScan = (bib) => {
     const result = processScan('CheckPoint', bib, currentCpId);
@@ -86,9 +96,19 @@ export default function CheckPoint() {
         <div>
           <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>เลือกจุด Check Point:</label>
-            <select className="search" value={currentCpId} onChange={(e) => setSelectedCp(e.target.value)}>
-              {activeCpList.map(cp => <option key={cp.id} value={cp.id}>{cp.name}</option>)}
-            </select>
+            {isStationLocked ? (
+              <span
+                title="จุด Check Point ถูกล็อกตามสถานีที่บัญชีนี้ได้รับมอบหมาย เปลี่ยนเองไม่ได้"
+                className="search"
+                style={{ display: 'inline-flex', alignItems: 'center', fontWeight: 600, cursor: 'not-allowed', color: 'var(--ink)' }}
+              >
+                🔒 {getCpName(currentCpId)}
+              </span>
+            ) : (
+              <select className="search" value={currentCpId} onChange={(e) => setSelectedCp(e.target.value)}>
+                {activeCpList.map(cp => <option key={cp.id} value={cp.id}>{cp.name}</option>)}
+              </select>
+            )}
           </div>
           
           <ScannerInput onScan={handleScan} />
