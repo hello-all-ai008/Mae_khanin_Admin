@@ -134,6 +134,18 @@ export default function RunnersList() {
   });
 
   const columns = [
+    {
+      key: 'actions',
+      label: 'จัดการ',
+      align: 'center',
+      defaultWidth: 120,
+      render: (_, r) => (
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+          <button className="btn btn-sm" onClick={() => handleEdit(r)} style={{ padding: '2px 8px', fontSize: '12px' }}>✏️</button>
+          <button className="btn btn-sm" onClick={() => handleDelete(r.id, r.name)} style={{ padding: '2px 8px', fontSize: '12px', background: '#fee2e2', color: '#b91c1c' }}>🗑️</button>
+        </div>
+      )
+    },
     { key: 'bib', label: 'BIB', defaultWidth: 120 },
     { key: 'name', label: 'Name', defaultWidth: 250 },
     { key: 'cat', label: 'Cat.', defaultWidth: 120 },
@@ -152,18 +164,6 @@ export default function RunnersList() {
           </span>
         );
       }
-    },
-    {
-      key: 'actions',
-      label: 'จัดการ',
-      align: 'center',
-      defaultWidth: 120,
-      render: (_, r) => (
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-          <button className="btn btn-sm" onClick={() => handleEdit(r)} style={{ padding: '2px 8px', fontSize: '12px' }}>✏️</button>
-          <button className="btn btn-sm" onClick={() => handleDelete(r.id, r.name)} style={{ padding: '2px 8px', fontSize: '12px', background: '#fee2e2', color: '#b91c1c' }}>🗑️</button>
-        </div>
-      )
     }
   ];
 

@@ -16,9 +16,15 @@ import AccessDenied from './components/AccessDenied';
 import { useAuth } from './context/AuthContext';
 import { canAccessRoute, landingRouteFor } from './lib/roles';
 
+import AdminUserManagement from './pages/AdminUserManagement';
+import OverallDashboard from './pages/OverallDashboard';
+import LiveLeaderboard from './pages/LiveLeaderboard';
+
 // Every authenticated route, in one place. Access per role is defined in
 // lib/roles.js and enforced again by RLS on the server.
 const APP_ROUTES = [
+  { path: '/dashboard', element: <OverallDashboard /> },
+  { path: '/leaderboard', element: <LiveLeaderboard /> },
   { path: '/events', element: <EventManager /> },
   { path: '/staff', element: <StaffManager /> },
   { path: '/runners', element: <RunnersList /> },
@@ -29,6 +35,7 @@ const APP_ROUTES = [
   { path: '/log', element: <ScanLog /> },
   { path: '/bib-canvas', element: <BibCanvas /> },
   { path: '/database-flow', element: <DatabaseFlow /> },
+  { path: '/admin/users', element: <AdminUserManagement /> },
 ];
 
 function AuthLoading() {

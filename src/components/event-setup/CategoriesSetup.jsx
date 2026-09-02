@@ -14,7 +14,8 @@ export default function CategoriesSetup({ eventId }) {
     id: null,
     name: '',
     distance_km: '',
-    unit: 'km'
+    unit: 'km',
+    color: '#3b82f6'
   });
 
   useEffect(() => {
@@ -48,14 +49,15 @@ export default function CategoriesSetup({ eventId }) {
       id: cat.id,
       name: cat.name,
       distance_km: cat.distance_km,
-      unit: cat.unit || 'km'
+      unit: cat.unit || 'km',
+      color: cat.color || '#3b82f6'
     });
     addToast(`กำลังแก้ไข: ${cat.name}`, false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleClear = () => {
-    setFormData({ id: null, name: '', distance_km: '', unit: 'km' });
+    setFormData({ id: null, name: '', distance_km: '', unit: 'km', color: '#3b82f6' });
   };
 
   const handleSave = async (e) => {
@@ -70,7 +72,8 @@ export default function CategoriesSetup({ eventId }) {
       const payload = {
         name: formData.name.trim(),
         distance_km: parseFloat(formData.distance_km),
-        unit: formData.unit || 'km'
+        unit: formData.unit || 'km',
+        color: formData.color || null
       };
 
       if (formData.id) {
@@ -127,6 +130,17 @@ export default function CategoriesSetup({ eventId }) {
     },
     { key: 'distance_km', label: 'ระยะทาง', defaultWidth: 120 },
     { key: 'unit', label: 'หน่วย', defaultWidth: 100 },
+    { 
+      key: 'color', 
+      label: 'สีประจำระยะ', 
+      defaultWidth: 130,
+      render: (val) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '20px', height: '20px', borderRadius: '4px', background: val || '#3b82f6', border: '1px solid var(--line)' }}></div>
+          <span style={{ fontSize: '12px', color: 'var(--ink-2)', fontFamily: 'var(--mono)' }}>{val || '-'}</span>
+        </div>
+      )
+    },
     {
       key: 'actions',
       label: 'จัดการ',
@@ -238,6 +252,13 @@ export default function CategoriesSetup({ eventId }) {
               </select>
             </div>
           </div>
+          <div style={{ borderTop: '1px dashed var(--line)', paddingTop: '10px' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 600 }}>สีประจำระยะ (Color)</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input type="color" name="color" value={formData.color} onChange={handleChange} style={{ width: '40px', height: '36px', padding: '0', border: 'none', borderRadius: '6px', cursor: 'pointer', background: 'transparent' }} />
+              <input className="search" type="text" name="color" value={formData.color} onChange={handleChange} style={{ flex: 1, padding: '8px', fontFamily: 'var(--mono)' }} placeholder="#HEX" />
+            </div>
+          </div>
           <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
             <button
               type="submit"
@@ -260,7 +281,7 @@ export default function CategoriesSetup({ eventId }) {
                 type="button"
                 className="btn"
                 onClick={handleClear}
-                style={{ border: '1px solid var(--line)', background: '#fff', padding: '10px', cursor: 'pointer' }}
+                style={{ border: '1px solid var(--line)', background: '#fff', color: '#000', padding: '10px', cursor: 'pointer', fontWeight: 600 }}
               >
                 ยกเลิก
               </button>

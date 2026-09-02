@@ -1,0 +1,93 @@
+/* src/components/ESlip.css */
+.eslip {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 360px;
+  max-height: 90vh;
+  overflow: auto;
+  padding: 26px 26px 20px;
+  font-family: var(--mono, monospace);
+  font-size: 13px;
+  margin: 0 auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  color: var(--ink);
+}
+
+.eslip .head {
+  text-align: center;
+  border-bottom: 1.5px dashed var(--line);
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+}
+.eslip .head .logo-mark {
+  margin: 0 auto 8px;
+}
+.eslip .row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  gap: 12px;
+}
+.eslip .row span:first-child {
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.eslip .hr {
+  border-top: 1.5px dashed var(--line);
+  margin: 14px 0;
+}
+.eslip .rank {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 6px 0;
+}
+.eslip .foot {
+  text-align: center;
+  color: var(--ink-2);
+  font-size: 11px;
+  margin-top: 16px;
+}
+
+/* Responsive styling for smaller devices */
+@media (max-width: 480px) {
+  .eslip {
+    padding: 20px 16px 16px;
+    border-radius: 12px;
+    font-size: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+  .eslip .row {
+    padding: 3px 0;
+  }
+}
+
+/* Print styles - to only print the slip itself */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .eslip, .eslip * {
+    visibility: visible;
+  }
+  .eslip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 20px;
+    box-shadow: none;
+    border-radius: 0;
+    overflow: visible;
+    max-height: none;
+  }
+  .modal-bg {
+    background: transparent !important;
+  }
+  .eslip .foot {
+    margin-top: 30px;
+  }
+}

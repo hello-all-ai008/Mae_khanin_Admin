@@ -2,9 +2,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 :root{
-  --bg:#ffffff; --bg-soft:#f7f8f9; --ink:#16181d; --ink-2:#5b6472; --line:#e6e9ed;
-  --start:#f5b60a; --cp:#f07f1a; --finish:#3346e0; --ok:#1a9e5c; --warn:#d94141;
-  --led-bg:#0c0d10; --led:#ffd400;
+  --bg:#ffffff; --bg-soft:#f8f9fc; --ink:#0f172a; --ink-2:#64748b; --line:#e2e8f0;
+  --start:#8b2df6; --cp:#6366f1; --finish:#020b5e; --ok:#10b981; --warn:#ef4444;
+  --led-bg:#0f172a; --led:#8b2df6;
   --radius:14px;
   --sans:'IBM Plex Sans Thai',system-ui,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,monospace;
@@ -19,7 +19,7 @@ input,select{font-family:inherit}
 
 .navbar{width:100%;height:64px;border-bottom:1px solid var(--line);padding:0 24px;position:sticky;top:0;display:flex;align-items:center;background:var(--bg);z-index:100;}
 .navbar-left{display:flex;align-items:center;flex-shrink:0;}
-.navbar-center{display:flex;align-items:center;gap:16px;margin-left:32px;flex:1;overflow-x:auto;scrollbar-width:none;min-width:0;}
+.navbar-center{display:flex;align-items:center;gap:16px;margin-left:32px;flex:1;min-width:0;}
 .navbar-center::-webkit-scrollbar{display:none;}
 .nav-group-horizontal{display:flex;align-items:center;gap:4px;flex-shrink:0;}
 .nav-divider{width:1px;height:24px;background:var(--line);margin:0 4px;flex-shrink:0;}
@@ -129,16 +129,7 @@ select.search{flex:none;width:auto}
 .toast.err{background:var(--warn)}
 .modal-bg{position:fixed;inset:0;background:rgba(15,17,21,.45);display:none;place-items:center;z-index:50;padding:20px}
 .modal-bg.open{display:grid}
-.eslip{background:#fff;border-radius:14px;width:330px;max-height:92vh;overflow:auto;padding:26px 26px 20px;font-family:var(--mono);font-size:13px}
-.eslip .head{text-align:center;border-bottom:1.5px dashed var(--line);padding-bottom:14px;margin-bottom:14px}
-.eslip .head .logo-mark{margin:0 auto 8px}
-.eslip .row{display:flex;justify-content:space-between;padding:3.5px 0}
-.eslip .row span:first-child{color:var(--ink-2)}
-.eslip .hr{border-top:1.5px dashed var(--line);margin:12px 0}
-.eslip .rank{text-align:center;font-size:15px;font-weight:600;padding:6px 0}
-.eslip .foot{text-align:center;color:var(--ink-2);font-size:11px;margin-top:14px}
-.eslip .actions{display:flex;gap:8px;margin-top:16px;font-family:var(--sans)}
-.eslip .actions .btn{flex:1}
+
 
 .empty{padding:34px;text-align:center;color:var(--ink-2);font-size:14px}
 .note{font-size:12.5px;color:var(--ink-2);background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:18px}
@@ -154,11 +145,14 @@ select.search{flex:none;width:auto}
   display: none;
 }
 
-@media (max-width:960px){
+@media (max-width:1024px){
   .station{grid-template-columns:1fr}
   .grid-4{grid-template-columns:repeat(2,1fr)}
-  .navbar-center{gap:8px; margin-left:16px;}
-  .nav-item-h{padding:6px 8px;font-size:12px;}
+  .navbar { padding: 0 16px; justify-content: space-between; }
+  .navbar-center { display: none !important; }
+  .navbar-right { display: none !important; }
+  .navbar-mobile-toggle { display: flex; align-items: center; }
+  .mobile-menu-overlay { display: block; top: 64px; }
   .logo b,.logo span{display:none !important}
   .nav-item{justify-content:center;padding:11px}
   .main{padding:20px 16px 60px}
@@ -166,13 +160,6 @@ select.search{flex:none;width:auto}
 
 @media (max-width:768px){
   .app { flex-direction: column; }
-  .navbar { height: 64px; padding: 0 16px; justify-content: space-between; }
-  .navbar-center { display: none !important; }
-  /* Sign-out lives in the mobile menu instead, away from the scan hot zone. */
-  .navbar-right { display: none !important; }
-  .navbar-mobile-toggle { display: flex; align-items: center; }
-  .mobile-menu-overlay { display: block; top: 64px; }
-  
   .main { padding: 16px 12px 80px; }
   
   .grid-4, .grid-2 { grid-template-columns: 1fr; }
@@ -181,7 +168,6 @@ select.search{flex:none;width:auto}
   .led .bib { font-size: 32px; }
   .scan-input { font-size: 18px; padding: 12px 12px 12px 42px; }
   
-  .eslip { width: 100%; max-width: 320px; }
   .toast { left: 16px; right: 16px; bottom: 80px; max-width: none; }
   
   table { display: block; overflow-x: auto; white-space: nowrap; }

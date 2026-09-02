@@ -403,6 +403,9 @@ verify_jwt = false
 [functions.login-options]
 verify_jwt = false
 
+[functions.admin-user-mgmt]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

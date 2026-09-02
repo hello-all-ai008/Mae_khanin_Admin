@@ -187,21 +187,7 @@ export default function StaffLogin() {
         }}
       >
         <header style={{ textAlign: 'center', marginBottom: '18px' }}>
-          <div
-            style={{
-              width: '52px',
-              height: '52px',
-              margin: '0 auto 12px',
-              borderRadius: '16px',
-              background: 'var(--ink)',
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <KeyRound size={24} />
-          </div>
+          <img src="/src/LOGO/logo-rohn-full.png" alt="ROHN Logo" style={{ height: '80px', width: 'auto', margin: '0 auto 16px', display: 'block' }} />
           <h1 style={{ fontSize: '21px', fontWeight: 800, letterSpacing: '-0.01em' }}>
             เข้าสู่ระบบเจ้าหน้าที่
           </h1>

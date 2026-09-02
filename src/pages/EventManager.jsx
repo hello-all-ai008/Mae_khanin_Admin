@@ -464,7 +464,7 @@ export default function EventManager() {
                 <h2 style={{ fontSize: '17px', margin: 0, fontWeight: 700 }}>รายชื่องานวิ่งทั้งหมด ({events.length})</h2>
                 <span style={{ fontSize: '12px', color: 'var(--ink-2)' }}>คลิกที่งานเพื่อเลือกจัดการ</span>
               </div>
-              <button className="btn btn-sm" onClick={fetchEvents} style={{ padding: '5px 10px', fontSize: '12px', background: 'var(--bg-soft)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button className="btn btn-sm" onClick={fetchEvents} style={{ padding: '5px 10px', fontSize: '12px', background: 'var(--bg-soft)', color: 'black', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <RefreshCw size={13} /> รีเฟรช
               </button>
             </div>

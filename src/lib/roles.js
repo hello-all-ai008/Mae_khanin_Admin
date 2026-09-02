@@ -47,12 +47,15 @@ const EVERY_ROLE = Object.values(ROLES);
 
 // Route path -> roles allowed to open it.
 export const ROUTE_ACCESS = {
+  '/dashboard': ADMIN_ONLY,
+  '/leaderboard': ADMIN_ONLY,
   '/events': ADMIN_ONLY,
   '/staff': ADMIN_ONLY,
   '/runners': ADMIN_ONLY,
   '/import': ADMIN_ONLY,
   '/bib-canvas': ADMIN_ONLY,
   '/database-flow': ADMIN_ONLY,
+  '/admin/users': ADMIN_ONLY,
   '/checkin': [ROLES.ADMIN, ROLES.CHECKIN_CREW],
   '/checkpoint': [ROLES.ADMIN, ROLES.MARSHAL],
   '/finish': [ROLES.ADMIN, ROLES.FINISH_JUDGE],

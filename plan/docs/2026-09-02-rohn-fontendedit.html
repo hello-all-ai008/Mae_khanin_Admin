@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สรุปการอัปเดต Frontend ประจำวันที่ 2026-09-02</title>
+    <style>
+        body {
+            font-family: 'Kanit', 'Sarabun', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #1e3a8a;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #4338ca;
+            margin-top: 25px;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .highlight {
+            background-color: #fef3c7;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .warning {
+            color: #b91c1c;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>สรุปการอัปเดต Frontend (2026-09-02)</h1>
+        
+        <h2>1. งานที่ดำเนินการเสร็จสิ้น (Work Accomplished)</h2>
+        <ul>
+            <li><strong>ปรับโครงสร้างเมนู:</strong> จัดกลุ่มเมนู "สรุปผล" ให้อยู่ในรูปแบบ Dropdown และย้ายไปต่อจาก "เครื่องมือระบบ" ในหน้า <code>Navbar.jsx</code></li>
+            <li><strong>จัดเรียงคอลัมน์ตาราง:</strong> ย้ายคอลัมน์ "จัดการ" และปุ่ม "พิมพ์ e-Slip" มาไว้ด้านหน้าสุดในตาราง <code>RunnersList.jsx</code> และ <code>OverallDashboard.jsx</code></li>
+            <li><strong>ปรับปรุง e-Slip:</strong> แยกคอมโพเนนต์ <code>ESlip.jsx</code> ออกมาต่างหาก รองรับขนาดหน้าจอมือถือ และเพิ่ม Media Query <code>@media print</code> เพื่อให้พิมพ์ผ่านเบราว์เซอร์ได้สวยงาม</li>
+            <li><strong>จัดการสีของระยะวิ่ง:</strong> เพิ่มคอลัมน์ <code>color</code> ลงในตาราง <code>categories</code> และเพิ่มช่องตั้งค่าสีใน <code>CategoriesSetup.jsx</code> โดยสีดังกล่าวจะไปแสดงที่แถบหัวตารางของ <code>LiveLeaderboard.jsx</code> อัตโนมัติ</li>
+            <li><strong>Rebranding เป็น "ROHN":</strong> เปลี่ยนชื่อระบบจาก TrailTime เป็น ROHN, ปรับโทนสีหลักเป็นโทนน้ำเงินเข้ม-ม่วง (รหัสสีพื้นฐาน: Deep Navy <code>#020b5e</code>, Purple <code>#8b2df6</code>, Indigo <code>#6366f1</code>, Slate Navy <code>#0f172a</code>) ตามรูปภาพอ้างอิง และเปลี่ยนโลโก้ทั้งหมดให้เป็นรูปภาพของ ROHN ใน <code>Navbar.jsx</code>, <code>ESlip.jsx</code> และ <code>StaffLogin.jsx</code></li>
+        </ul>
+
+        <h2>2. ข้อมูลจำลอง (Mock-up Data) ที่ถูกใช้งานอยู่</h2>
+        <ul>
+            <li><strong><span class="highlight">LiveLeaderboard.jsx</span>:</strong> มีการจำลองอาร์เรย์ <code>mockRunners</code> และ <code>mockSt</code> ขึ้นมาแสดงผลแทนที่ หากในระบบยังไม่มีนักวิ่งคนใดเข้าเส้นชัย (hasAnyFinish === false)</li>
+            <li><strong><span class="highlight">OverallDashboard.jsx</span>:</strong> ใช้ลอจิกเดียวกันในการแสดงผลข้อมูล <code>mockRunners</code> เพื่อให้แอดมินเห็นหน้าตา Dashboard ได้แม้การแข่งจะยังไม่เริ่ม</li>
+        </ul>
+
+        <h2>3. จุดที่ยังไม่สมบูรณ์ / การเชื่อมต่อ Backend ที่ขาดหาย (Missing Connections)</h2>
+        <ul>
+            <li><strong>สีใน OverallDashboard:</strong> หน้า Overall Dashboard ยังไม่ได้ถูกเขียนโค้ดให้ดึงข้อมูลตาราง <code>categories</code> มาทำสีหัวตาราง (มีแค่ใน LiveLeaderboard ที่ทำไปแล้ว)</li>
+            <li><strong>ระบบปริ้นท์ e-Slip แบบหลายใบ (Bulk Print):</strong> คำสั่งพิมพ์ตอนนี้เป็นการสั่ง <code>window.print()</code> แบบพื้นฐานสำหรับทีละบุคคล ยังไม่รองรับการ Gen PDF ผ่าน Backend รวดเดียวหลายๆ คน</li>
+            <li><strong>ระบบ Realtime (WebSocket):</strong> การอัปเดตข้อมูลนักวิ่งในหน้า Dashboard/Leaderboard ตอนนี้ใช้วิธีกดปุ่ม Refresh ธรรมดา ยังไม่ได้เปิดใช้งาน Supabase Realtime เพื่อให้ขยับเองสดๆ แบบไม่ต้องรีเฟรชเว็บ</li>
+            <li class="warning"><strong>พาธของโลโก้ (Image Paths):</strong> ปัจจุบันเรียกใช้รูปโลโก้ด้วยพาธ <code>/src/LOGO/...</code> ตรงๆ ซึ่งเมื่อทำการ Build ขึ้นโปรดักชั่น (Vite build) อาจเกิดปัญหาหาไฟล์ไม่เจอ (404 Error) แนะนำให้ย้ายโฟลเดอร์ LOGO ไปไว้ใน <code>public</code> หรือเปลี่ยนไปใช้คำสั่ง <code>import</code> ของ JS แทนครับ</li>
+        </ul>
+    </div>
+</body>
+</html>

@@ -107,6 +107,7 @@ export default function DatabaseFlow() {
                     string name "e.g., MKT10"
                     float distance_km
                     string unit "e.g., km"
+                    string color "e.g., #FF5733"
                 }
                 
                 LOCATIONS {
@@ -257,6 +258,7 @@ export default function DatabaseFlow() {
                   <tr><td><span className="code">name</span></td><td>VARCHAR</td><td>ชื่อระยะ (เช่น &quot;MKT10&quot;)</td></tr>
                   <tr><td><span className="code">distance_km</span></td><td>FLOAT</td><td>ระยะทาง (ตัวเลข)</td></tr>
                   <tr><td><span className="code">unit</span></td><td>VARCHAR</td><td>หน่วย (เช่น &quot;km&quot;)</td></tr>
+                  <tr><td><span className="code">color</span></td><td>VARCHAR</td><td>สีประจำระยะ (เช่น &quot;#FF5733&quot;)</td></tr>
               </tbody>
           </table>
 
