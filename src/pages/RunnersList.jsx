@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { assertWriteOk } from '../lib/supabaseResult';
+import { fetchAllRows } from '../lib/supabaseFetch';
 import { useRace } from '../context/RaceContext';
 import AdvancedTable from '../components/AdvancedTable';
 import EditRunnerModal from '../components/EditRunnerModal';
@@ -37,10 +38,19 @@ export default function RunnersList() {
     if (!selectedEventId) return;
     setLoading(true);
     try {
-      const { data: runData, error } = await supabase
-        .from('runners')
-        .select('*')
-        .eq('event_id', selectedEventId);
+      // PostgREST caps a single response at 1000 rows by default — page
+      // through the full table instead of silently truncating past that.
+      // `.order('id')` gives Postgres a deterministic sort so consecutive
+      // `.range()` pages can't overlap or skip a row (LIMIT/OFFSET without
+      // ORDER BY has no guaranteed row order between calls).
+      const { data: runData, error } = await fetchAllRows((from, to) =>
+        supabase
+          .from('runners')
+          .select('*')
+          .eq('event_id', selectedEventId)
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
 
       if (error) throw error;
       if (runData) {

@@ -28,8 +28,11 @@ const ROLE_OPTIONS = [
 
 export default function AdminUserManagement() {
   const { role } = useAuth();
-  const { eventId, addToast, showConfirm } = useRace();
-  
+  const { addToast, showConfirm } = useRace();
+
+  const [events, setEvents] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
+
   const [users, setUsers] = useState([]);
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +43,7 @@ export default function AdminUserManagement() {
   const [formData, setFormData] = useState({
     id: null,
     user_id: null,
+    event_id: null,
     name: '',
     role: 'MARSHAL',
     phone: '',
@@ -51,12 +55,37 @@ export default function AdminUserManagement() {
 
   const [showPin, setShowPin] = useState(false);
 
+  // Fetch events for the "เลือกงานวิ่ง" selector, same pattern as
+  // RunnersList.jsx — default to the most recent event.
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const { data, error } = await supabase.from('events').select('id, name').order('start_date', { ascending: false });
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setEvents(data);
+          setSelectedEventId(data[0].id);
+        } else {
+          // No events to select — fetchUsers() waits on selectedEventId
+          // and will never run, so stop the initial spinner here instead
+          // of leaving the table loading forever.
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Fetch events error:', err);
+        addToast('โหลดรายชื่องานวิ่งไม่สำเร็จ: ' + err.message, true);
+        setLoading(false);
+      }
+    }
+    fetchEvents();
+  }, []);
+
   useEffect(() => {
     if (role === 'ADMIN') {
       fetchUsers();
-      if (eventId) fetchStations();
+      if (selectedEventId) fetchStations();
     }
-  }, [eventId, role]);
+  }, [selectedEventId, role]);
 
   if (role !== 'ADMIN') {
     return <div className="card card-pad" style={{ marginTop: '20px', textAlign: 'center', color: 'var(--warn)' }}>Access Denied: Admins Only</div>;
@@ -67,7 +96,7 @@ export default function AdminUserManagement() {
       const { data } = await supabase
         .from('stations')
         .select('id, name, type')
-        .eq('event_id', eventId)
+        .eq('event_id', selectedEventId)
         .order('sequence_order', { ascending: true });
       setStations(data || []);
     } catch (err) {
@@ -76,11 +105,15 @@ export default function AdminUserManagement() {
   };
 
   const fetchUsers = async () => {
+    // No event_id param means no server-side filter at all — the Edge
+    // Function would return every staff row from every event. Wait for a
+    // real selection instead of flashing an unfiltered, cross-event list.
+    if (!selectedEventId) return;
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('admin-user-mgmt', {
         method: 'GET',
-        query: eventId ? { event_id: eventId } : undefined
+        query: { event_id: selectedEventId }
       });
 
       if (error) throw error;
@@ -111,6 +144,11 @@ export default function AdminUserManagement() {
     setFormData({
       id: user.id,
       user_id: user.user_id,
+      // Keep the staff member's own event, independent of whatever the
+      // header's "เลือกงานวิ่ง" dropdown currently shows — editing a
+      // phone number or role must not silently move them to a different
+      // event just because someone switched the dropdown in between.
+      event_id: user.event_id || null,
       name: user.name || '',
       role: user.role || 'MARSHAL',
       phone: user.phone || '',
@@ -126,6 +164,7 @@ export default function AdminUserManagement() {
     setFormData({
       id: null,
       user_id: null,
+      event_id: null,
       name: '',
       role: 'MARSHAL',
       phone: '',
@@ -157,7 +196,11 @@ export default function AdminUserManagement() {
     setIsSaving(true);
     
     try {
-      const payload = { ...formData, event_id: eventId };
+      // New staff belong to the event currently picked in the header
+      // dropdown. Editing an existing staff member keeps their own
+      // event_id (set in handleEdit) — the dropdown is just for browsing
+      // the list, not for silently reassigning whoever you're editing.
+      const payload = { ...formData, event_id: formData.id ? formData.event_id : selectedEventId };
 
       if (formData.id) {
         // Update existing
@@ -290,12 +333,28 @@ export default function AdminUserManagement() {
 
   return (
     <div className="page active">
-      <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1>จัดการ User (Admin)</h1>
           <p>เพิ่ม ลบ แก้ไข ผู้ใช้งานระบบและจัดการรหัส PIN</p>
         </div>
-        <div className="badge b-fin"><span className="dot"></span> ระบบผู้ดูแล (Admin)</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--ink)' }}>เลือกงานวิ่ง:</label>
+            <select
+              className="search"
+              value={selectedEventId}
+              onChange={(e) => setSelectedEventId(e.target.value)}
+              style={{ minWidth: '180px', padding: '6px 10px', fontSize: '0.85rem' }}
+            >
+              {events.length === 0 && <option value="">ไม่มีงานวิ่งในระบบ</option>}
+              {events.map(ev => (
+                <option key={ev.id} value={ev.id}>{ev.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="badge b-fin"><span className="dot"></span> ระบบผู้ดูแล (Admin)</div>
+        </div>
       </div>
 
       <div className="event-setup-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(0, 1.6fr)', gap: '20px', alignItems: 'start' }}>
