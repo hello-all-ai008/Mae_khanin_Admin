@@ -1,5 +1,6 @@
 import React from 'react';
 import './ESlip.css';
+import logoRohnFull from '../LOGO/logo-rohn-full.png';
 
 export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
   if (!runner) return null;
@@ -26,7 +27,7 @@ export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
         Printed: {printTime}
       </div>
       <div className="head" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <img src="/src/LOGO/logo-rohn-full.png" alt="ROHN Logo" style={{ height: '90px', width: 'auto', marginBottom: '8px' }} />
+        <img src={logoRohnFull} alt="ROHN Logo" style={{ height: '90px', width: 'auto', marginBottom: '8px' }} />
         <span style={{ fontSize: '13px' }}>Official e-Slip</span>
       </div>
 

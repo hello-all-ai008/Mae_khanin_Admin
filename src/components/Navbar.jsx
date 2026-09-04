@@ -1,5 +1,7 @@
 import { Fragment, useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import logoRohnPic from '../LOGO/logo-rohn-pic.png';
+import logoRohnLabel from '../LOGO/logo-rohn-label.png';
 import {
   Users,
   UserPlus,
@@ -98,8 +100,8 @@ export default function Navbar() {
       <nav className="navbar">
         <div className="navbar-left">
           <div className="logo">
-            <img src="/src/LOGO/logo-rohn-pic.png" alt="ROHN" style={{ height: '100px', width: 'auto', zIndex: 2 }} />
-            <img src="/src/LOGO/logo-rohn-label.png" alt="ROHN Label" style={{ height: '75px', width: 'auto', marginLeft: '-16px' }} className="hide-mobile" />
+            <img src={logoRohnPic} alt="ROHN" style={{ height: '100px', width: 'auto', zIndex: 2 }} />
+            <img src={logoRohnLabel} alt="ROHN Label" style={{ height: '75px', width: 'auto', marginLeft: '-16px' }} className="hide-mobile" />
           </div>
         </div>
 
