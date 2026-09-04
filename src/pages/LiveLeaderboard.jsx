@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useRace } from '../context/RaceContext';
 import { RefreshCw, Trophy, ArrowLeft, Printer } from 'lucide-react';
@@ -8,6 +8,13 @@ import ESlipModal from '../components/ESlipModal';
 export default function LiveLeaderboard() {
   const { addToast } = useRace();
   const navigate = useNavigate();
+  // addToast comes from RaceContext and gets a new identity on every context
+  // render — read it via ref so fetchData's own identity stays stable and
+  // doesn't re-trigger the fetch/realtime-resubscribe effects below.
+  const addToastRef = useRef(addToast);
+  useEffect(() => {
+    addToastRef.current = addToast;
+  });
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
   
@@ -18,6 +25,13 @@ export default function LiveLeaderboard() {
   const [categories, setCategories] = useState([]);
   const [selectedDistance, setSelectedDistance] = useState('ALL');
   const [selectedSlip, setSelectedSlip] = useState(null);
+  // Read inside fetchData without making fetchData's identity depend on
+  // selectedDistance — a tab click must filter client-side only, never
+  // trigger a network re-fetch or a realtime channel re-subscribe.
+  const selectedDistanceRef = useRef(selectedDistance);
+  useEffect(() => {
+    selectedDistanceRef.current = selectedDistance;
+  }, [selectedDistance]);
 
   useEffect(() => {
     async function fetchEvents() {
@@ -30,9 +44,9 @@ export default function LiveLeaderboard() {
     fetchEvents();
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!selectedEventId) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const { data: stData, error: stError } = await supabase
         .from('stations')
@@ -99,21 +113,58 @@ export default function LiveLeaderboard() {
       // Extract unique distances
       const uniqueDist = [...new Set(actualRunners.map(r => r.cat).filter(Boolean))].sort();
       setDistances(uniqueDist);
-      if (selectedDistance !== 'ALL' && !uniqueDist.includes(selectedDistance)) {
+      if (selectedDistanceRef.current !== 'ALL' && !uniqueDist.includes(selectedDistanceRef.current)) {
         setSelectedDistance('ALL');
       }
 
     } catch (err) {
       console.error('Fetch leaderboard error:', err);
-      addToast(`ดึงข้อมูลไม่สำเร็จ: ${err.message}`, true);
+      addToastRef.current(`ดึงข้อมูลไม่สำเร็จ: ${err.message}`, true);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, [selectedEventId]);
 
   useEffect(() => {
     fetchData();
-  }, [selectedEventId]);
+  }, [fetchData]);
+
+  // Live update: any CP/finish scan writes to public.runners (from any
+  // station device). Re-pull silently instead of forcing a manual refresh.
+  // Debounced so a burst of scans coalesces into one re-fetch.
+  useEffect(() => {
+    if (!selectedEventId) return undefined;
+    let debounceTimer = null;
+    const scheduleRefetch = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchData(true), 400);
+    };
+    // INSERT/UPDATE only: DELETE isn't tracked reliably without
+    // REPLICA IDENTITY FULL on runners, and CP/finish scans are always
+    // UPDATEs anyway — a deleted (DQ'd) runner just needs a manual refresh.
+    const channel = supabase
+      .channel(`runners-live-leaderboard-${selectedEventId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'runners', filter: `event_id=eq.${selectedEventId}` },
+        scheduleRefetch
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'runners', filter: `event_id=eq.${selectedEventId}` },
+        scheduleRefetch
+      )
+      .subscribe((status, err) => {
+        if (err || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('Realtime subscribe error (leaderboard):', status, err);
+        }
+      });
+
+    return () => {
+      clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [selectedEventId, fetchData]);
 
   // Group and rank runners
   const leaderboards = useMemo(() => {
@@ -272,7 +323,7 @@ export default function LiveLeaderboard() {
           </select>
           <button
             className="btn btn-sm"
-            onClick={fetchData}
+            onClick={() => fetchData()}
             disabled={loading}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#fff', color: 'var(--ink)', border: '1px solid var(--line)', borderRadius: '8px', fontSize: '14px', fontWeight: 600 }}
           >
