@@ -60,22 +60,34 @@ export default function LiveLeaderboard() {
       if (!hasAnyFinish) {
         // MOCK DATA for Demo
         const baseTime = Date.now() - 3600000 * 4;
+        let s1_id = 's1', s2_id = 's2', s3_id = 's3', s4_id = 's4';
         const mockSt = [
           { id: 's1', type: 'START', name: 'Start', sequence_order: 1 },
           { id: 's2', type: 'CP', name: 'A1', sequence_order: 2 },
-          { id: 's3', type: 'FINISH', name: 'Finish', sequence_order: 3 },
+          { id: 's3', type: 'CP', name: 'A2', sequence_order: 3 },
+          { id: 's4', type: 'FINISH', name: 'Finish', sequence_order: 4 },
         ];
-        if (!stData || stData.length === 0) setStations(mockSt);
+        if (!stData || stData.length === 0) {
+          setStations(mockSt);
+        } else {
+          const stStart = stData.find(s => s.type === 'START');
+          const stCpList = stData.filter(s => s.type === 'CP').sort((a,b)=>a.sequence_order - b.sequence_order);
+          const stFinish = stData.find(s => s.type === 'FINISH');
+          if (stStart) s1_id = stStart.id;
+          if (stCpList.length > 0) s2_id = stCpList[0].id;
+          if (stCpList.length > 1) s3_id = stCpList[1].id;
+          if (stFinish) s4_id = stFinish.id;
+        }
 
         const mockRunners = [
-          { id: 'm1', bib: '1001', name: 'Somchai Fast', gender: 'Male', age_group: '20-29', cat: '10 KM', registration_status: 'CHECKED_IN', cps: { s1: baseTime, s2: baseTime + 1800000 }, finish: baseTime + 3600000 },
-          { id: 'm2', bib: '1002', name: 'Wandee Run', gender: 'Female', age_group: '20-29', cat: '10 KM', registration_status: 'CHECKED_IN', cps: { s1: baseTime, s2: baseTime + 1900000 }, finish: baseTime + 3700000 },
-          { id: 'm3', bib: '1003', name: 'Mike T', gender: 'Male', age_group: '30-39', cat: '5 KM', registration_status: 'CHECKED_IN', cps: { s1: baseTime }, finish: baseTime + 1500000 },
-          { id: 'm4', bib: '1004', name: 'Suda Trail', gender: 'Female', age_group: '30-39', cat: '5 KM', registration_status: 'CHECKED_IN', cps: { s1: baseTime }, finish: baseTime + 1600000 },
-          { id: 'm5', bib: '1005', name: 'Mana Power', gender: 'Male', age_group: '40-49', cat: '10 KM', registration_status: 'CHECKED_IN', cps: { s1: baseTime, s2: baseTime + 2000000 }, finish: null },
+          { id: 'm1', bib: '1001', name: 'Somchai Fast', gender: 'Male', age_group: '20-29', cat: '10 KM', registration_status: 'CHECKED_IN', cps: { [s1_id]: baseTime, [s2_id]: baseTime + 1800000, [s3_id]: baseTime + 3000000 }, finish: baseTime + 3600000 },
+          { id: 'm2', bib: '1002', name: 'Wandee Run', gender: 'Female', age_group: '20-29', cat: '10 KM', registration_status: 'CHECKED_IN', cps: { [s1_id]: baseTime, [s2_id]: baseTime + 1900000, [s3_id]: baseTime + 3100000 }, finish: baseTime + 3700000 },
+          { id: 'm3', bib: '1003', name: 'Mike T', gender: 'Male', age_group: '30-39', cat: '5 KM', registration_status: 'CHECKED_IN', cps: { [s1_id]: baseTime }, finish: baseTime + 1500000 },
+          { id: 'm4', bib: '1004', name: 'Suda Trail', gender: 'Female', age_group: '30-39', cat: '5 KM', registration_status: 'CHECKED_IN', cps: { [s1_id]: baseTime }, finish: baseTime + 1600000 },
+          { id: 'm5', bib: '1005', name: 'Mana Power', gender: 'Male', age_group: '40-49', cat: '10 KM', registration_status: 'CHECKED_IN', cps: { [s1_id]: baseTime, [s2_id]: baseTime + 2000000 }, finish: null },
           { id: 'm6', bib: '1006', name: 'John Doe', gender: 'Male', age_group: '20-29', cat: '10 KM', registration_status: 'CHECKED_IN', cps: {}, finish: null },
-          { id: 'm7', bib: '1007', name: 'Sarah C', gender: 'Female', age_group: '20-29', cat: '10 KM', registration_status: 'CHECKED_IN', cps: { s1: baseTime }, finish: baseTime + 3800000 },
-          { id: 'm8', bib: '1008', name: 'Alex B', gender: 'Male', age_group: '20-29', cat: '10 KM', registration_status: 'CHECKED_IN', cps: { s1: baseTime }, finish: baseTime + 3500000 },
+          { id: 'm7', bib: '1007', name: 'Sarah C', gender: 'Female', age_group: '20-29', cat: '10 KM', registration_status: 'CHECKED_IN', cps: { [s1_id]: baseTime }, finish: baseTime + 3800000 },
+          { id: 'm8', bib: '1008', name: 'Alex B', gender: 'Male', age_group: '20-29', cat: '10 KM', registration_status: 'CHECKED_IN', cps: { [s1_id]: baseTime }, finish: baseTime + 3500000 },
           { id: 'm9', bib: '1009', name: 'Tiw Runner', gender: 'Male', age_group: '30-39', cat: '10 KM', registration_status: 'PRE_REGISTERED', cps: {}, finish: null },
         ];
         
@@ -354,6 +366,7 @@ export default function LiveLeaderboard() {
           runner={selectedSlip.runner} 
           overallRank="-" 
           catRank={selectedSlip.catRank} 
+          stations={stations}
           onClose={() => setSelectedSlip(null)} 
         />
       )}

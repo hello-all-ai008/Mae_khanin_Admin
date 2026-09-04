@@ -4,8 +4,6 @@
   border-radius: 14px;
   width: 100%;
   max-width: 360px;
-  max-height: 90vh;
-  overflow: auto;
   padding: 26px 26px 20px;
   font-family: var(--mono, monospace);
   font-size: 13px;

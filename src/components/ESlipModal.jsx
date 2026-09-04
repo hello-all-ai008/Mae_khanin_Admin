@@ -1,15 +1,15 @@
 import React from 'react';
 import ESlip from './ESlip';
 
-export default function ESlipModal({ runner, overallRank, catRank, onClose }) {
+export default function ESlipModal({ runner, overallRank, catRank, stations = [], onClose }) {
   if (!runner) return null;
 
   return (
-    <div className="modal-bg open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', width: '100%', maxWidth: '360px', margin: '0 auto', padding: '0 16px' }}>
+    <div className="modal-bg open" style={{ zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', overflow: 'hidden' }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', width: '100%', maxWidth: '340px', transform: 'scale(0.85)', marginTop: '20px' }}>
         
         {/* Render the ESlip component */}
-        <ESlip runner={runner} overallRank={overallRank} catRank={catRank} />
+        <ESlip runner={runner} overallRank={overallRank} catRank={catRank} stations={stations} />
         
         {/* Actions - hidden when printing */}
         <div style={{ display: 'flex', gap: '10px', width: '100%' }} className="no-print">

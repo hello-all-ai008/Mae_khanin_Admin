@@ -1,7 +1,7 @@
 import React from 'react';
 import './ESlip.css';
 
-export default function ESlip({ runner, overallRank, catRank }) {
+export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
   if (!runner) return null;
 
   const fmtTime = (ts) => ts ? new Date(ts).toTimeString().slice(0, 8) : '—';
@@ -15,8 +15,16 @@ export default function ESlip({ runner, overallRank, catRank }) {
     return `${h}:${m}:${ss}`;
   };
 
+  const printTime = new Date().toLocaleString('en-GB', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+
   return (
-    <div className="eslip">
+    <div className="eslip" style={{ position: 'relative' }}>
+      <div style={{ position: 'absolute', top: '12px', right: '16px', fontSize: '9px', color: 'var(--ink-2, #64748b)' }}>
+        Printed: {printTime}
+      </div>
       <div className="head" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <img src="/src/LOGO/logo-rohn-full.png" alt="ROHN Logo" style={{ height: '90px', width: 'auto', marginBottom: '8px' }} />
         <span style={{ fontSize: '13px' }}>Official e-Slip</span>
@@ -35,8 +43,8 @@ export default function ESlip({ runner, overallRank, catRank }) {
         <b>{runner.cat || '—'}</b>
       </div>
       <div className="row">
-        <span>Gender/Age</span>
-        <b>{runner.gender || '—'} · {runner.age || '—'}</b>
+        <span>Gender/Age Group</span>
+        <b>{runner.gender || '—'} · {runner.age_group || runner.ageGroup || runner.age || '—'}</b>
       </div>
 
       <div className="hr"></div>
@@ -50,12 +58,15 @@ export default function ESlip({ runner, overallRank, catRank }) {
         <span style={{ fontFamily: 'var(--mono)' }}>{fmtTime(runner.checkin)}</span>
       </div>
 
-      {runner.cps && Object.entries(runner.cps).map(([cp, ts]) => (
-        <div className="row" key={cp}>
-          <span>{cp}</span>
-          <span style={{ fontFamily: 'var(--mono)' }}>{fmtTime(ts)}</span>
-        </div>
-      ))}
+      {runner.cps && Object.entries(runner.cps).map(([cp, ts]) => {
+        const stationName = stations?.find(s => s.id === cp)?.name || cp;
+        return (
+          <div className="row" key={cp}>
+            <span>{stationName}</span>
+            <span style={{ fontFamily: 'var(--mono)' }}>{fmtTime(ts)}</span>
+          </div>
+        );
+      })}
 
       <div className="row">
         <span>Finish</span>
@@ -74,9 +85,11 @@ export default function ESlip({ runner, overallRank, catRank }) {
           </div>
         </div>
         <div style={{ background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
-          <div style={{ color: 'var(--ink-2, #64748b)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Chip Time</div>
+          <div style={{ color: 'var(--ink-2, #64748b)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Net Time (Start-Finish)</div>
           <div style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'var(--mono)', color: 'var(--start, #3b82f6)' }}>
-            {runner.finish && runner.checkin ? fmtDur(runner.finish - runner.checkin) : '—'}
+            {runner.finish && runner.cps && Object.keys(runner.cps).length > 0
+              ? fmtDur(runner.finish - Math.min(...Object.values(runner.cps))) 
+              : '—'}
           </div>
         </div>
       </div>
