@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useRace } from '../context/RaceContext';
 import AdvancedTable from '../components/AdvancedTable';
@@ -7,6 +7,13 @@ import { RefreshCw, Printer } from 'lucide-react';
 
 export default function OverallDashboard() {
   const { addToast } = useRace();
+  // addToast comes from RaceContext and gets a new identity on every context
+  // render — read it via ref so fetchData's own identity stays stable and
+  // doesn't re-trigger the fetch/realtime-resubscribe effects below.
+  const addToastRef = useRef(addToast);
+  useEffect(() => {
+    addToastRef.current = addToast;
+  });
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
   const [stations, setStations] = useState([]);
@@ -26,9 +33,9 @@ export default function OverallDashboard() {
     fetchEvents();
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!selectedEventId) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       // Fetch stations
       const { data: stData, error: stError } = await supabase
@@ -44,6 +51,7 @@ export default function OverallDashboard() {
         .from('runners')
         .select('*')
         .eq('event_id', selectedEventId);
+      if (runError) throw runError;
       let actualRunners = runData || [];
       const hasAnyFinish = actualRunners.some(r => r.finish);
 
@@ -88,15 +96,52 @@ export default function OverallDashboard() {
 
     } catch (err) {
       console.error('Fetch dashboard error:', err);
-      addToast(`ดึงข้อมูลไม่สำเร็จ: ${err.message}`, true);
+      addToastRef.current(`ดึงข้อมูลไม่สำเร็จ: ${err.message}`, true);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, [selectedEventId]);
 
   useEffect(() => {
     fetchData();
-  }, [selectedEventId]);
+  }, [fetchData]);
+
+  // Live update: any CP/finish scan writes to public.runners (from any
+  // station device). Re-pull silently instead of forcing a manual refresh.
+  // Debounced so a burst of scans coalesces into one re-fetch.
+  useEffect(() => {
+    if (!selectedEventId) return undefined;
+    let debounceTimer = null;
+    const scheduleRefetch = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchData(true), 400);
+    };
+    // INSERT/UPDATE only: DELETE isn't tracked reliably without
+    // REPLICA IDENTITY FULL on runners, and CP/finish scans are always
+    // UPDATEs anyway — a deleted (DQ'd) runner just needs a manual refresh.
+    const channel = supabase
+      .channel(`runners-live-dashboard-${selectedEventId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'runners', filter: `event_id=eq.${selectedEventId}` },
+        scheduleRefetch
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'runners', filter: `event_id=eq.${selectedEventId}` },
+        scheduleRefetch
+      )
+      .subscribe((status, err) => {
+        if (err || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('Realtime subscribe error (dashboard):', status, err);
+        }
+      });
+
+    return () => {
+      clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [selectedEventId, fetchData]);
 
   // Compute stats
   const stats = useMemo(() => {
@@ -263,7 +308,7 @@ export default function OverallDashboard() {
           </select>
           <button
             className="btn btn-sm"
-            onClick={fetchData}
+            onClick={() => fetchData()}
             disabled={loading}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#fff', color: 'var(--ink)', border: '1px solid var(--line)', borderRadius: '8px', fontSize: '14px', fontWeight: 600 }}
           >
