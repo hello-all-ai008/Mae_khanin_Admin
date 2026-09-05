@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
 import { isAuthError, writeFailureReason, writeErrorMessage } from '../lib/supabaseResult';
+import { fetchAllRows } from '../lib/supabaseFetch';
 
 const RaceContext = createContext();
 
@@ -364,10 +365,14 @@ export function RaceProvider({ children }) {
       // Step 3: Runners
       setPreloadProgress(75);
       setPreloadStatusText('กำลังดาวน์โหลดรายชื่อนักวิ่งทั้งหมด...');
-      const { data: rData, error: rError } = await supabase
-        .from('runners')
-        .select('*')
-        .eq('event_id', targetEventId);
+      const { data: rData, error: rError } = await fetchAllRows((from, to) =>
+        supabase
+          .from('runners')
+          .select('*')
+          .eq('event_id', targetEventId)
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
 
       if (!rError && rData) {
         const formatted = rData.map(r => {
@@ -635,10 +640,14 @@ export function RaceProvider({ children }) {
         });
 
         // 2. Fetch Runners
-        const { data: rData, error: rError } = await supabase
-          .from('runners')
-          .select('*')
-          .eq('event_id', selectedEventId);
+        const { data: rData, error: rError } = await fetchAllRows((from, to) =>
+          supabase
+            .from('runners')
+            .select('*')
+            .eq('event_id', selectedEventId)
+            .order('id', { ascending: true })
+            .range(from, to)
+        );
 
         if (!rError && rData) {
           const formatted = rData.map(r => {

@@ -163,8 +163,7 @@ export default function EditRunnerModal({ isOpen, onClose, runner, onSave, event
             <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 600 }}>สถานะการสมัคร</label>
             <select className="search" name="registration_status" value={formData.registration_status} onChange={handleChange} style={{ width: '100%', padding: '8px' }}>
               <option value="PRE_REGISTERED">PRE_REGISTERED (สมัครแล้ว/รอยืนยัน)</option>
-              <option value="CONFIRMED">CONFIRMED (ยืนยันแล้ว)</option>
-              <option value="CANCELLED">CANCELLED (ยกเลิก)</option>
+              <option value="CHECKED_IN">CHECKED_IN (เช็คอินแล้ว)</option>
             </select>
           </div>
 

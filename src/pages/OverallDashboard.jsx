@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { fetchAllRows } from '../lib/supabaseFetch';
 import { useRace } from '../context/RaceContext';
 import AdvancedTable from '../components/AdvancedTable';
 import ESlipModal from '../components/ESlipModal';
@@ -47,10 +48,14 @@ export default function OverallDashboard() {
       setStations(stData || []);
 
       // Fetch runners
-      const { data: runData, error: runError } = await supabase
-        .from('runners')
-        .select('*')
-        .eq('event_id', selectedEventId);
+      const { data: runData, error: runError } = await fetchAllRows((from, to) =>
+        supabase
+          .from('runners')
+          .select('*')
+          .eq('event_id', selectedEventId)
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
       if (runError) throw runError;
       let actualRunners = runData || [];
       const hasAnyFinish = actualRunners.some(r => r.finish);
