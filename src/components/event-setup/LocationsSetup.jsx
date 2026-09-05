@@ -107,17 +107,19 @@ export default function LocationsSetup({ eventId }) {
   };
 
   const columns = [
-    { key: 'name', label: 'ชื่อสถานที่' },
-    { key: 'latitude', label: 'Lat', defaultWidth: 100 },
-    { key: 'longitude', label: 'Lng', defaultWidth: 100 },
+    { key: 'name', label: 'ชื่อสถานที่', defaultWidth: 260 },
+    { key: 'latitude', label: 'Lat', defaultWidth: 180 },
+    { key: 'longitude', label: 'Lng', defaultWidth: 180 },
     {
       key: 'url',
       label: 'Google Maps',
+      defaultWidth: 200,
       render: (val) => val ? <a href={val} target="_blank" rel="noreferrer" style={{ color: 'var(--primary-dark)' }}>Link</a> : '-'
     },
     {
       key: 'actions',
       label: 'จัดการ',
+      defaultWidth: 200,
       align: 'center',
       render: (_, r) => (
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>

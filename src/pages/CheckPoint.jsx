@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
+import { RefreshCw, CheckCircle2, WifiOff } from 'lucide-react';
 import { useRace, CHECKPOINTS } from '../context/RaceContext';
 import LedBoard from '../components/LedBoard';
 import ScannerInput from '../components/ScannerInput';
 import PreloadDataCard from '../components/PreloadDataCard';
+import ScanSyncBadge from '../components/ScanSyncBadge';
 
 export default function CheckPoint() {
   const {
@@ -15,7 +17,9 @@ export default function CheckPoint() {
     processScan,
     scanLog,
     getCpName,
-    currentStaff
+    currentStaff,
+    pendingSyncQueue,
+    isOnline
   } = useRace();
   const [ledState, setLedState] = useState({ runner: null, message: '', warn: false });
   const [selectedCp, setSelectedCp] = useState('');
@@ -114,34 +118,87 @@ export default function CheckPoint() {
           <ScannerInput onScan={handleScan} />
           <p className="scan-hint">นักวิ่งต้องผ่าน Check-in ก่อน จึงจะบันทึกเวลาที่จุดนี้ได้</p>
           
-          <div className="card" style={{marginTop: '16px', overflow: 'auto'}}>
-            <table>
-              <thead>
-                <tr>
-                  <th style={{ width: '90px' }}>เวลา</th>
-                  <th style={{ width: '80px' }}>BIB</th>
-                  <th>ชื่อนักวิ่ง</th>
-                  <th style={{ width: '130px' }}>ผู้สแกน</th>
-                  <th style={{ textAlign: 'right', width: '80px' }}>สถานะ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentLog.map((log, i) => (
-                  <tr key={i}>
-                    <td className="mono" style={{width: '90px'}}>{new Date(log.time).toTimeString().slice(0,8)}</td>
-                    <td className="mono" style={{fontWeight: 600}}>{log.bib}</td>
-                    <td>{log.name}</td>
-                    <td style={{ fontSize: '12px', color: 'var(--ink-2)' }}>
-                      {log.operator ? `👤 ${log.operator}` : '—'}
-                    </td>
-                    <td style={{textAlign: 'right'}}>
-                      {log.ok ? <span style={{color: 'var(--ok)'}}>✓</span> : <span style={{color: 'var(--warn)'}}>✗ {log.msg}</span>}
-                    </td>
+          <div className="card" style={{ marginTop: '16px', overflow: 'hidden' }}>
+            {/* Real-time Database Status Header Bar */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '10px 16px',
+              background: 'var(--bg-soft)',
+              borderBottom: '1px solid var(--line)',
+              flexWrap: 'wrap',
+              gap: '8px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)' }}>
+                  ประวัติการสแกนล่าสุด ({getCpName(currentCpId)})
+                </span>
+                <span style={{ fontSize: '12px', color: 'var(--ink-2)' }}>
+                  ({recentLog.length} รายการ)
+                </span>
+              </div>
+
+              {/* Status Indicator */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {pendingSyncQueue.length > 0 ? (
+                  isOnline ? (
+                    <span className="db-sync-badge syncing" title="ระบบกำลังทยอยส่งข้อมูลขึ้น Database ในพื้นหลัง">
+                      <RefreshCw size={12} className="spin" />
+                      กำลังส่งไป Database ({pendingSyncQueue.length} รายการ)...
+                    </span>
+                  ) : (
+                    <span className="db-sync-badge offline" title="บันทึกลงในเครื่องเรียบร้อย จะส่งไป Database อัตโนมัติเมื่อมีเน็ต">
+                      <WifiOff size={12} />
+                      ออฟไลน์: บันทึกในเครื่อง ({pendingSyncQueue.length} รอส่ง)
+                    </span>
+                  )
+                ) : (
+                  <span className="db-sync-badge synced" title="ข้อมูลเชื่อมโยงคลาวด์ Database เรียบร้อย">
+                    <CheckCircle2 size={12} />
+                    Database: ข้อมูลตรงกัน 100%
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th style={{ width: '165px' }}>เวลา</th>
+                    <th style={{ width: '155px' }}>BIB</th>
+                    <th style={{ minWidth: '260px' }}>ชื่อนักวิ่ง</th>
+                    <th style={{ width: '200px' }}>ผู้สแกน</th>
+                    <th style={{ textAlign: 'center', width: '150px' }}>สแกน</th>
+                    <th style={{ textAlign: 'right', width: '220px' }}>ส่ง Database</th>
                   </tr>
-                ))}
-                {recentLog.length === 0 && <tr><td colSpan="5" className="empty">ยังไม่มีการสแกน</td></tr>}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {recentLog.map((log, i) => (
+                    <tr key={i}>
+                      <td className="mono" style={{ width: '165px' }}>{new Date(log.time).toTimeString().slice(0, 8)}</td>
+                      <td className="mono" style={{ width: '155px', fontWeight: 700, color: 'var(--ink)' }}>{log.bib}</td>
+                      <td style={{ minWidth: '260px', fontWeight: 500 }}>{log.name}</td>
+                      <td style={{ width: '200px', fontSize: '12px', color: 'var(--ink-2)' }}>
+                        {log.operator ? `👤 ${log.operator}` : '—'}
+                      </td>
+                      <td style={{ textAlign: 'center', width: '150px' }}>
+                        {log.ok ? (
+                          <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '13px' }}>✓</span>
+                        ) : (
+                          <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '13px' }}>✗</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right', width: '220px' }}>
+                        <ScanSyncBadge log={log} />
+                      </td>
+                    </tr>
+                  ))}
+                  {recentLog.length === 0 && <tr><td colSpan="6" className="empty">ยังไม่มีการสแกน</td></tr>}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
         

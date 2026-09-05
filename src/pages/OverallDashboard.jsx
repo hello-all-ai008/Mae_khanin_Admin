@@ -141,7 +141,7 @@ export default function OverallDashboard() {
       {
         key: 'print',
         label: 'พิมพ์',
-        defaultWidth: 70,
+        defaultWidth: 150,
         align: 'center',
         render: (_, r) => (
           <button className="btn btn-sm" onClick={() => setSelectedSlip(r)} title="พิมพ์ Slip" style={{ padding: '4px', background: 'transparent', border: 'none', color: 'var(--ink)' }}>
@@ -149,12 +149,12 @@ export default function OverallDashboard() {
           </button>
         )
       },
-      { key: 'name', label: 'Name', defaultWidth: 200 },
-      { key: 'bib', label: 'BIB', defaultWidth: 80, align: 'center' },
+      { key: 'name', label: 'Name', defaultWidth: 280 },
+      { key: 'bib', label: 'BIB', defaultWidth: 160, align: 'center' },
       {
         key: 'checkin',
         label: 'Check-In',
-        defaultWidth: 90,
+        defaultWidth: 170,
         align: 'center',
         render: (_, r) => {
           return (r.registration_status === 'CHECKED_IN' || r.checked_in_at)
@@ -168,7 +168,7 @@ export default function OverallDashboard() {
       cols.push({
         key: `st_${st.id}`,
         label: st.name,
-        defaultWidth: 110,
+        defaultWidth: 190,
         align: 'center',
         render: (_, r) => {
           if (st.type === 'FINISH') {
@@ -187,7 +187,7 @@ export default function OverallDashboard() {
     cols.push({
       key: 'total_time',
       label: 'เวลาสุทธิ',
-      defaultWidth: 100,
+      defaultWidth: 180,
       align: 'center',
       render: (_, r) => {
         const startSt = stations.find(s => s.type === 'START');
@@ -204,19 +204,19 @@ export default function OverallDashboard() {
       }
     });
 
-    cols.push({ key: 'age_group', label: 'Age Grp', defaultWidth: 100, align: 'center' });
+    cols.push({ key: 'age_group', label: 'Age Grp', defaultWidth: 180, align: 'center' });
 
     cols.push({
       key: 'grp_rank',
       label: 'Grp Rank',
-      defaultWidth: 90,
+      defaultWidth: 170,
       align: 'center',
       render: () => <span style={{ color: 'var(--line)' }}>-</span>
     });
     cols.push({
       key: 'overall',
       label: 'Overall',
-      defaultWidth: 90,
+      defaultWidth: 170,
       align: 'center',
       render: () => <span style={{ color: 'var(--line)' }}>-</span>
     });

@@ -1,4 +1,5 @@
 import { useRace } from '../context/RaceContext';
+import ScanSyncBadge from '../components/ScanSyncBadge';
 
 export default function ScanLog() {
   const { scanLog } = useRace();
@@ -14,41 +15,45 @@ export default function ScanLog() {
       <div className="page-head">
         <span className="eyebrow">Audit</span>
         <h1>Scan Log</h1>
-        <p>ประวัติการสแกนทั้งหมดทุกจุด เรียงจากล่าสุด — ใช้ตรวจสอบย้อนหลังกรณีมีข้อโต้แย้ง</p>
+        <p>ประวัติการสแกนทั้งหมดทุกจุด เรียงจากล่าสุด — พร้อมตรวจสอบสถานะการส่งข้อมูลขึ้น Database</p>
       </div>
       <div className="card" style={{overflow: 'auto'}}>
         <table>
           <thead>
             <tr>
-              <th>Time</th>
-              <th>Station</th>
-              <th>BIB</th>
-              <th>Name</th>
-              <th>Status</th>
-              <th>Note</th>
+              <th style={{ width: '220px' }}>Time</th>
+              <th style={{ width: '190px' }}>Station</th>
+              <th style={{ width: '155px' }}>BIB</th>
+              <th style={{ minWidth: '260px' }}>Name</th>
+              <th style={{ textAlign: 'center', width: '150px' }}>Status</th>
+              <th style={{ width: '180px' }}>Note</th>
+              <th style={{ textAlign: 'right', width: '210px' }}>Database</th>
             </tr>
           </thead>
           <tbody>
             {scanLog.map((log, i) => (
               <tr key={i}>
-                <td className="mono" style={{color: 'var(--ink-2)'}}>{fmtTimeFull(log.time)}</td>
-                <td style={{fontWeight: 500}}>{log.station}</td>
-                <td className="mono" style={{fontWeight: 600}}>{log.bib}</td>
-                <td>{log.name}</td>
-                <td>
+                <td className="mono" style={{ width: '220px', color: 'var(--ink-2)' }}>{fmtTimeFull(log.time)}</td>
+                <td style={{ width: '190px', fontWeight: 500 }}>{log.station}</td>
+                <td className="mono" style={{ width: '155px', fontWeight: 600 }}>{log.bib}</td>
+                <td style={{ minWidth: '260px' }}>{log.name}</td>
+                <td style={{ textAlign: 'center', width: '150px' }}>
                   {log.ok ? 
                     <span style={{color: 'var(--ok)', fontWeight: 600}}>OK</span> : 
                     <span style={{color: 'var(--warn)', fontWeight: 600}}>ERR</span>
                   }
                 </td>
-                <td style={{color: 'var(--ink-2)', fontSize: '13px'}}>{log.msg || '—'}</td>
+                <td style={{ width: '180px', color: 'var(--ink-2)', fontSize: '13px' }}>{log.msg || '—'}</td>
+                <td style={{ textAlign: 'right', width: '210px' }}>
+                  <ScanSyncBadge log={log} />
+                </td>
               </tr>
             ))}
-            {scanLog.length === 0 && <tr><td colSpan="6" className="empty">ยังไม่มีประวัติการสแกน</td></tr>}
+            {scanLog.length === 0 && <tr><td colSpan="7" className="empty">ยังไม่มีประวัติการสแกน</td></tr>}
           </tbody>
         </table>
       </div>
-      <div className="note">💡 เวอร์ชั่นนี้เป็น React แบบออฟไลน์ข้อมูลในหน่วยความจำ (รีเฟรชแล้วข้อมูลกลับเป็นค่าเริ่มต้น)</div>
+      <div className="note">💡 ระบบรองรับการทำงานออฟไลน์ เมื่อมีอินเทอร์เน็ตระบบจะส่งข้อมูลไปยัง Database อัตโนมัติ</div>
     </div>
   );
 }

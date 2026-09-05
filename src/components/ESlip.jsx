@@ -1,10 +1,24 @@
 import React from 'react';
 import './ESlip.css';
+import logoBaanPong from '../LOGO/logo-BaanPong.jpg';
+import logoMaekhaning from '../LOGO/logo-maekhaning.jpg';
+import logoRohn from '../LOGO/logo-rohn-full.png';
+import logoRohnLabel from '../LOGO/logo-rohn-label.png';
 
 export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
   if (!runner) return null;
 
   const fmtTime = (ts) => ts ? new Date(ts).toTimeString().slice(0, 8) : '—';
+
+  const fmtDate = (ts) => {
+    if (!ts) return '—';
+    try {
+      const d = new Date(ts);
+      return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch {
+      return '—';
+    }
+  };
 
   const fmtDur = (ms) => {
     if (ms == null) return '—';
@@ -26,8 +40,12 @@ export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
         Printed: {printTime}
       </div>
       <div className="head" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <img src="/src/LOGO/logo-rohn-full.png" alt="ROHN Logo" style={{ height: '90px', width: 'auto', marginBottom: '8px' }} />
-        <span style={{ fontSize: '13px' }}>Official e-Slip</span>
+        <img
+          src={logoBaanPong}
+          alt="Baan Pong Trail Logo"
+          style={{ height: '75px', maxWidth: '180px', width: 'auto', objectFit: 'contain', marginBottom: '8px' }}
+        />
+        <span style={{ fontSize: '13px', fontWeight: 600 }}>Official e-Slip</span>
       </div>
 
       <div className="row">
@@ -49,10 +67,6 @@ export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
 
       <div className="hr"></div>
 
-      <div className="row">
-        <span>Official Gun Start</span>
-        <span style={{ fontFamily: 'var(--mono)' }}>{runner.categoryStartTimeStr || fmtTime(runner.gunStartTime) || '—'}</span>
-      </div>
       <div className="row">
         <span>Check-in Scan</span>
         <span style={{ fontFamily: 'var(--mono)' }}>{fmtTime(runner.checkin)}</span>
@@ -77,18 +91,22 @@ export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', margin: '14px 0' }}>
         <div style={{ background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
-          <div style={{ color: 'var(--ink-2, #64748b)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Gun Time</div>
-          <div style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'var(--mono)' }}>
-            {runner.finish && (runner.gunStartTime || runner.checkin)
-              ? fmtDur(runner.finish - (runner.gunStartTime || runner.checkin))
-              : '—'}
+          <div style={{ color: 'var(--ink-2, #64748b)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Start date</div>
+          <div style={{ fontSize: '15px', fontWeight: 700, fontFamily: 'var(--mono)' }}>
+            {runner.start_date
+              ? fmtDate(runner.start_date)
+              : (runner.gunStartTime
+                  ? fmtDate(runner.gunStartTime)
+                  : (runner.cps && Object.keys(runner.cps).length > 0
+                      ? fmtDate(Math.min(...Object.values(runner.cps)))
+                      : (runner.checkin ? fmtDate(runner.checkin) : fmtDate(Date.now()))))}
           </div>
         </div>
         <div style={{ background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
           <div style={{ color: 'var(--ink-2, #64748b)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Net Time (Start-Finish)</div>
           <div style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'var(--mono)', color: 'var(--start, #3b82f6)' }}>
             {runner.finish && runner.cps && Object.keys(runner.cps).length > 0
-              ? fmtDur(runner.finish - Math.min(...Object.values(runner.cps))) 
+              ? fmtDur(runner.finish - Math.min(...Object.values(runner.cps)))
               : '—'}
           </div>
         </div>
@@ -105,7 +123,31 @@ export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
         </div>
       </div>
 
-      <div className="foot">Powered by ROHN System</div>
+      <div className="hr" style={{ marginTop: '14px', marginBottom: '12px' }}></div>
+
+      <div className="foot" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
+          <img
+            src={logoMaekhaning}
+            alt="Mae Khaning Logo"
+            style={{ height: '52px', maxWidth: '120px', width: 'auto', objectFit: 'contain', borderRadius: '4px' }}
+          />
+          <img
+            src={logoRohn}
+            alt="ROHN Logo"
+            style={{ height: '75px', maxWidth: '200px', width: 'auto', objectFit: 'contain' }}
+          />
+        </div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--ink-2, #64748b)', fontWeight: 600 }}>
+          <span>Timing System by</span>
+          <img 
+            src={logoRohnLabel} 
+            alt="ROHN" 
+            style={{ height: '32px', width: 'auto', objectFit: 'contain' }} 
+          />
+        </div>
+        <span style={{ fontSize: '10px', color: 'var(--ink-2, #64748b)', fontStyle: 'italic' }}>* Provisional Result ( Subject to change)</span>
+      </div>
     </div>
   );
 }

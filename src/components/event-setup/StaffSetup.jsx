@@ -321,6 +321,7 @@ export default function StaffSetup({ eventId }) {
     {
       key: 'name',
       label: 'ชื่อเจ้าหน้าที่ / ผู้สแกน',
+      defaultWidth: 300,
       render: (val, row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ 
@@ -351,11 +352,13 @@ export default function StaffSetup({ eventId }) {
     {
       key: 'role',
       label: 'บทบาท / หน้าที่',
+      defaultWidth: 240,
       render: (val) => getRoleBadge(val)
     },
     {
       key: 'event_id',
       label: 'การใช้งาน',
+      defaultWidth: 200,
       render: (val) => (
         <span style={{ fontSize: '12px', color: val ? '#0284c7' : '#059669', fontWeight: 500 }}>
           {val ? '📍 เฉพาะงานนี้' : '🌐 ใช้ได้ทุกงาน'}
@@ -365,6 +368,7 @@ export default function StaffSetup({ eventId }) {
     {
       key: 'status',
       label: 'สถานะ',
+      defaultWidth: 190,
       align: 'center',
       render: (val, row) => (
         <button
@@ -392,6 +396,7 @@ export default function StaffSetup({ eventId }) {
     {
       key: 'actions',
       label: 'จัดการ',
+      defaultWidth: 180,
       align: 'center',
       render: (_, row) => (
         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>

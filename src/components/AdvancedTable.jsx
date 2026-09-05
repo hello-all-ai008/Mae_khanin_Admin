@@ -4,6 +4,67 @@ import * as XLSX from 'xlsx';
 import { cn } from '../lib/utils';
 import './AdvancedTable.css';
 
+// Accurate text measurement helper
+const measureTextPx = (text) => {
+    if (text === null || text === undefined || text === '') return 0;
+    const str = String(text);
+    if (typeof document !== 'undefined') {
+        if (!measureTextPx.canvas) {
+            measureTextPx.canvas = document.createElement('canvas');
+            measureTextPx.ctx = measureTextPx.canvas.getContext('2d');
+        }
+        if (measureTextPx.ctx) {
+            measureTextPx.ctx.font = '14px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            return measureTextPx.ctx.measureText(str).width;
+        }
+    }
+    // Fallback: estimate based on character codes (Unicode/Thai ~12px, Latin/Numbers ~8.5px)
+    let width = 0;
+    for (let i = 0; i < str.length; i++) {
+        const code = str.charCodeAt(i);
+        width += code > 255 ? 12 : 8.5;
+    }
+    return width;
+};
+
+// คำนวณความกว้างแต่ละ Column: เท่ากับข้อมูลที่ยาวที่สุดของแต่ละ Column + เพิ่ม 80 px
+const calculateAutoColumnWidths = (cols, tableData) => {
+    return cols.reduce((acc, col) => {
+        // วัดขนาด Header Label + ไอคอนต่าง ๆ (Grip, Sort, Filter, Pin ~60px)
+        const headerTextWidth = measureTextPx(col.label || col.header || col.key || '') + 60;
+        let maxContentWidth = headerTextWidth;
+
+        if (tableData && tableData.length > 0) {
+            // สแกนข้อมูลเพื่อหาความยาวสูงสุด
+            const sample = tableData.length > 500 ? tableData.slice(0, 500) : tableData;
+            for (let i = 0; i < sample.length; i++) {
+                const row = sample[i];
+                const rawVal = row[col.key];
+                let contentStr = '';
+                if (typeof rawVal === 'object' && rawVal !== null) {
+                    contentStr = JSON.stringify(rawVal);
+                } else if (rawVal !== undefined && rawVal !== null) {
+                    contentStr = String(rawVal);
+                }
+                const w = measureTextPx(contentStr);
+                if (w > maxContentWidth) {
+                    maxContentWidth = w;
+                }
+            }
+        }
+
+        // ความกว้างของ Column = ข้อมูลที่ยาวที่สุด + 80px
+        const dynamicWidth = Math.ceil(maxContentWidth) + 80;
+
+        // ถ้ามีการกำหนด defaultWidth ดั้งเดิมไว้ ให้บวกเพิ่มอีก 80px ด้วยเช่นกัน
+        const baseWidth = col.defaultWidth ? (col.defaultWidth + 80) : 160;
+        const finalWidth = Math.max(dynamicWidth, baseWidth, 130);
+
+        acc[col.key] = finalWidth;
+        return acc;
+    }, {});
+};
+
 const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSize: initialPageSize = 50, externalCurrentPage = null, onPageChange = null, className = "", maxHeight = 'calc(100vh - 280px)' }) => {
     // Normalize columns
     const initialColumns = useMemo(() => (rawColumns || []).map((col, idx) => ({
@@ -24,7 +85,7 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
     // --- Column Order & Resize State ---
     const [columnOrder, setColumnOrder] = useState(() => initialColumns.map((_, i) => i));
     const [columnWidths, setColumnWidths] = useState(() =>
-        initialColumns.reduce((acc, col) => ({ ...acc, [col.key]: col.defaultWidth || 140 }), {})
+        calculateAutoColumnWidths(initialColumns, data)
     );
     const [frozenColumns, setFrozenColumns] = useState([]);
 
@@ -38,32 +99,7 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
     // Sync columnOrder and columnWidths when initialColumns or data changes
     useEffect(() => {
         setColumnOrder(initialColumns.map((_, i) => i));
-        
-        const charWidth = 8; // Approximate px per character
-        const paddingAndIcons = 90; // Padding + sort icon + filter icon
-        
-        const newWidths = initialColumns.reduce((acc, col) => {
-            let maxLen = String(col.label || '').length;
-            
-            if (data && data.length > 0) {
-                // Check sample size (first 100 rows) to avoid lag on huge datasets
-                const sampleData = data.slice(0, 100);
-                sampleData.forEach(row => {
-                    const contentStr = typeof row[col.key] === 'object' && row[col.key] !== null 
-                        ? JSON.stringify(row[col.key]) 
-                        : String(row[col.key] || '');
-                    if (contentStr.length > maxLen) {
-                        maxLen = contentStr.length;
-                    }
-                });
-            }
-            
-            // Limit width between 130px and 600px
-            const calcWidth = Math.min(Math.max(maxLen * charWidth + paddingAndIcons, 130), 600);
-            acc[col.key] = col.defaultWidth ? Math.max(col.defaultWidth, calcWidth) : calcWidth;
-            return acc;
-        }, {});
-        
+        const newWidths = calculateAutoColumnWidths(initialColumns, data);
         setColumnWidths(newWidths);
     }, [initialColumns.length, initialColumns.map(c => c.key).join('|'), data]);
 
@@ -424,7 +460,7 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
                 >
                     <colgroup>
                         {columns.map(col => (
-                            <col key={col.key} style={{ width: `${columnWidths[col.key] || 140}px` }} />
+                            <col key={col.key} style={{ width: `${columnWidths[col.key] || 160}px`, minWidth: `${columnWidths[col.key] || 160}px` }} />
                         ))}
                     </colgroup>
 
@@ -439,7 +475,8 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
                                         col.align === 'center' ? "text-center" : col.align === 'right' ? "text-right" : "text-left"
                                     )}
                                     style={{ 
-                                        width: `${columnWidths[col.key] || 140}px`, 
+                                        width: `${columnWidths[col.key] || 160}px`, 
+                                        minWidth: `${columnWidths[col.key] || 160}px`, 
                                         position: stickyStyles[col.key] ? 'sticky' : 'relative',
                                         left: stickyStyles[col.key]?.left,
                                         top: stickyStyles[col.key] ? 0 : undefined,
@@ -657,9 +694,12 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
                                                 col.isNumeric && "mono"
                                             )}
                                             style={{
-                                                width: `${columnWidths[col.key] || 140}px`,
-                                                maxWidth: `${columnWidths[col.key] || 140}px`,
+                                                width: `${columnWidths[col.key] || 160}px`,
+                                                minWidth: `${columnWidths[col.key] || 160}px`,
+                                                maxWidth: `${columnWidths[col.key] || 160}px`,
                                                 overflow: 'hidden',
+                                                whiteSpace: 'nowrap',
+                                                textOverflow: 'ellipsis',
                                                 position: stickyStyles[col.key] ? 'sticky' : undefined,
                                                 left: stickyStyles[col.key]?.left,
                                                 zIndex: stickyStyles[col.key] ? 20 : undefined,

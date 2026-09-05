@@ -203,11 +203,11 @@ export default function CheckpointsSetup({ eventId }) {
   const currentStationObj = stations.find(s => s.id === formData.station_id);
 
   const columns = [
-    { key: 'sequence_order', label: 'ลำดับ (Seq)', defaultWidth: 90, align: 'center' },
+    { key: 'sequence_order', label: 'ลำดับ (Seq)', defaultWidth: 170, align: 'center' },
     {
       key: 'station_name',
       label: 'ชื่อจุดตรวจ (Station)',
-      defaultWidth: 160,
+      defaultWidth: 240,
       render: (val, r) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontWeight: 600 }}>{val}</span>
@@ -222,7 +222,7 @@ export default function CheckpointsSetup({ eventId }) {
     {
       key: 'station_type',
       label: 'ประเภท',
-      defaultWidth: 100,
+      defaultWidth: 180,
       render: (val) => (
         <span className={`badge ${val === 'START' ? 'b-start' : val === 'FINISH' ? 'b-fin' : 'b-cp'}`}>
           {val}
@@ -232,7 +232,7 @@ export default function CheckpointsSetup({ eventId }) {
     {
       key: 'cutoff_time',
       label: 'เวลา Start / Cut-off',
-      defaultWidth: 170,
+      defaultWidth: 250,
       render: (val, r) => {
         if (!val) return <span style={{ color: 'var(--ink-2)' }}>—</span>;
         const d = new Date(val);
@@ -250,7 +250,7 @@ export default function CheckpointsSetup({ eventId }) {
     {
       key: 'actions',
       label: 'จัดการ',
-      defaultWidth: 170,
+      defaultWidth: 250,
       align: 'center',
       render: (_, r) => (
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>

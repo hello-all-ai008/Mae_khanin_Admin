@@ -123,12 +123,13 @@ export default function StationsSetup({ eventId }) {
   };
 
   const columns = [
-    { key: 'sequence_order', label: 'ลำดับ', defaultWidth: 80, align: 'center' },
-    { key: 'name', label: 'ชื่อจุด (Name)' },
-    { key: 'type', label: 'ประเภท (Type)' },
+    { key: 'sequence_order', label: 'ลำดับ', defaultWidth: 160, align: 'center' },
+    { key: 'name', label: 'ชื่อจุด (Name)', defaultWidth: 230 },
+    { key: 'type', label: 'ประเภท (Type)', defaultWidth: 200 },
     {
       key: 'actions',
       label: 'จัดการ',
+      defaultWidth: 200,
       align: 'center',
       render: (_, r) => (
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>

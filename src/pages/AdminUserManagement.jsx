@@ -233,6 +233,7 @@ export default function AdminUserManagement() {
     {
       key: 'name',
       label: 'ชื่อผู้ใช้งาน (Staff)',
+      defaultWidth: 280,
       render: (val, row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ 
@@ -250,10 +251,11 @@ export default function AdminUserManagement() {
         </div>
       )
     },
-    { key: 'role', label: 'บทบาท', render: (val) => getRoleBadge(val) },
+    { key: 'role', label: 'บทบาท', defaultWidth: 200, render: (val) => getRoleBadge(val) },
     {
       key: 'pin_status',
       label: 'รหัส PIN',
+      defaultWidth: 200,
       render: (_, row) => {
         const hasPin = row.event_pins && row.event_pins.length > 0;
         return (
@@ -267,6 +269,7 @@ export default function AdminUserManagement() {
       key: 'actions',
       label: 'จัดการ',
       align: 'center',
+      defaultWidth: 180,
       render: (_, row) => (
         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
           <button 

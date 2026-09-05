@@ -240,23 +240,23 @@ export default function ImportRunners() {
   };
 
   const tableColumns = [
-    { key: '_no', label: 'NO' },
-    { key: 'title', label: 'Title' },
-    { key: 'name', label: 'Name' },
-    { key: 'gender', label: 'Gender' },
-    { key: 'age_group', label: 'Age Group' },
-    { key: 'distance', label: 'Distance', defaultWidth: 150 },
-    { key: 'unit', label: 'Unit', defaultWidth: 150 },
-    { key: 'cat_name', label: 'Category', defaultWidth: 200 },
+    { key: '_no', label: 'NO', defaultWidth: 140 },
+    { key: 'title', label: 'Title', defaultWidth: 150 },
+    { key: 'name', label: 'Name', defaultWidth: 280 },
+    { key: 'gender', label: 'Gender', defaultWidth: 160 },
+    { key: 'age_group', label: 'Age Group', defaultWidth: 180 },
+    { key: 'distance', label: 'Distance', defaultWidth: 230 },
+    { key: 'unit', label: 'Unit', defaultWidth: 230 },
+    { key: 'cat_name', label: 'Category', defaultWidth: 280 },
     {
-      key: 'payment_status', label: 'Status', defaultWidth: 180, render: (val) => (
+      key: 'payment_status', label: 'Status', defaultWidth: 260, render: (val) => (
         <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600, background: val?.toLowerCase().includes('paid') ? '#dcfce7' : 'var(--border)', color: val?.toLowerCase().includes('paid') ? '#166534' : 'var(--ink)' }}>
           {val || 'N/A'}
         </span>
       )
     },
     {
-      key: 'bib', label: 'BIB', defaultWidth: 150, render: () => (
+      key: 'bib', label: 'BIB', defaultWidth: 230, render: () => (
         <span style={{ color: 'var(--warn)', fontWeight: 600, fontSize: '0.75rem' }}>NULL</span>
       )
     }

@@ -116,7 +116,7 @@ export default function CategoriesSetup({ eventId }) {
     {
       key: 'name',
       label: 'ชื่อระยะ (Name)',
-      defaultWidth: 160,
+      defaultWidth: 240,
       render: (val, r) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontWeight: 600 }}>{val}</span>
@@ -128,12 +128,12 @@ export default function CategoriesSetup({ eventId }) {
         </div>
       )
     },
-    { key: 'distance_km', label: 'ระยะทาง', defaultWidth: 120 },
-    { key: 'unit', label: 'หน่วย', defaultWidth: 100 },
+    { key: 'distance_km', label: 'ระยะทาง', defaultWidth: 200 },
+    { key: 'unit', label: 'หน่วย', defaultWidth: 180 },
     { 
       key: 'color', 
       label: 'สีประจำระยะ', 
-      defaultWidth: 130,
+      defaultWidth: 210,
       render: (val) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '20px', height: '20px', borderRadius: '4px', background: val || '#3b82f6', border: '1px solid var(--line)' }}></div>
@@ -144,7 +144,7 @@ export default function CategoriesSetup({ eventId }) {
     {
       key: 'actions',
       label: 'จัดการ',
-      defaultWidth: 170,
+      defaultWidth: 250,
       align: 'center',
       render: (_, r) => (
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>

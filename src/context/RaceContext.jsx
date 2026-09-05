@@ -86,7 +86,21 @@ export function RaceProvider({ children }) {
   const [categories, setCategories] = useState([]);
   const [runners, setRunners] = useState([]);
   const [checkpoints, setCheckpoints] = useState(CHECKPOINTS);
-  const [scanLog, setScanLog] = useState([]);
+  const [scanLog, setScanLog] = useState(() => {
+    try {
+      const saved = localStorage.getItem('trail_scan_log');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('trail_scan_log', JSON.stringify(scanLog.slice(0, 100)));
+    } catch {}
+  }, [scanLog]);
+
   const [loadingRunners, setLoadingRunners] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
   const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: '', message: '', resolve: null });
@@ -110,6 +124,7 @@ export function RaceProvider({ children }) {
     }
   });
   const [isSyncingQueue, setIsSyncingQueue] = useState(false);
+  const [currentlySyncingId, setCurrentlySyncingId] = useState(null);
   const isProcessingQueueRef = useRef(false);
 
   useEffect(() => {
@@ -449,6 +464,7 @@ export function RaceProvider({ children }) {
 
     try {
       const item = currentQueue[0];
+      setCurrentlySyncingId(item.id);
       let uploadSuccess = false;
 
       try {
@@ -506,6 +522,7 @@ export function RaceProvider({ children }) {
         await new Promise(r => setTimeout(r, 2500));
       }
     } finally {
+      setCurrentlySyncingId(null);
       isProcessingQueueRef.current = false;
       // Trigger next item with slight delay (40ms) to ensure UI thread remains buttery smooth
       setTimeout(() => {
@@ -780,17 +797,18 @@ export function RaceProvider({ children }) {
         addToast(`BIB ${r.bib} เช็คอินไปแล้ว`, true);
         addLog({ time: now, station: 'Check-in', bib, name: r.name, ok: false, msg: 'ซ้ำ', operator });
       } else {
+        const syncId = 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
         const updated = { ...r, checkin: now, registration_status: 'CHECKED_IN', checked_in_by: operator };
         updateRunner(updated);
         result.success = true;
         result.runner = updated;
         addToast(`✓ Check-in สำเร็จ — BIB ${r.bib} ${r.name}`);
-        addLog({ time: now, station: 'Check-in', bib, name: r.name, ok: true, operator });
+        addLog({ time: now, station: 'Check-in', bib, name: r.name, ok: true, operator, syncId });
 
         // Push to asynchronous background sync queue (Zero delay / 0ms UI blocking)
         if (r.id) {
           enqueueSyncItem({
-            id: 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+            id: syncId,
             type: 'CHECKIN',
             runnerId: r.id,
             bib: r.bib,
@@ -813,17 +831,18 @@ export function RaceProvider({ children }) {
         addToast(`BIB ${r.bib} ผ่าน ${cpName} ไปแล้ว`, true);
         addLog({ time: now, station: cpName, bib, name: r.name, ok: false, msg: 'ซ้ำ', operator });
       } else {
+        const syncId = 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
         const updated = { ...r, cps: { ...(r.cps || {}), [stationId]: now } };
         updateRunner(updated);
         result.success = true;
         result.runner = updated;
         addToast(`✓ ${cpName} — BIB ${r.bib} ${r.name}`);
-        addLog({ time: now, station: cpName, bib, name: r.name, ok: true, operator });
+        addLog({ time: now, station: cpName, bib, name: r.name, ok: true, operator, syncId });
 
         // Push to asynchronous background sync queue (Zero delay / 0ms UI blocking)
         if (r.id) {
           enqueueSyncItem({
-            id: 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+            id: syncId,
             type: 'CP',
             runnerId: r.id,
             bib: r.bib,
@@ -846,17 +865,18 @@ export function RaceProvider({ children }) {
         addToast(`BIB ${r.bib} เข้าเส้นชัยแล้ว (ยึดเวลาแรก)`, true);
         addLog({ time: now, station: 'Finish', bib, name: r.name, ok: false, msg: 'ซ้ำ', operator });
       } else {
+        const syncId = 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
         const updated = { ...r, finish: now };
         updateRunner(updated);
         result.success = true;
         result.runner = updated;
         addToast(`🏁 Finish! BIB ${r.bib} ${r.name}`);
-        addLog({ time: now, station: 'Finish', bib, name: r.name, ok: true, operator });
+        addLog({ time: now, station: 'Finish', bib, name: r.name, ok: true, operator, syncId });
 
         // Push to asynchronous background sync queue (Zero delay / 0ms UI blocking)
         if (r.id) {
           enqueueSyncItem({
-            id: 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+            id: syncId,
             type: 'FINISH',
             runnerId: r.id,
             bib: r.bib,
@@ -918,6 +938,7 @@ export function RaceProvider({ children }) {
       lastSyncedTime,
       pendingSyncQueue,
       isSyncingQueue,
+      currentlySyncingId,
       preloadEventData,
       syncPendingQueue,
       clearPendingSyncQueue

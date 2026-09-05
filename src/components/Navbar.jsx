@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Users,
@@ -83,6 +83,18 @@ export default function Navbar() {
   const [isOverviewDropdownOpen, setIsOverviewDropdownOpen] = useState(false);
   const [isSummaryDropdownOpen, setIsSummaryDropdownOpen] = useState(false);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.nav-dropdown-container')) {
+        setIsSummaryDropdownOpen(false);
+        setIsToolsDropdownOpen(false);
+        setIsOverviewDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const toggleMenu = () => {
     setIsMobileMenuOpen(prev => !prev);
   };
@@ -110,19 +122,21 @@ export default function Navbar() {
               {index > 0 && <div className="nav-divider"></div>}
               {group.id === 'summary' ? (
                 <div
-                  className="nav-group-horizontal"
+                  className="nav-group-horizontal nav-dropdown-container"
                   style={{ position: 'relative' }}
-                  onMouseEnter={() => setIsSummaryDropdownOpen(true)}
-                  onMouseLeave={() => setIsSummaryDropdownOpen(false)}
                 >
                   <div
                     className={`nav-item-h ${isSummaryDropdownOpen ? 'active' : ''}`}
                     style={{ cursor: 'pointer' }}
-                    onClick={() => setIsSummaryDropdownOpen(!isSummaryDropdownOpen)}
+                    onClick={() => {
+                      setIsSummaryDropdownOpen(prev => !prev);
+                      setIsToolsDropdownOpen(false);
+                      setIsOverviewDropdownOpen(false);
+                    }}
                   >
                     <LayoutDashboard size={16} />
                     <span className="label">สรุปผล</span>
-                    <ChevronDown size={14} />
+                    <ChevronDown size={14} style={{ transform: isSummaryDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                   </div>
                   {isSummaryDropdownOpen && (
                     <div style={{
@@ -142,19 +156,21 @@ export default function Navbar() {
                 </div>
               ) : group.id === 'tools' ? (
                 <div
-                  className="nav-group-horizontal"
+                  className="nav-group-horizontal nav-dropdown-container"
                   style={{ position: 'relative' }}
-                  onMouseEnter={() => setIsToolsDropdownOpen(true)}
-                  onMouseLeave={() => setIsToolsDropdownOpen(false)}
                 >
                   <div
                     className={`nav-item-h ${isToolsDropdownOpen ? 'active' : ''}`}
                     style={{ cursor: 'pointer' }}
-                    onClick={() => setIsToolsDropdownOpen(!isToolsDropdownOpen)}
+                    onClick={() => {
+                      setIsToolsDropdownOpen(prev => !prev);
+                      setIsSummaryDropdownOpen(false);
+                      setIsOverviewDropdownOpen(false);
+                    }}
                   >
                     <Database size={16} />
                     <span className="label">เครื่องมือระบบ</span>
-                    <ChevronDown size={14} />
+                    <ChevronDown size={14} style={{ transform: isToolsDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                   </div>
                   {isToolsDropdownOpen && (
                     <div style={{
@@ -174,19 +190,21 @@ export default function Navbar() {
                 </div>
               ) : group.id === 'overview' ? (
                 <div
-                  className="nav-group-horizontal"
+                  className="nav-group-horizontal nav-dropdown-container"
                   style={{ position: 'relative' }}
-                  onMouseEnter={() => setIsOverviewDropdownOpen(true)}
-                  onMouseLeave={() => setIsOverviewDropdownOpen(false)}
                 >
                   <div
                     className={`nav-item-h ${isOverviewDropdownOpen ? 'active' : ''}`}
                     style={{ cursor: 'pointer' }}
-                    onClick={() => setIsOverviewDropdownOpen(!isOverviewDropdownOpen)}
+                    onClick={() => {
+                      setIsOverviewDropdownOpen(prev => !prev);
+                      setIsSummaryDropdownOpen(false);
+                      setIsToolsDropdownOpen(false);
+                    }}
                   >
                     <CalendarDays size={16} />
                     <span className="label">จัดการข้อมูล</span>
-                    <ChevronDown size={14} />
+                    <ChevronDown size={14} style={{ transform: isOverviewDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                   </div>
                   {isOverviewDropdownOpen && (
                     <div style={{

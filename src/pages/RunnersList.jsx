@@ -138,7 +138,7 @@ export default function RunnersList() {
       key: 'actions',
       label: 'จัดการ',
       align: 'center',
-      defaultWidth: 120,
+      defaultWidth: 200,
       render: (_, r) => (
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
           <button className="btn btn-sm" onClick={() => handleEdit(r)} style={{ padding: '2px 8px', fontSize: '12px' }}>✏️</button>
@@ -146,16 +146,16 @@ export default function RunnersList() {
         </div>
       )
     },
-    { key: 'bib', label: 'BIB', defaultWidth: 120 },
-    { key: 'name', label: 'Name', defaultWidth: 250 },
-    { key: 'cat', label: 'Cat.', defaultWidth: 120 },
-    { key: 'gender', label: 'Gen.', defaultWidth: 100 },
-    { key: 'age', label: 'Age', defaultWidth: 100 },
-    { key: 'nat', label: 'Nat.', defaultWidth: 100 },
+    { key: 'bib', label: 'BIB', defaultWidth: 200 },
+    { key: 'name', label: 'Name', defaultWidth: 330 },
+    { key: 'cat', label: 'Cat.', defaultWidth: 200 },
+    { key: 'gender', label: 'Gen.', defaultWidth: 180 },
+    { key: 'age', label: 'Age', defaultWidth: 180 },
+    { key: 'nat', label: 'Nat.', defaultWidth: 180 },
     {
       key: 'status',
       label: 'Status',
-      defaultWidth: 150,
+      defaultWidth: 230,
       render: (_, r) => {
         const s = statusOf(r);
         return (
