@@ -5,6 +5,7 @@ import { useRace } from '../context/RaceContext';
 import { RefreshCw, Trophy, ArrowLeft, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ESlipModal from '../components/ESlipModal';
+import { fetchCategoryStartMap, attachGunStartTime } from '../lib/categoryStartTimes';
 
 export default function LiveLeaderboard() {
   const { addToast } = useRace();
@@ -63,6 +64,8 @@ export default function LiveLeaderboard() {
       if (catError) console.warn('Categories fetch error', catError);
       setCategories(catData || []);
 
+      const catStartMap = await fetchCategoryStartMap(supabase, catData || []);
+
       const { data: runData, error: runError } = await fetchAllRows((from, to) =>
         supabase
           .from('runners')
@@ -112,9 +115,11 @@ export default function LiveLeaderboard() {
         
         actualRunners = [...mockRunners, ...actualRunners];
       }
-      
+
+      actualRunners = actualRunners.map(r => attachGunStartTime(r, catStartMap));
+
       setRunners(actualRunners);
-      
+
       // Extract unique distances
       const uniqueDist = [...new Set(actualRunners.map(r => r.cat).filter(Boolean))].sort();
       setDistances(uniqueDist);
