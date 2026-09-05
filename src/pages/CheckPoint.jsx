@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { RefreshCw, CheckCircle2, WifiOff } from 'lucide-react';
+import { RefreshCw, CheckCircle2, WifiOff, Trash2 } from 'lucide-react';
 import { useRace, CHECKPOINTS } from '../context/RaceContext';
 import LedBoard from '../components/LedBoard';
 import ScannerInput from '../components/ScannerInput';
@@ -16,13 +16,26 @@ export default function CheckPoint() {
     checkpoints,
     processScan,
     scanLog,
+    clearStationScanLog,
+    showConfirm,
     getCpName,
     currentStaff,
     pendingSyncQueue,
     isOnline
   } = useRace();
   const [ledState, setLedState] = useState({ runner: null, message: '', warn: false });
-  const [selectedCp, setSelectedCp] = useState('');
+  const [selectedCp, setSelectedCp] = useState(() => {
+    return localStorage.getItem('trail_selected_cp') || '';
+  });
+
+  const handleSelectCp = (cpId) => {
+    setSelectedCp(cpId);
+    if (cpId) {
+      try {
+        localStorage.setItem('trail_selected_cp', cpId);
+      } catch {}
+    }
+  };
 
   // Keep selectedCp in sync with available checkpoints
   const activeCpList = useMemo(() => {
@@ -61,8 +74,26 @@ export default function CheckPoint() {
 
   const recentLog = useMemo(() => {
     const cpName = getCpName(currentCpId);
-    return scanLog.filter(log => log.station === cpName).slice(0, 5);
+    return scanLog.filter(log => (
+      log.station === cpName || 
+      log.stationId === currentCpId || 
+      log.station === currentCpId
+    )).slice(0, 10);
   }, [scanLog, currentCpId, getCpName]);
+
+  const handleClearRecentLog = async () => {
+    const cpName = getCpName(currentCpId);
+    const ok = await showConfirm(
+      `ยืนยันล้างประวัติการสแกน (${cpName}) บนหน้านี้?`,
+      'ประวัติการสแกนบนหน้าจอนี้จะถูกล้างออก โดยข้อมูลใน Database จะยังคงอยู่เหมือนเดิม 100%'
+    );
+    if (ok) {
+      clearStationScanLog(cpName);
+      if (currentCpId && currentCpId !== cpName) {
+        clearStationScanLog(currentCpId);
+      }
+    }
+  };
 
   return (
     <div className="page active">
@@ -109,7 +140,7 @@ export default function CheckPoint() {
                 🔒 {getCpName(currentCpId)}
               </span>
             ) : (
-              <select className="search" value={currentCpId} onChange={(e) => setSelectedCp(e.target.value)}>
+              <select className="search" value={currentCpId} onChange={(e) => handleSelectCp(e.target.value)}>
                 {activeCpList.map(cp => <option key={cp.id} value={cp.id}>{cp.name}</option>)}
               </select>
             )}
@@ -130,13 +161,35 @@ export default function CheckPoint() {
               flexWrap: 'wrap',
               gap: '8px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)' }}>
                   ประวัติการสแกนล่าสุด ({getCpName(currentCpId)})
                 </span>
                 <span style={{ fontSize: '12px', color: 'var(--ink-2)' }}>
                   ({recentLog.length} รายการ)
                 </span>
+                {recentLog.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearRecentLog}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      background: '#fff',
+                      border: '1px solid var(--line)',
+                      borderRadius: '6px',
+                      padding: '2px 8px',
+                      fontSize: '11px',
+                      color: 'var(--ink-2)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                    title="ล้างประวัติการสแกนบนหน้านี้ (ข้อมูลใน Database ไม่ได้รับผลกระทบ)"
+                  >
+                    <Trash2 size={12} /> ล้างประวัติ
+                  </button>
+                )}
               </div>
 
               {/* Status Indicator */}

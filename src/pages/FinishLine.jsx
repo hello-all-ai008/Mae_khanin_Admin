@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { RefreshCw, CheckCircle2, WifiOff } from 'lucide-react';
+import { RefreshCw, CheckCircle2, WifiOff, Trash2 } from 'lucide-react';
 import { useRace } from '../context/RaceContext';
 import LedBoard from '../components/LedBoard';
 import ScannerInput from '../components/ScannerInput';
@@ -15,6 +15,8 @@ export default function FinishLine() {
     loadingRunners, 
     processScan, 
     scanLog,
+    clearStationScanLog,
+    showConfirm,
     pendingSyncQueue,
     isOnline
   } = useRace();
@@ -50,8 +52,18 @@ export default function FinishLine() {
   };
 
   const recentLog = useMemo(() => {
-    return scanLog.filter(log => log.station === 'Finish').slice(0, 5);
+    return scanLog.filter(log => log.station === 'Finish').slice(0, 10);
   }, [scanLog]);
+
+  const handleClearRecentLog = async () => {
+    const ok = await showConfirm(
+      'ยืนยันล้างประวัติการสแกนเส้นชัยบนหน้านี้?',
+      'ประวัติการสแกนบนหน้าจอนี้จะถูกล้างออก โดยข้อมูลใน Database จะยังคงอยู่เหมือนเดิม 100%'
+    );
+    if (ok) {
+      clearStationScanLog('Finish');
+    }
+  };
 
   return (
     <div className="page active">
@@ -102,13 +114,35 @@ export default function FinishLine() {
               flexWrap: 'wrap',
               gap: '8px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)' }}>
                   ประวัติการสแกนล่าสุด (Finish)
                 </span>
                 <span style={{ fontSize: '12px', color: 'var(--ink-2)' }}>
                   ({recentLog.length} รายการ)
                 </span>
+                {recentLog.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearRecentLog}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      background: '#fff',
+                      border: '1px solid var(--line)',
+                      borderRadius: '6px',
+                      padding: '2px 8px',
+                      fontSize: '11px',
+                      color: 'var(--ink-2)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                    title="ล้างประวัติการสแกนบนหน้านี้ (ข้อมูลใน Database ไม่ได้รับผลกระทบ)"
+                  >
+                    <Trash2 size={12} /> ล้างประวัติ
+                  </button>
+                )}
               </div>
 
               {/* Status Indicator */}

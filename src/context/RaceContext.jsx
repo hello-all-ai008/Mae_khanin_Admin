@@ -96,15 +96,153 @@ export function RaceProvider({ children }) {
     }
   });
 
+  const [stationClearedAt, setStationClearedAt] = useState(() => {
+    try {
+      const saved = localStorage.getItem('trail_station_cleared_at');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
   useEffect(() => {
     try {
-      localStorage.setItem('trail_scan_log', JSON.stringify(scanLog.slice(0, 100)));
+      localStorage.setItem('trail_scan_log', JSON.stringify(scanLog.slice(0, 300)));
     } catch {}
   }, [scanLog]);
 
   const [loadingRunners, setLoadingRunners] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
   const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: '', message: '', resolve: null });
+
+  const addToast = useCallback((msg, err = false) => {
+    setToastMsg({ msg, err, id: Date.now() });
+    setTimeout(() => setToastMsg(null), 2600);
+  }, []);
+
+  const clearStationScanLog = useCallback((stationKey) => {
+    const now = Date.now();
+    setStationClearedAt(prev => {
+      const updated = { ...prev, [stationKey]: now };
+      try {
+        localStorage.setItem('trail_station_cleared_at', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    setScanLog(prev => {
+      const filtered = prev.filter(log => {
+        const match = log.station === stationKey || log.stationId === stationKey;
+        return !match;
+      });
+      try {
+        localStorage.setItem('trail_scan_log', JSON.stringify(filtered.slice(0, 300)));
+      } catch {}
+      return filtered;
+    });
+
+    addToast(`ล้างประวัติการสแกนบนหน้าจอนี้เรียบร้อย (ข้อมูลใน Database ไม่ได้รับผลกระทบ)`, false);
+  }, [addToast]);
+
+  const syncRunnerScansToLog = useCallback((runnersList, currentStations, clearedMap = stationClearedAt) => {
+    if (!runnersList || runnersList.length === 0) return;
+
+    const getStationName = (stId) => {
+      const found = currentStations?.find(s => s.id === stId);
+      return found ? found.name : stId;
+    };
+
+    const newEntries = [];
+    runnersList.forEach(r => {
+      // 1. Check-in
+      if (r.checkin) {
+        const time = typeof r.checkin === 'number' ? r.checkin : new Date(r.checkin).getTime();
+        const clearedTime = clearedMap['Check-in'] || 0;
+        if (time > clearedTime) {
+          newEntries.push({
+            id: `db_checkin_${r.id || r.bib}`,
+            time,
+            station: 'Check-in',
+            bib: r.bib,
+            name: r.name,
+            ok: true,
+            operator: r.checked_in_by || 'Staff',
+            isFromDb: true
+          });
+        }
+      }
+
+      // 2. Checkpoints
+      if (r.cps && typeof r.cps === 'object') {
+        Object.entries(r.cps).forEach(([cpId, cpTime]) => {
+          if (!cpTime) return;
+          const time = typeof cpTime === 'number' ? cpTime : new Date(cpTime).getTime();
+          const stName = getStationName(cpId);
+          const clearedTime = Math.max(clearedMap[stName] || 0, clearedMap[cpId] || 0);
+          if (time > clearedTime) {
+            newEntries.push({
+              id: `db_cp_${cpId}_${r.id || r.bib}`,
+              time,
+              station: stName,
+              stationId: cpId,
+              bib: r.bib,
+              name: r.name,
+              ok: true,
+              operator: 'Staff',
+              isFromDb: true
+            });
+          }
+        });
+      }
+
+      // 3. Finish
+      if (r.finish) {
+        const time = typeof r.finish === 'number' ? r.finish : new Date(r.finish).getTime();
+        const clearedTime = clearedMap['Finish'] || 0;
+        if (time > clearedTime) {
+          newEntries.push({
+            id: `db_finish_${r.id || r.bib}`,
+            time,
+            station: 'Finish',
+            bib: r.bib,
+            name: r.name,
+            ok: true,
+            operator: 'Staff',
+            isFromDb: true
+          });
+        }
+      }
+    });
+
+    if (newEntries.length === 0) return;
+
+    setScanLog(prev => {
+      const filteredPrev = prev.filter(item => {
+        const clearedTime = Math.max(
+          clearedMap[item.station] || 0,
+          item.stationId ? (clearedMap[item.stationId] || 0) : 0
+        );
+        return (item.time || 0) > clearedTime;
+      });
+
+      const existingKeys = new Set(
+        filteredPrev.map(item => `${item.bib}_${item.station}_${Math.floor((item.time || 0) / 1000)}`)
+      );
+
+      const toAdd = newEntries.filter(
+        item => !existingKeys.has(`${item.bib}_${item.station}_${Math.floor((item.time || 0) / 1000)}`)
+      );
+
+      if (toAdd.length === 0 && filteredPrev.length === prev.length) return prev;
+
+      const merged = [...filteredPrev, ...toAdd].sort((a, b) => (b.time || 0) - (a.time || 0));
+      const sliced = merged.slice(0, 300);
+      try {
+        localStorage.setItem('trail_scan_log', JSON.stringify(sliced));
+      } catch {}
+      return sliced;
+    });
+  }, [stationClearedAt]);
 
   // ── Offline & Preload Data State ──
   const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -603,6 +741,7 @@ export function RaceProvider({ children }) {
       try {
         const parsed = JSON.parse(cachedRunners);
         setRunners(parsed);
+        syncRunnerScansToLog(parsed, checkpoints);
       } catch (e) {
         console.warn('Cache parse error:', e);
       }
@@ -611,7 +750,13 @@ export function RaceProvider({ children }) {
     const cachedStations = localStorage.getItem(`trail_cached_stations_${selectedEventId}`);
     if (cachedStations) {
       try {
-        setCheckpoints(JSON.parse(cachedStations));
+        const parsedSt = JSON.parse(cachedStations);
+        setCheckpoints(parsedSt);
+        if (cachedRunners) {
+          try {
+            syncRunnerScansToLog(JSON.parse(cachedRunners), parsedSt);
+          } catch {}
+        }
       } catch (err) {
         console.error('Cached stations parse error:', err);
       }
@@ -666,6 +811,7 @@ export function RaceProvider({ children }) {
             .range(from, to)
         );
 
+        let latestRunners = [];
         if (!rError && rData) {
           const formatted = rData.map(r => {
             const matchedCat = catMap[r.cat] || (r.category_id ? catMap[r.category_id] : null);
@@ -687,9 +833,11 @@ export function RaceProvider({ children }) {
               finish: r.finish || null
             };
           });
+          latestRunners = formatted;
           setRunners(formatted);
           localStorage.setItem(`trail_cached_runners_${selectedEventId}`, JSON.stringify(formatted));
           setLastSyncedTime(Date.now());
+          syncRunnerScansToLog(formatted, checkpoints);
         }
 
         // 3. Fetch Stations/Checkpoints
@@ -703,6 +851,9 @@ export function RaceProvider({ children }) {
           const mappedStations = sData.map(s => ({ id: s.id, name: s.name, type: s.type }));
           setCheckpoints(mappedStations);
           localStorage.setItem(`trail_cached_stations_${selectedEventId}`, JSON.stringify(mappedStations));
+          if (latestRunners.length > 0) {
+            syncRunnerScansToLog(latestRunners, mappedStations);
+          }
         }
       } catch (err) {
         console.warn('Background fetch error, using client cache:', err);
@@ -711,12 +862,7 @@ export function RaceProvider({ children }) {
       }
     }
     fetchEventData();
-  }, [selectedEventId]);
-
-  const addToast = (msg, err = false) => {
-    setToastMsg({ msg, err, id: Date.now() });
-    setTimeout(() => setToastMsg(null), 2600);
-  };
+  }, [selectedEventId, syncRunnerScansToLog]);
 
   const showConfirm = useCallback((title, message) => {
     return new Promise((resolve) => {
@@ -927,6 +1073,7 @@ export function RaceProvider({ children }) {
       loadingRunners,
       runners,
       scanLog,
+      clearStationScanLog,
       staffList,
       currentOperator,
       currentStaff: staffProfile,
