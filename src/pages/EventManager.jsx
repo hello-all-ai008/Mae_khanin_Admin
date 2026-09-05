@@ -268,7 +268,7 @@ export default function EventManager() {
               <button 
                 className="btn btn-sm" 
                 onClick={() => setActiveTab('info')}
-                style={{ padding: '6px 12px', fontSize: '12px', background: '#fff', border: '1px solid var(--line)' }}
+                style={{ padding: '6px 12px', fontSize: '12px', background: '#fff', color: '#000', border: '1px solid var(--line)' }}
               >
                 ✏️ แก้ไขข้อมูลงาน
               </button>
