@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุปงานแก้ไขระบบ ROHN — Mae Khanin Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f1ece2;
+    --surface: #fbf8f2;
+    --surface-2: #ede6d8;
+    --text-main: #2c2620;
+    --text-muted: #7a7264;
+    --border: #ded4c0;
+    --primary: #b3742c;
+    --primary-bg: #f3e3c9;
+    --success: #4c7a4f;
+    --success-bg: #e2ecdd;
+    --warning: #a8752c;
+    --warning-bg: #f4e5c8;
+    --danger: #a4442f;
+    --danger-bg: #f3ddd6;
+    --purple: #6b5b95;
+    --purple-bg: #e9e3f2;
+    --mono-bg: #2c2620;
+    --mono-text: #f1ece2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+    line-height: 1.7;
+    padding: 40px 20px;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    background: var(--surface);
+    padding: 48px;
+    border-radius: 20px;
+    box-shadow: 0 10px 34px -12px rgba(44,38,32,0.18);
+    border: 1px solid var(--border);
+  }
+  header { margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 24px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; }
+  h1 { font-size: 27px; font-weight: 800; margin: 0 0 10px 0; }
+  .meta-tags { display: flex; flex-wrap: wrap; gap: 10px; font-size: 13px; margin-top: 14px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-weight: 700; }
+  .badge-green { background: var(--success-bg); color: var(--success); }
+  .badge-blue  { background: var(--primary-bg); color: var(--primary); }
+  .badge-purple{ background: var(--purple-bg); color: var(--purple); }
+  .badge-warn  { background: var(--warning-bg); color: var(--warning); }
+
+  .section { margin-bottom: 38px; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 16px 0; display: flex; align-items: center; gap: 10px; }
+  h2 .num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:8px; background:var(--primary); color:#fff; font-size:13px; flex-shrink:0; }
+  h3 { font-size: 15px; font-weight: 700; margin: 20px 0 10px 0; color: var(--text-main); }
+  p { color: var(--text-main); }
+  .muted { color: var(--text-muted); }
+
+  .tldr {
+    background: var(--primary-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    font-size: 15px;
+  }
+  .tldr ul { margin: 8px 0 0 0; padding-left: 20px; }
+  .tldr li { margin-bottom: 4px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 10px 0 4px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--surface-2); font-weight: 700; font-size: 12.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  .status-ok { color: var(--success); font-weight: 700; white-space: nowrap; }
+  .status-warn { color: var(--warning); font-weight: 700; white-space: nowrap; }
+
+  code, .mono { font-family: 'SF Mono', Menlo, monospace; background: var(--surface-2); padding: 2px 7px; border-radius: 6px; font-size: 12.5px; }
+
+  .callout { border-radius: 12px; padding: 16px 18px; font-size: 13.5px; margin: 14px 0; border: 1px solid; }
+  .callout-warn { background: var(--warning-bg); border-color: #dcbb85; color: #6b4a17; }
+  .callout-danger { background: var(--danger-bg); border-color: #dda99a; color: #7a2f1e; }
+  .callout-info { background: var(--purple-bg); border-color: #cabfe0; color: #4a3d6b; }
+  .callout-ok { background: var(--success-bg); border-color: #a8c8a5; color: #2f4f31; }
+  .callout b { display:block; margin-bottom:4px; }
+
+  .checklist { list-style:none; padding:0; margin:0; }
+  .checklist li { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .checklist li:last-child { border-bottom:none; }
+  .check-icon { flex-shrink:0; width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:#fff; margin-top:1px; }
+  .check-done { background: var(--success); }
+  .check-todo { background: var(--warning); }
+
+  /* browser-window mockup */
+  .browser {
+    background: var(--mono-bg);
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 14px 30px -10px rgba(44,38,32,0.35);
+    margin-top: 16px;
+  }
+  .browser-bar { display:flex; align-items:center; gap:6px; padding: 2px 6px 10px; }
+  .browser-dot { width:9px; height:9px; border-radius:50%; background:#5c5346; }
+  .browser-url { flex:1; margin-left:10px; background:#443d33; border-radius:6px; padding:5px 10px; font-size:11px; color:#c9bfa8; font-family:monospace; }
+  .browser-screen { background: var(--surface); border-radius: 10px; padding: 18px 20px; }
+  .mockup-caption { text-align:center; font-size:12px; color:var(--text-muted); margin-top:10px; font-weight:600; }
+  .mockup-row { display:flex; gap:20px; flex-wrap:wrap; }
+  .mockup-col { flex: 1; min-width: 280px; }
+
+  .field-label { font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
+  .field-select { display:flex; align-items:center; justify-content:space-between; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; font-weight: 600; margin-bottom: 12px; }
+  .field-select.locked { background: var(--warning-bg); border-color: #dcbb85; color: #6b4a17; cursor: not-allowed; }
+  .field-select.open { background: var(--surface); }
+  .lock-icon { font-size: 12px; }
+
+  .toast { display:flex; align-items:flex-start; gap:8px; border-radius: 10px; padding: 10px 14px; font-size: 12.5px; font-weight: 600; margin-top: 10px; }
+  .toast-red { background: var(--danger-bg); color: #7a2f1e; }
+  .toast-green { background: var(--success-bg); color: #2f4f31; }
+
+  .live-badge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color: var(--success); background: var(--success-bg); padding: 3px 9px; border-radius: 20px; }
+  .live-dot { width:6px; height:6px; border-radius:50%; background: var(--success); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+
+  .leaderboard-card { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+  .lb-row { display:flex; justify-content:space-between; font-size: 12.5px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-rank { font-weight:800; color: var(--primary); margin-right:6px; }
+
+  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); text-align:center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="eyebrow">Mae Khanin Admin — Trail Running Ops System</div>
+    <h1>สรุปงานแก้ไข/เพิ่มระบบ ประจำวันที่ 2–5 กันยายน 2569</h1>
+    <p class="muted" style="margin:0;">รวมงานทดสอบ, แก้บั๊ก, และฟีเจอร์ใหม่ที่ทำระหว่างเตรียมระบบก่อนงานวิ่งจริง 12–13 กันยายน 2569</p>
+    <div class="meta-tags">
+      <span class="badge badge-green">✓ Frontend</span>
+      <span class="badge badge-blue">✓ Supabase / Edge Function</span>
+      <span class="badge badge-purple">✓ Database Migration</span>
+      <span class="badge badge-warn">มี 2 รายการรอตัดสินใจ</span>
+    </div>
+  </header>
+
+  <div class="section">
+    <div class="tldr">
+      <b>สรุปสั้น:</b> วันนี้แก้บั๊กจริง 3 จุดใหญ่ (Check Point ล็อกสถานี, Leaderboard/Dashboard อัปเดตสด, หน้า admin/users ใช้งานไม่ได้ทั้งหน้า) และแก้ปัญหาข้อมูลนักวิ่งโดนตัดที่ 1,000 รายชื่อ ทุกจุดผ่านการ verify ซ้ำโดย subagent อิสระก่อนปิดงาน
+      <ul>
+        <li>Check Point: ล็อกจุดสแกนตาม station ที่ล็อกอินมา สแกนผิดจุดไม่ได้อีกต่อไป</li>
+        <li>Leaderboard + Overall Dashboard: อัปเดตสดอัตโนมัติเมื่อมีนักวิ่งผ่าน CP/Finish ไม่ต้องกด Refresh เอง</li>
+        <li>Runners List: แก้บั๊กแสดงข้อมูลไม่ครบ (ตัดที่ 1,000 จาก 1,061 คนจริง)</li>
+        <li>Admin/Users: หน้านี้ใช้งานไม่ได้เลยตั้งแต่ต้น — ไล่แก้ 4 รอบจนใช้งานได้ครบ (list / create / edit)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 1. Check Point Lock -->
+  <div class="section">
+    <h2><span class="num">1</span> ล็อกจุด Check Point ตาม Station ที่ล็อกอิน</h2>
+    <p><b>ปัญหาที่ Gong แจ้ง:</b> ทดสอบเข้า station A1 (Loha Prasat) แล้วปุ่ม dropdown เลือกจุด Check Point ยังให้เลือกจุดอื่นได้อยู่ (Start / A1 / A2 / Finish) — เสี่ยงสแกนผิดจุดโดยไม่ตั้งใจ</p>
+    <p><b>วิธีแก้:</b> อ่าน <code>station_id</code> ที่ผูกกับบัญชี staff คนนั้นจาก session แล้วล็อก dropdown ให้เหลือแค่จุดที่ได้รับมอบหมาย — บัญชีที่ไม่มี station ประจำ (เช่น Admin ที่คุมได้ทุกจุด) ยังเลือกได้อิสระเหมือนเดิม</p>
+
+    <div class="browser">
+      <div class="browser-bar"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-url">rohn-mu.vercel.app/#/checkpoint</span></div>
+      <div class="browser-screen">
+        <div class="field-label">เลือกจุด Check Point:</div>
+        <div class="field-select locked"><span><span class="lock-icon">🔒</span> A1 – Loha Prasat</span><span style="font-size:10px; opacity:.75;">ล็อกตามบัญชี</span></div>
+        <div class="muted" style="font-size:11.5px;">ผู้สแกน: A1 - Loha Prasat · Marshal จุดตรวจ — เปลี่ยนเองไม่ได้</div>
+      </div>
+    </div>
+    <div class="mockup-caption">Mockup: dropdown ที่หน้า Check Point หลังล็อกสถานี</div>
+  </div>
+
+  <!-- 2. Realtime -->
+  <div class="section">
+    <h2><span class="num">2</span> Leaderboard + Overall Dashboard อัปเดตสด (Realtime)</h2>
+    <p><b>คำขอ:</b> ให้หน้า Leaderboard และ Dashboard ไม่ต้อง refresh เองทุกครั้งที่มีนักวิ่งถึง Finish หรือผ่านจุด CP</p>
+    <p><b>วิธีแก้:</b> เปิด Supabase Realtime บนตาราง <code>runners</code> (migration ใหม่) แล้วให้ทั้ง 2 หน้าฟังการเปลี่ยนแปลง (INSERT/UPDATE) ของ event ที่กำลังดูอยู่ — พอมีสแกนจากเครื่องไหนก็ตาม หน้าจะ fetch ข้อมูลใหม่แบบเงียบๆ ให้เอง (หน่วง 400ms กันสแกนรัว)</p>
+
+    <div class="browser">
+      <div class="browser-bar"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-url">rohn-mu.vercel.app/#/leaderboard</span><span class="live-badge"><span class="live-dot"></span> LIVE</span></div>
+      <div class="browser-screen">
+        <div class="mockup-row">
+          <div class="mockup-col">
+            <div class="leaderboard-card">
+              <b style="font-size:12.5px;">10 KM : Hard Rock — ชาย</b>
+              <div class="lb-row"><span><span class="lb-rank">1</span>1011 Abhidej P.</span><span>00:58:20</span></div>
+              <div class="lb-row"><span><span class="lb-rank">2</span>1012 Adisak P.</span><span>01:03:11</span></div>
+            </div>
+          </div>
+          <div class="mockup-col">
+            <div class="leaderboard-card">
+              <b style="font-size:12.5px;">5 KM : Soft Rock — หญิง</b>
+              <div class="lb-row"><span><span class="lb-rank">1</span>5011 Aelisa B.</span><span style="color:var(--text-muted);">กำลังวิ่ง…</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="muted" style="font-size:11px; margin-top:6px;">↻ อัปเดตอัตโนมัติเมื่อมีสแกนใหม่จากทุกจุด ไม่ต้องกด Refresh</div>
+      </div>
+    </div>
+    <div class="mockup-caption">Mockup: อันดับขึ้นเองเมื่อมีนักวิ่งเข้าเส้นชัย</div>
+
+    <h3>รอบแก้ไขย่อยระหว่างทาง (ผ่าน verifier ครบทุกข้อ)</h3>
+    <table>
+      <tr><th>ปัญหาที่เจอ</th><th>วิธีแก้</th></tr>
+      <tr><td>ปุ่ม Refresh ส่ง event object แทนค่า silent → spinner ไม่ขึ้น</td><td>แก้ปุ่มให้เรียก <code>fetchData()</code> เปล่าๆ</td></tr>
+      <tr><td>Dashboard กลืน error เงียบ แล้วโชว์ข้อมูลปลอมแทน</td><td>เพิ่ม throw error ให้ตรงกับ Leaderboard</td></tr>
+      <tr><td>ฟัง DELETE ทั้งที่ตารางไม่รองรับ (เสี่ยงพลาดแถวลบ)</td><td>ฟังเฉพาะ INSERT/UPDATE ตรงกับพฤติกรรมสแกนจริง</td></tr>
+      <tr><td><code>fetchData</code> สร้างใหม่ทุก render → subscribe ซ้ำ/ค่าเก่าค้าง</td><td>ห่อด้วย <code>useCallback</code> + ref สำหรับ state ที่ไม่ควรกระตุ้น re-subscribe</td></tr>
+    </table>
+  </div>
+
+  <!-- 3. Runners cap -->
+  <div class="section">
+    <h2><span class="num">3</span> แก้บั๊กหน้า Runners แสดงข้อมูลไม่ครบ (ตัดที่ 1,000)</h2>
+    <p><b>ปัญหา:</b> หน้า "รายชื่อนักวิ่ง" ขึ้น "1,000 records" ทั้งที่ import จริง 1,061 คน — สาเหตุ Supabase/PostgREST จำกัดผลลัพธ์ต่อ 1 คำขอไว้ที่ 1,000 แถวเป็นค่าเริ่มต้น</p>
+    <p><b>วิธีแก้:</b> เขียนฟังก์ชันช่วย <code>fetchAllRows()</code> วนดึงทีละ 1,000 แถวจนครบ พร้อม sort แบบตายตัว (<code>order('id')</code>) กันข้อมูลซ้ำ/หายระหว่างแบ่งหน้า และใส่เพดานกันวนลูปไม่รู้จบ — มี unit test ครบ 6 เคส</p>
+    <div class="callout callout-ok"><b>ผลหลังแก้</b>หน้า Runners แสดงครบ 1,061 รายชื่อจริง ปุ่ม "ล้างรายชื่อทั้งหมด" นับเลขถูกต้องตามจริงด้วย</div>
+  </div>
+
+  <!-- 4. Test data -->
+  <div class="section">
+    <h2><span class="num">4</span> ข้อมูลทดสอบสำหรับซ้อมก่อนงานจริง</h2>
+    <p>เพิ่มข้อมูลจำลอง (checked-in / ผ่าน CP / เข้าเส้นชัย) ให้ BIB จริง 3 เบอร์ (<span class="mono">1011, 1012, 5011</span>) เพื่อให้ Gong เห็นชื่อนักวิ่งจริงตอนซ้อมระบบวันที่ 6 ก.ย. — <b>รีเซ็ตกลับสถานะเดิมแล้ว</b> (PRE_REGISTERED, ไม่มีเวลาสแกนค้าง) พร้อมสำหรับงานจริง 12–13 ก.ย.</p>
+  </div>
+
+  <!-- 5. Admin Users saga -->
+  <div class="section">
+    <h2><span class="num">5</span> หน้า Admin/Users ใช้งานไม่ได้ทั้งหน้า — ไล่แก้ 4 รอบ</h2>
+    <p>Gong แจ้งว่าโหลดข้อมูลไม่ได้ ไล่ตรวจแล้วพบว่าเป็นบั๊กสะสม 4 ชั้นซ้อนกัน แก้ทีละชั้นจนหน้าใช้งานได้ครบ (ดูรายชื่อ / เพิ่มผู้ใช้ / แก้ไข)</p>
+    <table>
+      <tr><th style="width:60px;">รอบ</th><th>อาการที่เจอ</th><th>สาเหตุจริง</th><th>วิธีแก้</th><th>สถานะ</th></tr>
+      <tr>
+        <td><b>1</b></td>
+        <td>โหลดรายชื่อไม่สำเร็จ: "Failed to send a request to the Edge Function"</td>
+        <td>ฟังก์ชัน <code>admin-user-mgmt</code> มีโค้ดอยู่ในเครื่องแล้ว แต่ไม่เคย deploy ขึ้น Supabase จริง</td>
+        <td>Deploy ฟังก์ชันขึ้นระบบ</td>
+        <td class="status-ok">✓ แก้แล้ว</td>
+      </tr>
+      <tr>
+        <td><b>2</b></td>
+        <td>โหลดได้ถึงฟังก์ชันแล้ว แต่ตอบกลับ 500 error</td>
+        <td>โค้ดพยายาม join ตาราง staff กับ event_pins ผ่าน foreign key ที่ไม่มีอยู่จริงในฐานข้อมูล</td>
+        <td>เขียนใหม่ให้ query แยก 2 ตาราง แล้ว join เองในโค้ด</td>
+        <td class="status-ok">✓ แก้แล้ว</td>
+      </tr>
+      <tr>
+        <td><b>3</b></td>
+        <td>รายชื่อขึ้นแล้ว แต่กด "สร้างผู้ใช้และ PIN" ไม่ได้ (400 Bad Request)</td>
+        <td>หน้านี้อ่านค่า event ผิด key จาก context (ไม่เคยมีค่านี้จริง) → ส่ง event_id เป็นค่าว่างทุกครั้ง และหน้านี้ไม่เคยมี dropdown เลือกงานวิ่งมาตั้งแต่แรก</td>
+        <td>เพิ่ม dropdown "เลือกงานวิ่ง" จริงที่หัวหน้า (ตามแบบหน้าอื่นในระบบ) แล้วผูกค่าให้ถูกต้อง</td>
+        <td class="status-ok">✓ แก้แล้ว</td>
+      </tr>
+      <tr>
+        <td><b>4</b></td>
+        <td>ผลข้างเคียงจากรอบ 3 ที่ตรวจพบระหว่าง verify</td>
+        <td>(ก) แก้ไขผู้ใช้เดิมอาจโดนสลับ event ไปตาม dropdown โดยไม่ตั้งใจ &nbsp;(ข) โหลดหน้าแรกมีจังหวะเห็นรายชื่อทุก event ปนกันก่อนกรองถูก &nbsp;(ค) ถ้าโหลดรายชื่องานวิ่งพลาด หน้าจะค้างไม่มีข้อความแจ้ง</td>
+        <td>ล็อก event เดิมไว้ตอนแก้ไข ไม่ให้ dropdown มายุ่ง / ไม่ยิง query จนกว่าจะเลือก event / เพิ่ม toast แจ้งเตือนเมื่อโหลดพลาด</td>
+        <td class="status-ok">✓ แก้แล้ว</td>
+      </tr>
+    </table>
+
+    <div class="mockup-row" style="margin-top:18px;">
+      <div class="mockup-col">
+        <div class="browser">
+          <div class="browser-bar"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-url">…/#/admin/users — ก่อนแก้</span></div>
+          <div class="browser-screen">
+            <div class="toast toast-red">⚠ โหลดรายชื่อผู้ใช้ไม่สำเร็จ: Failed to send a request to the Edge Function</div>
+            <div class="muted" style="font-size:11.5px; margin-top:10px;">0 records — ไม่มี dropdown เลือกงานวิ่งเลย</div>
+          </div>
+        </div>
+        <div class="mockup-caption">ก่อนแก้: ใช้งานไม่ได้เลย</div>
+      </div>
+      <div class="mockup-col">
+        <div class="browser">
+          <div class="browser-bar"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-url">…/#/admin/users — หลังแก้</span></div>
+          <div class="browser-screen">
+            <div class="field-label">เลือกงานวิ่ง:</div>
+            <div class="field-select open">บ้านปง ครอส คันทรี่ 2026 ▾</div>
+            <div class="toast toast-green">✓ เพิ่มผู้ใช้งาน "Whale" สำเร็จ</div>
+          </div>
+        </div>
+        <div class="mockup-caption">หลังแก้: มี dropdown, สร้างผู้ใช้ได้จริง</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Open items -->
+  <div class="section">
+    <h2><span class="num">6</span> รายการที่ยังไม่แก้ — รอ Gong ตัดสินใจ</h2>
+    <ul class="checklist">
+      <li><span class="check-icon check-todo">!</span><div><b>ปรับ Global Staff กลับเป็นประจำ event เดิมทำไม่ได้ผ่านหน้าเว็บ</b><br><span class="muted">แก้ไขผู้ใช้ที่เป็น "ใช้ได้ทุกงานวิ่ง" ให้กลับมาผูกกับ event เดียว ตอนนี้ไม่มีช่องให้เลือก — เคสนี้เกิดไม่บ่อย รอ Gong บอกว่าจำเป็นต้องมีไหม</span></div></li>
+      <li><span class="check-icon check-todo">!</span><div><b>หน้า Runners/Dashboard/Leaderboard บางหน้ายังไม่โชว์สถานะ "กำลังโหลด" ที่ถูกต้อง</b><br><span class="muted">Component ตารางกลางที่ใช้ร่วมหลายหน้า (AdvancedTable) ยังไม่รองรับ loading state จริง — ผลคือถ้าโหลดพลาด หน้าจะโชว์ "ไม่พบข้อมูล" เฉยๆ แทนข้อความแจ้งเตือน จุดนี้กระทบหลายหน้า แนะนำแยกเป็นงานถัดไป ไม่รีบวันนี้</span></div></li>
+    </ul>
+  </div>
+
+  <div class="callout callout-info">
+    <b>ทุกจุดที่ระบุว่า "✓ แก้แล้ว" ผ่านการตรวจซ้ำโดย subagent อิสระ (ไม่ใช่คนแก้เอง) ก่อนปิดงาน</b>
+    ตามมาตรฐานของ workspace นี้ — ลด bias จากคนที่เขียนโค้ดเอง
+  </div>
+
+  <footer>
+    Mae Khanin Admin · ROHN Trail Running System — จัดทำโดย Whale สำหรับ Gong<br>
+    ไฟล์นี้เป็นเอกสารสรุปแบบ standalone อ่านออฟไลน์ได้ ไม่ผูกกับระบบ build ใดๆ
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { KeyRound, WifiOff, AlertCircle, LogIn, ChevronLeft } from 'lucide-react';
+import logoRohnFull from '../LOGO/logo-rohn-full.png';
 import { useAuth } from '../context/AuthContext';
 import { fetchLoginEvents, fetchLoginSlots } from '../lib/loginOptions';
 import PinKeypad from '../components/auth/PinKeypad';
@@ -187,7 +188,7 @@ export default function StaffLogin() {
         }}
       >
         <header style={{ textAlign: 'center', marginBottom: '18px' }}>
-          <img src="/src/LOGO/logo-rohn-full.png" alt="ROHN Logo" style={{ height: '80px', width: 'auto', margin: '0 auto 16px', display: 'block' }} />
+          <img src={logoRohnFull} alt="ROHN Logo" style={{ height: '80px', width: 'auto', margin: '0 auto 16px', display: 'block' }} />
           <h1 style={{ fontSize: '21px', fontWeight: 800, letterSpacing: '-0.01em' }}>
             เข้าสู่ระบบเจ้าหน้าที่
           </h1>

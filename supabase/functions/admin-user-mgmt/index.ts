@@ -45,15 +45,38 @@ Deno.serve(async (req: Request) => {
       const url = new URL(req.url);
       const eventId = url.searchParams.get("event_id");
 
-      let query = supabaseClient.from("staff").select("*, event_pins(id, active, event_id, station_id)");
+      // staff.user_id and event_pins.auth_user_id both reference
+      // auth.users.id independently — neither table has a foreign key to
+      // the other, so PostgREST can't embed event_pins under staff in one
+      // query. Fetch both and join them here instead.
+      let query = supabaseClient.from("staff").select("*");
       if (eventId) {
         query = query.or(`event_id.eq.${eventId},event_id.is.null`);
       }
 
       const { data: allStaff, error: allStaffError } = await query.order('name', { ascending: true });
       if (allStaffError) throw allStaffError;
-      
-      return new Response(JSON.stringify(allStaff), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      const userIds = [...new Set((allStaff || []).map((s) => s.user_id).filter(Boolean))];
+      let pinsByUserId: Record<string, unknown[]> = {};
+      if (userIds.length > 0) {
+        const { data: pins, error: pinsError } = await supabaseClient
+          .from("event_pins")
+          .select("id, active, event_id, station_id, auth_user_id")
+          .in("auth_user_id", userIds);
+        if (pinsError) throw pinsError;
+        pinsByUserId = (pins || []).reduce((acc, pin) => {
+          (acc[pin.auth_user_id] ||= []).push(pin);
+          return acc;
+        }, {} as Record<string, unknown[]>);
+      }
+
+      const staffWithPins = (allStaff || []).map((s) => ({
+        ...s,
+        event_pins: pinsByUserId[s.user_id] || [],
+      }));
+
+      return new Response(JSON.stringify(staffWithPins), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // ---------------------------------------------
