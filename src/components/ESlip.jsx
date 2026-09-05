@@ -56,7 +56,7 @@ export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
       </div>
       <div className="row">
         <span>Check-in Scan</span>
-        <span style={{ fontFamily: 'var(--mono)' }}>{fmtTime(runner.checkin)}</span>
+        <span style={{ fontFamily: 'var(--mono)' }}>{fmtTime(runner.checked_in_at)}</span>
       </div>
 
       {runner.cps && Object.entries(runner.cps).map(([cp, ts]) => {
@@ -80,8 +80,8 @@ export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
         <div style={{ background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
           <div style={{ color: 'var(--ink-2, #64748b)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Gun Time</div>
           <div style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'var(--mono)' }}>
-            {runner.finish && (runner.gunStartTime || runner.checkin)
-              ? fmtDur(runner.finish - (runner.gunStartTime || runner.checkin))
+            {runner.finish && (runner.gunStartTime || runner.checked_in_at)
+              ? fmtDur(runner.finish - (runner.gunStartTime || new Date(runner.checked_in_at).getTime()))
               : '—'}
           </div>
         </div>
