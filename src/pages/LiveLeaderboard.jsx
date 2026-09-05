@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { fetchAllRows } from '../lib/supabaseFetch';
 import { useRace } from '../context/RaceContext';
 import { RefreshCw, Trophy, ArrowLeft, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -62,10 +63,14 @@ export default function LiveLeaderboard() {
       if (catError) console.warn('Categories fetch error', catError);
       setCategories(catData || []);
 
-      const { data: runData, error: runError } = await supabase
-        .from('runners')
-        .select('*')
-        .eq('event_id', selectedEventId);
+      const { data: runData, error: runError } = await fetchAllRows((from, to) =>
+        supabase
+          .from('runners')
+          .select('*')
+          .eq('event_id', selectedEventId)
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
       if (runError) throw runError;
       
       let actualRunners = runData || [];
