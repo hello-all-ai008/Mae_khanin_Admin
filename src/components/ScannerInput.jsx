@@ -36,10 +36,10 @@ export default function ScannerInput({ onScan }) {
     return localStorage.getItem('trail_camera_facing') || 'environment';
   });
   
-  // Focus & Scanning Mode: 'full' (เต็มกล้อง - ค่าเริ่มต้น), 'barcode' (1D wide), 'qr' (2D square), 'center' (80% center)
+  // Focus & Scanning Mode: 'center' (กึ่งกลาง - ค่าเริ่มต้น), 'full' (เต็มกล้อง), 'barcode' (1D wide), 'qr' (2D square)
   const [scanMode, setScanMode] = useState(() => {
-    const saved = localStorage.getItem('trail_camera_scan_mode');
-    return (saved && ['full', 'barcode', 'qr', 'center'].includes(saved)) ? saved : 'full';
+    const saved = localStorage.getItem('trail_camera_scan_mode_v3');
+    return (saved && ['center', 'full', 'barcode', 'qr'].includes(saved)) ? saved : 'center';
   });
 
   // View Size: 'auto' (เต็มจอ ไม่ครอปตัด - ค่าเริ่มต้น) | 'standard' (380px) | 'compact' (260px) | 'large' (540px)
@@ -85,6 +85,7 @@ export default function ScannerInput({ onScan }) {
   }, [facingMode]);
 
   useEffect(() => {
+    localStorage.setItem('trail_camera_scan_mode_v3', scanMode);
     localStorage.setItem('trail_camera_scan_mode', scanMode);
   }, [scanMode]);
 
@@ -630,23 +631,44 @@ export default function ScannerInput({ onScan }) {
           {/* Top Control Bar: Mode & Viewport Controls */}
           <div style={{ background: '#1e293b', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid #334155' }}>
             
-            {/* Mode Switcher: Full (Default) / Barcode 1D / QR Code 2D / Center */}
+            {/* Mode Switcher: Center (Default) / Full / Barcode 1D / QR Code 2D */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginRight: '2px' }}>มุมมองสแกน:</span>
               <button 
                 type="button"
-                onClick={() => handleScanModeChange('full')}
-                title="สแกนเต็มกล้องทั้งหน้าจอ ไม่จำกัดกรอบแคบ (สแกนได้ทั้ง Barcode และ QR)"
+                onClick={() => handleScanModeChange('center')}
+                title="กรอบโฟกัสกึ่งกลางหน้าจอ (ค่าเริ่มต้น)"
                 style={{ 
                   padding: '5px 12px', 
                   fontSize: '12px', 
                   borderRadius: '6px', 
                   border: 'none', 
+                  cursor: 'pointer', 
+                  fontWeight: 700, 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '5px', 
+                  background: scanMode === 'center' ? 'var(--start)' : '#334155', 
+                  color: scanMode === 'center' ? '#000' : '#e2e8f0',
+                  boxShadow: scanMode === 'center' ? '0 0 10px rgba(0, 255, 128, 0.3)' : 'none'
+                }}
+              >
+                <ScanLine size={13} /> กึ่งกลาง (Center)
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleScanModeChange('full')}
+                title="สแกนเต็มกล้องทั้งหน้าจอ ไม่จำกัดกรอบแคบ (สแกนได้ทั้ง Barcode และ QR)"
+                style={{ 
+                  padding: '5px 10px', 
+                  fontSize: '12px', 
+                  borderRadius: '6px', 
+                  border: 'none', 
                   cursor: 'pointer',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '5px',
+                  gap: '4px',
                   background: scanMode === 'full' ? 'var(--start)' : '#334155',
                   color: scanMode === 'full' ? '#000' : '#e2e8f0',
                   boxShadow: scanMode === 'full' ? '0 0 10px rgba(0, 255, 128, 0.3)' : 'none'
@@ -693,26 +715,6 @@ export default function ScannerInput({ onScan }) {
                 }}
               >
                 <QrCode size={14} /> QR Code (2D)
-              </button>
-              <button 
-                type="button"
-                onClick={() => handleScanModeChange('center')}
-                title="กรอบโฟกัสกึ่งกลาง 84%"
-                style={{ 
-                  padding: '5px 10px', 
-                  fontSize: '12px', 
-                  borderRadius: '6px', 
-                  border: 'none', 
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  background: scanMode === 'center' ? 'var(--start)' : '#334155',
-                  color: scanMode === 'center' ? '#000' : '#e2e8f0'
-                }}
-              >
-                <ScanLine size={13} /> กึ่งกลาง
               </button>
             </div>
 
@@ -910,7 +912,7 @@ export default function ScannerInput({ onScan }) {
 
           <div style={{ padding: '6px 12px', background: '#0f172a', textAlign: 'center' }}>
             <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>
-              💡 <b>โหมดเต็มกล้อง (Full):</b> สแกน Barcode/QR ได้ทุกบริเวณทั่วทั้งจอ ไม่ต้องเล็งเข้ากรอบแคบ | กด <b>1.5x / 2x</b> เพื่อสแกนจากระยะยืนได้ง่ายขึ้น
+              💡 <b>มุมมองกึ่งกลาง (Center):</b> ค่าเริ่มต้นเล็ง BIB กึ่งกลางจอเพื่อสแกนเร็วและแม่นยำ หรือเปลี่ยนเป็น <b>เต็มกล้อง / Barcode / QR</b> ได้ตามต้องการ | กด <b>1.5x / 2x</b> เพื่อสแกนจากระยะยืน
             </p>
           </div>
         </div>

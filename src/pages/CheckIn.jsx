@@ -96,10 +96,9 @@ export default function CheckIn() {
         castToMonitor(monitorId, { bib, name: 'NOT FOUND', cat: '-', age: '-' });
       }
     } else {
-      const d = new Date(result.now);
       setLedState({ 
         runner: result.runner, 
-        message: `Check in : ${d.toTimeString().slice(0, 8)}`, 
+        message: result.message, 
         warn: false 
       });
       if (monitorId && monitorId !== 'none' && result.runner) {
@@ -287,7 +286,13 @@ export default function CheckIn() {
                       </td>
                       <td style={{ textAlign: 'center', width: '150px' }}>
                         {log.ok ? (
-                          <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '13px' }}>✓</span>
+                          log.isRescan ? (
+                            <span style={{ color: '#0284c7', fontWeight: 600, fontSize: '11px', background: '#e0f2fe', padding: '2px 8px', borderRadius: '4px' }} title={log.msg || "สแกนซ้ำ — ยึดเวลาแรก"}>
+                              ✓ สแกนซ้ำ
+                            </span>
+                          ) : (
+                            <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '13px' }}>✓</span>
+                          )
                         ) : (
                           <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '13px' }}>✗</span>
                         )}

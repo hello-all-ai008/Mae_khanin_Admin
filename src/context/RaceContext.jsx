@@ -613,31 +613,46 @@ export function RaceProvider({ children }) {
 
       try {
         if (item.type === 'CHECKIN') {
-          const { error } = await supabase.from('runners').update({
-            registration_status: 'CHECKED_IN',
-            checked_in_at: new Date(item.time).toISOString(),
-            checked_in_by: item.operator
-          }).eq('id', item.runnerId);
+          if (!item.isRescan) {
+            const { error } = await supabase.from('runners').update({
+              registration_status: 'CHECKED_IN',
+              checked_in_at: new Date(item.time).toISOString(),
+              checked_in_by: item.operator
+            }).eq('id', item.runnerId);
 
-          if (!error) uploadSuccess = true;
-          else console.warn('Background sync checkin error:', error);
+            if (!error) uploadSuccess = true;
+            else console.warn('Background sync checkin error:', error);
+          } else {
+            // Re-scan: do not overwrite checked_in_at in runners table
+            uploadSuccess = true;
+          }
         } else if (item.type === 'CP') {
-          const { error } = await supabase.from('runners').update({
-            cps: item.cps
-          }).eq('id', item.runnerId);
+          if (!item.isRescan) {
+            const { error } = await supabase.from('runners').update({
+              cps: item.cps
+            }).eq('id', item.runnerId);
 
-          if (!error) uploadSuccess = true;
-          else console.warn('Background sync CP error:', error);
+            if (!error) uploadSuccess = true;
+            else console.warn('Background sync CP error:', error);
+          } else {
+            // Re-scan: do not overwrite cps in runners table
+            uploadSuccess = true;
+          }
         } else if (item.type === 'FINISH') {
-          const { error } = await supabase.from('runners').update({
-            finish: item.time
-          }).eq('id', item.runnerId);
+          if (!item.isRescan) {
+            const { error } = await supabase.from('runners').update({
+              finish: item.time
+            }).eq('id', item.runnerId);
 
-          if (!error) uploadSuccess = true;
-          else console.warn('Background sync finish error:', error);
+            if (!error) uploadSuccess = true;
+            else console.warn('Background sync finish error:', error);
+          } else {
+            // Re-scan: do not overwrite finish in runners table
+            uploadSuccess = true;
+          }
         }
 
-        // Optional scan_logs insertion for analytics/audit trail
+        // Always record every scan into scan_logs table for audit trail & analytics
         if (uploadSuccess) {
           try {
             await supabase.from('scan_logs').insert([{
@@ -646,7 +661,7 @@ export function RaceProvider({ children }) {
               scan_time: new Date(item.time).toISOString(),
               is_valid: true,
               scanned_by: item.operator || null,
-              note: item.type
+              note: item.note || (item.isRescan ? `${item.type}_RESCAN` : item.type)
             }]);
           } catch (_) {}
         }
@@ -887,7 +902,8 @@ export function RaceProvider({ children }) {
   };
 
   const getCpName = (id) => {
-    const c = checkpoints.find(c => c.id === id);
+    if (!id) return 'CheckPoint';
+    const c = checkpoints.find(c => c.id === id || c.name === id);
     return c ? c.name : id;
   };
 
@@ -932,12 +948,31 @@ export function RaceProvider({ children }) {
     }
   };
 
+  const formatDuration = (ms) => {
+    if (ms == null || isNaN(ms)) return '—';
+    const s = Math.max(0, Math.floor(ms / 1e3));
+    const h = String(Math.floor(s / 3600)).padStart(2, '0');
+    const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    return `${h}:${m}:${ss}`;
+  };
+
   const processScan = (stationType, bib, stationId = null) => {
     const now = Date.now();
     const r = findRunner(bib);
     // Identity comes from the session only — callers cannot pass an operator name.
     const operator = currentOperator || 'Staff';
-    let result = { success: false, runner: r, now, message: '', stationName: '', operator };
+    let result = { 
+      success: false, 
+      runner: r, 
+      now, 
+      firstTime: null, 
+      totalTime: '', 
+      isRescan: false, 
+      message: '', 
+      stationName: '', 
+      operator 
+    };
 
     if (!r) {
       const cleanBib = normalizeScannedBib(bib) || String(bib || '').trim();
@@ -949,27 +984,72 @@ export function RaceProvider({ children }) {
 
     if (stationType === 'Check-in') {
       result.stationName = 'Check-in';
-      if (r.checkin) {
-        result.message = `Already checked-in`;
-        addToast(`BIB ${r.bib} เช็คอินไปแล้ว`, true);
-        addLog({ time: now, station: 'Check-in', bib, name: r.name, ok: false, msg: 'ซ้ำ', operator });
-      } else {
-        const syncId = 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-        const updated = { ...r, checkin: now, registration_status: 'CHECKED_IN', checked_in_by: operator };
-        updateRunner(updated);
-        result.success = true;
-        result.runner = updated;
-        addToast(`✓ Check-in สำเร็จ — BIB ${r.bib} ${r.name}`);
-        addLog({ time: now, station: 'Check-in', bib, name: r.name, ok: true, operator, syncId });
+      const syncId = 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
 
-        // Push to asynchronous background sync queue (Zero delay / 0ms UI blocking)
+      if (r.checkin) {
+        // ── สแกนซ้ำ: จดจำเวลาครั้งแรก ทั้งหน้าบ้านและ database ──
+        const firstTime = typeof r.checkin === 'number' ? r.checkin : new Date(r.checkin).getTime();
+        const dFirst = new Date(firstTime);
+        const firstTimeStr = dFirst.toTimeString().slice(0, 8);
+
+        result.success = true;
+        result.isRescan = true;
+        result.runner = r; // ยึดเวลาเดิม ไม่เขียนทับ
+        result.firstTime = firstTime;
+        result.message = `Check in : ${firstTimeStr} (สแกนซ้ำ - เวลาแรก)`;
+
+        addToast(`✓ BIB ${r.bib} ${r.name} (สแกนซ้ำ — ยึดเวลาแรก ${firstTimeStr})`, false);
+        addLog({ 
+          time: now, 
+          station: 'Check-in', 
+          bib: r.bib, 
+          name: r.name, 
+          ok: true, 
+          isRescan: true, 
+          operator, 
+          syncId, 
+          msg: `สแกนซ้ำ (เวลาแรก ${firstTimeStr})` 
+        });
+
+        // ส่งเข้า log Database แต่ไม่เขียนทับ checked_in_at เดิม
         if (r.id) {
           enqueueSyncItem({
             id: syncId,
             type: 'CHECKIN',
+            isRescan: true,
             runnerId: r.id,
             bib: r.bib,
             time: now,
+            firstTime,
+            operator,
+            note: 'CHECKIN_RESCAN'
+          });
+        }
+      } else {
+        // ── สแกนครั้งแรก ──
+        const firstTime = now;
+        const d = new Date(firstTime);
+        const firstTimeStr = d.toTimeString().slice(0, 8);
+        const updated = { ...r, checkin: firstTime, registration_status: 'CHECKED_IN', checked_in_by: operator };
+        updateRunner(updated);
+
+        result.success = true;
+        result.isRescan = false;
+        result.runner = updated;
+        result.firstTime = firstTime;
+        result.message = `Check in : ${firstTimeStr}`;
+
+        addToast(`✓ Check-in สำเร็จ — BIB ${r.bib} ${r.name}`);
+        addLog({ time: now, station: 'Check-in', bib: r.bib, name: r.name, ok: true, isRescan: false, operator, syncId });
+
+        if (r.id) {
+          enqueueSyncItem({
+            id: syncId,
+            type: 'CHECKIN',
+            isRescan: false,
+            runnerId: r.id,
+            bib: r.bib,
+            time: firstTime,
             operator
           });
         }
@@ -978,34 +1058,80 @@ export function RaceProvider({ children }) {
     else if (stationType === 'CheckPoint') {
       const cpName = getCpName(stationId);
       result.stationName = cpName;
+      const syncId = 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
       
-      if (!r.checkin) {
-        result.message = `ยังไม่ได้ Check-in ที่จุดสตาร์ท`;
-        addToast(`BIB ${r.bib} ยังไม่ผ่าน Check-in`, true);
-        addLog({ time: now, station: cpName, bib, name: r.name, ok: false, msg: 'ยังไม่เช็คอิน', operator });
-      } else if (r.cps && r.cps[stationId]) {
-        result.message = `Already scanned`;
-        addToast(`BIB ${r.bib} ผ่าน ${cpName} ไปแล้ว`, true);
-        addLog({ time: now, station: cpName, bib, name: r.name, ok: false, msg: 'ซ้ำ', operator });
-      } else {
-        const syncId = 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-        const updated = { ...r, cps: { ...(r.cps || {}), [stationId]: now } };
-        updateRunner(updated);
-        result.success = true;
-        result.runner = updated;
-        addToast(`✓ ${cpName} — BIB ${r.bib} ${r.name}`);
-        addLog({ time: now, station: cpName, bib, name: r.name, ok: true, operator, syncId });
+      // ตรวจสอบว่าเคยสแกนจุดนี้แล้วหรือไม่ (รองรับทั้ง stationId และ cpName จาก database)
+      const existingCpTime = r.cps && (r.cps[stationId] != null ? r.cps[stationId] : (r.cps[cpName] != null ? r.cps[cpName] : null));
 
-        // Push to asynchronous background sync queue (Zero delay / 0ms UI blocking)
+      if (existingCpTime != null) {
+        // ── สแกนซ้ำที่จุดตรวจ: จดจำเวลาครั้งแรก ──
+        const firstTime = typeof existingCpTime === 'number' ? existingCpTime : new Date(existingCpTime).getTime();
+        const dFirst = new Date(firstTime);
+        const firstTimeStr = dFirst.toTimeString().slice(0, 8);
+
+        result.success = true;
+        result.isRescan = true;
+        result.runner = r; // ยึดเวลาเดิม ไม่เขียนทับ
+        result.firstTime = firstTime;
+        result.message = `Pass ${cpName} : ${firstTimeStr} (สแกนซ้ำ - เวลาแรก)`;
+
+        addToast(`✓ ${cpName} — BIB ${r.bib} ${r.name} (สแกนซ้ำ — ยึดเวลาแรก ${firstTimeStr})`, false);
+        addLog({ 
+          time: now, 
+          station: cpName, 
+          stationId, 
+          bib: r.bib, 
+          name: r.name, 
+          ok: true, 
+          isRescan: true, 
+          operator, 
+          syncId, 
+          msg: `สแกนซ้ำ (เวลาแรก ${firstTimeStr})` 
+        });
+
+        // ส่งเข้า log Database แต่ไม่เขียนทับ cps เดิม
         if (r.id) {
           enqueueSyncItem({
             id: syncId,
             type: 'CP',
+            isRescan: true,
+            runnerId: r.id,
+            bib: r.bib,
+            stationId,
+            time: now,
+            firstTime,
+            operator,
+            note: 'CP_RESCAN'
+          });
+        }
+      } else {
+        // ── สแกนผ่านจุดตรวจครั้งแรก ──
+        // ไม่อิงลำดับขั้น: สแกนได้ทันทีโดยไม่ต้องผ่านจุดก่อนหน้าหรือ Check-in ก่อน
+        const firstTime = now;
+        const d = new Date(firstTime);
+        const firstTimeStr = d.toTimeString().slice(0, 8);
+        const updated = { ...r, cps: { ...(r.cps || {}), [stationId]: firstTime } };
+        updateRunner(updated);
+
+        result.success = true;
+        result.isRescan = false;
+        result.runner = updated;
+        result.firstTime = firstTime;
+        result.message = `Pass ${cpName} : ${firstTimeStr}`;
+
+        addToast(`✓ ${cpName} — BIB ${r.bib} ${r.name}`);
+        addLog({ time: now, station: cpName, stationId, bib: r.bib, name: r.name, ok: true, isRescan: false, operator, syncId });
+
+        if (r.id) {
+          enqueueSyncItem({
+            id: syncId,
+            type: 'CP',
+            isRescan: false,
             runnerId: r.id,
             bib: r.bib,
             cps: updated.cps,
             stationId,
-            time: now,
+            time: firstTime,
             operator
           });
         }
@@ -1013,31 +1139,81 @@ export function RaceProvider({ children }) {
     }
     else if (stationType === 'Finish') {
       result.stationName = 'Finish';
-      if (!r.checkin) {
-        result.message = `ยังไม่ได้ Check-in — ไม่สามารถบันทึก Finish`;
-        addToast(`BIB ${r.bib} ยังไม่ผ่าน Check-in`, true);
-        addLog({ time: now, station: 'Finish', bib, name: r.name, ok: false, msg: 'ยังไม่เช็คอิน', operator });
-      } else if (r.finish) {
-        result.message = `Already finished`;
-        addToast(`BIB ${r.bib} เข้าเส้นชัยแล้ว (ยึดเวลาแรก)`, true);
-        addLog({ time: now, station: 'Finish', bib, name: r.name, ok: false, msg: 'ซ้ำ', operator });
-      } else {
-        const syncId = 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-        const updated = { ...r, finish: now };
-        updateRunner(updated);
-        result.success = true;
-        result.runner = updated;
-        addToast(`🏁 Finish! BIB ${r.bib} ${r.name}`);
-        addLog({ time: now, station: 'Finish', bib, name: r.name, ok: true, operator, syncId });
+      const syncId = 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
 
-        // Push to asynchronous background sync queue (Zero delay / 0ms UI blocking)
+      // ไม่อิงลำดับขั้น: สแกนเส้นชัยได้ทันที
+      // คำนวณเวลาวิ่ง Total Time:
+      // 1. ถ้ามี r.checkin ใช้ r.checkin
+      // 2. ถ้าไม่มี r.checkin แต่มี r.gunStartTime ใช้ r.gunStartTime
+      // 3. ถ้าไม่มีเลย ให้หาเวลา CP แรกสุดที่มี หรือ null
+      const checkinTime = r.checkin 
+        ? (typeof r.checkin === 'number' ? r.checkin : new Date(r.checkin).getTime())
+        : (r.gunStartTime || (r.cps && Object.keys(r.cps).length > 0 ? Math.min(...Object.values(r.cps).map(v => typeof v === 'number' ? v : new Date(v).getTime())) : null));
+
+      if (r.finish) {
+        // ── สแกนเข้าเส้นชัยซ้ำ: จดจำเวลาครั้งแรก ──
+        const firstTime = typeof r.finish === 'number' ? r.finish : new Date(r.finish).getTime();
+        const totalTime = checkinTime ? formatDuration(firstTime - checkinTime) : '—';
+
+        result.success = true;
+        result.isRescan = true;
+        result.runner = r; // ยึดเวลาเดิม ไม่เขียนทับ
+        result.firstTime = firstTime;
+        result.totalTime = totalTime;
+        result.message = totalTime !== '—' ? `Total Time ${totalTime} (เวลาแรก)` : `Finish : ${new Date(firstTime).toTimeString().slice(0, 8)} (สแกนซ้ำ)`;
+
+        addToast(`🏁 Finish! BIB ${r.bib} ${r.name} (สแกนซ้ำ — ยึดเวลาแรก${totalTime !== '—' ? ` Total: ${totalTime}` : ''})`, false);
+        addLog({ 
+          time: now, 
+          station: 'Finish', 
+          bib: r.bib, 
+          name: r.name, 
+          ok: true, 
+          isRescan: true, 
+          operator, 
+          syncId, 
+          msg: `เข้าเส้นชัยซ้ำ (ยึดเวลาแรก${totalTime !== '—' ? ` Total: ${totalTime}` : ''})` 
+        });
+
+        // ส่งเข้า log Database แต่ไม่เขียนทับ finish เดิม
         if (r.id) {
           enqueueSyncItem({
             id: syncId,
             type: 'FINISH',
+            isRescan: true,
             runnerId: r.id,
             bib: r.bib,
             time: now,
+            firstTime,
+            operator,
+            note: 'FINISH_RESCAN'
+          });
+        }
+      } else {
+        // ── สแกนเข้าเส้นชัยครั้งแรก ──
+        const firstTime = now;
+        const totalTime = checkinTime ? formatDuration(firstTime - checkinTime) : '—';
+        const updated = { ...r, finish: firstTime };
+        updateRunner(updated);
+
+        result.success = true;
+        result.isRescan = false;
+        result.runner = updated;
+        result.firstTime = firstTime;
+        result.totalTime = totalTime;
+        result.message = totalTime !== '—' ? `Total Time ${totalTime}` : `Finish : ${new Date(firstTime).toTimeString().slice(0, 8)}`;
+
+        addToast(`🏁 Finish! BIB ${r.bib} ${r.name}${totalTime !== '—' ? ` (${totalTime})` : ''}`);
+        addLog({ time: now, station: 'Finish', bib: r.bib, name: r.name, ok: true, isRescan: false, operator, syncId });
+
+        if (r.id) {
+          enqueueSyncItem({
+            id: syncId,
+            type: 'FINISH',
+            isRescan: false,
+            runnerId: r.id,
+            bib: r.bib,
+            time: firstTime,
             operator
           });
         }

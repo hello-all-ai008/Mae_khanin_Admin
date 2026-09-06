@@ -41,11 +41,9 @@ export default function FinishLine() {
         warn: true 
       });
     } else {
-      const d = new Date(result.now);
-      const totalTime = fmtDur(result.now - result.runner.checkin);
       setLedState({ 
         runner: result.runner, 
-        message: `Total Time ${totalTime}`, 
+        message: result.message, 
         warn: false 
       });
     }
@@ -191,7 +189,13 @@ export default function FinishLine() {
                       </td>
                       <td style={{ textAlign: 'center', width: '150px' }}>
                         {log.ok ? (
-                          <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '13px' }}>✓</span>
+                          log.isRescan ? (
+                            <span style={{ color: '#0284c7', fontWeight: 600, fontSize: '11px', background: '#e0f2fe', padding: '2px 8px', borderRadius: '4px' }} title={log.msg || "สแกนซ้ำ — ยึดเวลาแรก"}>
+                              ✓ สแกนซ้ำ
+                            </span>
+                          ) : (
+                            <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '13px' }}>✓</span>
+                          )
                         ) : (
                           <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '13px' }}>✗</span>
                         )}

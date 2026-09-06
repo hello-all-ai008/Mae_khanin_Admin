@@ -37,7 +37,7 @@ export default function CheckPoint() {
     }
   };
 
-  // Keep selectedCp in sync with available checkpoints
+  // Keep selectedCp in sync with available checkpoints from database
   const activeCpList = useMemo(() => {
     return checkpoints && checkpoints.length > 0 ? checkpoints : CHECKPOINTS;
   }, [checkpoints]);
@@ -46,12 +46,14 @@ export default function CheckPoint() {
   // only staff with no fixed station (e.g. roaming admin) get the free picker.
   const lockedStationId = currentStaff?.station_id || null;
   const isStationLocked = Boolean(
-    lockedStationId && activeCpList.some(cp => cp.id === lockedStationId)
+    lockedStationId && activeCpList.some(cp => cp.id === lockedStationId || cp.name === lockedStationId)
   );
+
+  const validSelectedCp = activeCpList.some(cp => cp.id === selectedCp || cp.name === selectedCp) ? selectedCp : '';
 
   const currentCpId = isStationLocked
     ? lockedStationId
-    : (selectedCp || (activeCpList[0]?.id || 'A1'));
+    : (validSelectedCp || (activeCpList[0]?.id || 'A1'));
 
   const handleScan = (bib) => {
     const result = processScan('CheckPoint', bib, currentCpId);
@@ -63,10 +65,9 @@ export default function CheckPoint() {
         warn: true 
       });
     } else {
-      const d = new Date(result.now);
       setLedState({ 
         runner: result.runner, 
-        message: `Check in : ${d.toTimeString().slice(0, 8)}`, 
+        message: result.message, 
         warn: false 
       });
     }
@@ -147,7 +148,7 @@ export default function CheckPoint() {
           </div>
           
           <ScannerInput onScan={handleScan} />
-          <p className="scan-hint">นักวิ่งต้องผ่าน Check-in ก่อน จึงจะบันทึกเวลาที่จุดนี้ได้ · พิมพ์หมายเลข BIB แล้วกดปุ่ม <span className="kbd">Enter BIB</span> ได้</p>
+          <p className="scan-hint">สามารถสแกนบันทึกเวลาที่จุดนี้ได้ทันทีโดยไม่ต้องเรียงตามลำดับขั้น · พิมพ์หมายเลข BIB แล้วกดปุ่ม <span className="kbd">Enter BIB</span> ได้</p>
           
           <div className="card" style={{ marginTop: '16px', overflow: 'hidden' }}>
             {/* Real-time Database Status Header Bar */}
@@ -238,7 +239,13 @@ export default function CheckPoint() {
                       </td>
                       <td style={{ textAlign: 'center', width: '150px' }}>
                         {log.ok ? (
-                          <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '13px' }}>✓</span>
+                          log.isRescan ? (
+                            <span style={{ color: '#0284c7', fontWeight: 600, fontSize: '11px', background: '#e0f2fe', padding: '2px 8px', borderRadius: '4px' }} title={log.msg || "สแกนซ้ำ — ยึดเวลาแรก"}>
+                              ✓ สแกนซ้ำ
+                            </span>
+                          ) : (
+                            <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '13px' }}>✓</span>
+                          )
                         ) : (
                           <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '13px' }}>✗</span>
                         )}
