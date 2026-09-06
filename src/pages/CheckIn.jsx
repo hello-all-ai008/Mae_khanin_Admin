@@ -31,6 +31,7 @@ export default function CheckIn() {
 
     const eventPayload = {
       type: 'ROHN_MONITOR_CAST',
+      source: 'rohn_admin_checkin',
       monitorId: targetMonitorId,
       bib: runnerData.bib || '',
       name: runnerData.name || '',
