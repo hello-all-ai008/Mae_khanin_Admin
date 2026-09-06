@@ -74,6 +74,8 @@ export default function ScannerInput({ onScan }) {
   const lastScanned = useRef('');
   const isScanningRef = useRef(false);
   const audioCtxRef = useRef(null);
+  const lastScanTimestampRef = useRef(0);
+  const lastBeepTimeRef = useRef(0);
 
   // Save persistent preferences
   useEffect(() => {
@@ -97,16 +99,20 @@ export default function ScannerInput({ onScan }) {
     localStorage.setItem('trail_camera_aspect_ratio', aspectRatioMode);
   }, [aspectRatioMode]);
 
-  // Play pleasant beep sound using Web Audio API
+  // Play pleasant beep sound using Web Audio API with rate-limiting
   const playBeep = () => {
     if (!soundEnabled) return;
+    const now = Date.now();
+    if (now - lastBeepTimeRef.current < 250) return;
+    lastBeepTimeRef.current = now;
+
     try {
-      if (!audioCtxRef.current) {
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         audioCtxRef.current = new AudioCtx();
       }
       const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') ctx.resume();
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
 
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -280,35 +286,28 @@ export default function ScannerInput({ onScan }) {
 
       const aspectRatioVal = getAspectRatioVal(currentAspect);
 
+      // ── Clean & robust formats without noise-prone ITF, CODABAR, and CODE_93 ──
       let formats = [
         Html5QrcodeSupportedFormats.QR_CODE,
         Html5QrcodeSupportedFormats.CODE_128,
         Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.CODE_93,
-        Html5QrcodeSupportedFormats.CODABAR,
-        Html5QrcodeSupportedFormats.ITF,
         Html5QrcodeSupportedFormats.EAN_13,
         Html5QrcodeSupportedFormats.EAN_8,
         Html5QrcodeSupportedFormats.UPC_A,
         Html5QrcodeSupportedFormats.UPC_E,
         Html5QrcodeSupportedFormats.DATA_MATRIX,
-        Html5QrcodeSupportedFormats.AZTEC,
         Html5QrcodeSupportedFormats.PDF_417
       ];
       if (currentScanMode === 'qr') {
         formats = [
           Html5QrcodeSupportedFormats.QR_CODE,
           Html5QrcodeSupportedFormats.DATA_MATRIX,
-          Html5QrcodeSupportedFormats.AZTEC,
           Html5QrcodeSupportedFormats.PDF_417
         ];
       } else if (currentScanMode === 'barcode') {
         formats = [
           Html5QrcodeSupportedFormats.CODE_128,
           Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.CODE_93,
-          Html5QrcodeSupportedFormats.CODABAR,
-          Html5QrcodeSupportedFormats.ITF,
           Html5QrcodeSupportedFormats.EAN_13,
           Html5QrcodeSupportedFormats.EAN_8,
           Html5QrcodeSupportedFormats.UPC_A,
@@ -336,34 +335,58 @@ export default function ScannerInput({ onScan }) {
         scanConfig,
         (decodedText) => {
           if (!decodedText) return;
-          const rawTrimmed = String(decodedText).trim();
-          if (!rawTrimmed) return;
+          const cleanText = String(decodedText)
+            .replace(/[\u200B-\u200D\uFEFF\x00-\x1F\x7F]/g, '')
+            .trim();
+          if (!cleanText) return;
+
+          const now = Date.now();
+          const timeSinceLast = now - lastScanTimestampRef.current;
+
+          // Global camera throttle: ignore frames within 750ms of previous scan
+          if (timeSinceLast < 750) return;
 
           // 1. Resolve runner using smartFindRunner against loaded runners
-          const matchedRunner = smartFindRunner(rawTrimmed, runners);
+          const matchedRunner = smartFindRunner(cleanText, runners);
           const resolvedBib = matchedRunner?.bib
             ? String(matchedRunner.bib).trim()
-            : (normalizeScannedBib(rawTrimmed) || rawTrimmed);
+            : (normalizeScannedBib(cleanText) || cleanText);
 
-          if (resolvedBib && resolvedBib !== lastScanned.current) {
-            lastScanned.current = resolvedBib;
-            setLastDetected({
-              raw: rawTrimmed,
-              bib: resolvedBib,
-              runner: matchedRunner,
-              matched: !!matchedRunner,
-              time: Date.now()
-            });
+          if (!resolvedBib) return;
 
-            playBeep();
+          // Filter out optical noise: strings shorter than 2 chars that don't match any runner
+          if (!matchedRunner && resolvedBib.length < 2) return;
+
+          // If same bib was scanned within debounce window, ignore
+          const isSameBib = resolvedBib === lastScanned.current;
+          const minInterval = isSameBib ? (matchedRunner ? 2000 : 1200) : 750;
+          if (timeSinceLast < minInterval) return;
+
+          lastScanTimestampRef.current = now;
+          lastScanned.current = resolvedBib;
+
+          setLastDetected({
+            raw: cleanText,
+            bib: resolvedBib,
+            runner: matchedRunner,
+            matched: !!matchedRunner,
+            time: now
+          });
+
+          playBeep();
+
+          try {
             onScan(resolvedBib);
-
-            // Shorter debounce if not matched (1000ms) so operator can adjust immediately
-            const debounceMs = matchedRunner ? 2000 : 1000;
-            setTimeout(() => {
-              lastScanned.current = '';
-            }, debounceMs);
+          } catch (scanErr) {
+            console.error('onScan execution error:', scanErr);
           }
+
+          const clearDelay = matchedRunner ? 2200 : 1200;
+          setTimeout(() => {
+            if (lastScanned.current === resolvedBib) {
+              lastScanned.current = '';
+            }
+          }, clearDelay);
         },
         () => {
           // ignore scan frame errors

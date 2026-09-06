@@ -6,6 +6,12 @@ import ScannerInput from '../components/ScannerInput';
 import PreloadDataCard from '../components/PreloadDataCard';
 import ScanSyncBadge from '../components/ScanSyncBadge';
 
+const safeFormatTime = (ts) => {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return isNaN(d.getTime()) ? '—' : d.toTimeString().slice(0, 8);
+};
+
 export default function CheckIn() {
   const { 
     events, 
@@ -83,27 +89,31 @@ export default function CheckIn() {
   };
 
   const handleScan = (bib) => {
-    const result = processScan('Check-in', bib);
-    
-    if (!result.success) {
-      const notFoundRunner = result.runner || { bib, name: 'NOT FOUND', nat: '', age: '', cat: '' };
-      setLedState({ 
-        runner: notFoundRunner, 
-        message: result.message, 
-        warn: true 
-      });
-      if (monitorId && monitorId !== 'none') {
-        castToMonitor(monitorId, { bib, name: 'NOT FOUND', cat: '-', age: '-' });
+    try {
+      const result = processScan('Check-in', bib);
+      
+      if (!result.success) {
+        const notFoundRunner = result.runner || { bib: String(bib || '—'), name: 'NOT FOUND', nat: '', age: '', cat: '' };
+        setLedState({ 
+          runner: notFoundRunner, 
+          message: result.message || 'NOT FOUND', 
+          warn: true 
+        });
+        if (monitorId && monitorId !== 'none') {
+          castToMonitor(monitorId, { bib: String(bib || '—'), name: 'NOT FOUND', cat: '-', age: '-' });
+        }
+      } else {
+        setLedState({ 
+          runner: result.runner, 
+          message: result.message, 
+          warn: false 
+        });
+        if (monitorId && monitorId !== 'none' && result.runner) {
+          castToMonitor(monitorId, result.runner);
+        }
       }
-    } else {
-      setLedState({ 
-        runner: result.runner, 
-        message: result.message, 
-        warn: false 
-      });
-      if (monitorId && monitorId !== 'none' && result.runner) {
-        castToMonitor(monitorId, result.runner);
-      }
+    } catch (e) {
+      console.error('CheckIn handleScan error:', e);
     }
   };
 
@@ -277,24 +287,33 @@ export default function CheckIn() {
                 </thead>
                 <tbody>
                   {recentLog.map((log, i) => (
-                    <tr key={i}>
-                      <td className="mono" style={{ width: '165px' }}>{new Date(log.time).toTimeString().slice(0, 8)}</td>
-                      <td className="mono" style={{ width: '155px', fontWeight: 700, color: 'var(--ink)' }}>{log.bib}</td>
-                      <td style={{ minWidth: '260px', fontWeight: 500 }}>{log.name}</td>
+                    <tr key={log.syncId || log.id || `${log.bib}_${i}`}>
+                      <td className="mono" style={{ width: '165px' }}>{safeFormatTime(log.time)}</td>
+                      <td className="mono" style={{ width: '155px', fontWeight: 700, color: 'var(--ink)' }}>{String(log.bib ?? '—')}</td>
+                      <td style={{ minWidth: '260px', fontWeight: 500 }}>{String(log.name ?? '—')}</td>
                       <td style={{ width: '200px', fontSize: '12px', color: 'var(--ink-2)' }}>
                         {log.operator ? `👤 ${log.operator}` : '—'}
                       </td>
                       <td style={{ textAlign: 'center', width: '150px' }}>
                         {log.ok ? (
-                          log.isRescan ? (
-                            <span style={{ color: '#0284c7', fontWeight: 600, fontSize: '11px', background: '#e0f2fe', padding: '2px 8px', borderRadius: '4px' }} title={log.msg || "สแกนซ้ำ — ยึดเวลาแรก"}>
-                              ✓ สแกนซ้ำ
-                            </span>
-                          ) : (
-                            <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '13px' }}>✓</span>
-                          )
+                          <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '13px' }}>✓ ผ่าน</span>
+                        ) : log.isRescan ? (
+                          <span 
+                            style={{ 
+                              color: '#d97706', 
+                              fontWeight: 700, 
+                              fontSize: '11px', 
+                              background: '#fef3c7', 
+                              padding: '2px 8px', 
+                              borderRadius: '4px',
+                              border: '1px solid #fde68a'
+                            }} 
+                            title={log.msg || "สแกนซ้ำ — สแกนได้ครั้งเดียวและยึดเวลาแรกเสมอ"}
+                          >
+                            ⚠️ สแกนซ้ำ (เวลาแรก)
+                          </span>
                         ) : (
-                          <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '13px' }}>✗</span>
+                          <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '13px' }}>✗ ไม่พบข้อมูล</span>
                         )}
                       </td>
                       <td style={{ textAlign: 'right', width: '220px' }}>

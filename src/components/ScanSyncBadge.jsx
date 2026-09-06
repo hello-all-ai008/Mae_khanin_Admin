@@ -14,8 +14,8 @@ export default function ScanSyncBadge({ log }) {
 
   if (!log) return null;
 
-  // กรณีสแกนไม่ผ่าน (เช่น ซ้ำ, ไม่พบข้อมูล, ยังไม่เช็คอิน) จะไม่ถูกส่งไป DB
-  if (!log.ok) {
+  // กรณีสแกนไม่ผ่านจริง (เช่น ไม่พบข้อมูลในระบบ) และไม่ใช่การบันทึกสแกนซ้ำ จะไม่ถูกส่งไป DB
+  if (!log.ok && !log.isRescan) {
     return (
       <span className="db-sync-badge err" title={`สแกนไม่ผ่าน: ${log.msg || 'ข้อมูลไม่ถูกต้อง'} (ไม่ส่ง Database)`}>
         <AlertCircle size={12} />
@@ -62,10 +62,10 @@ export default function ScanSyncBadge({ log }) {
   return (
     <span 
       className="db-sync-badge synced" 
-      title="ข้อมูลถูกบันทึกและซิงค์ขึ้น Supabase Database สำเร็จเรียบร้อยแล้ว ✓"
+      title={log.isRescan ? "บันทึกประวัติการสแกนซ้ำลง Database (scan_logs) สำเร็จ ✓" : "ข้อมูลถูกบันทึกและซิงค์ขึ้น Supabase Database สำเร็จเรียบร้อยแล้ว ✓"}
     >
       <CheckCircle2 size={12} />
-      <span>ส่งแล้ว</span>
+      <span>{log.isRescan ? "บันทึก Log แล้ว" : "ส่งแล้ว"}</span>
     </span>
   );
 }

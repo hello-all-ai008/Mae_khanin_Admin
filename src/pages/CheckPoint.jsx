@@ -6,6 +6,12 @@ import ScannerInput from '../components/ScannerInput';
 import PreloadDataCard from '../components/PreloadDataCard';
 import ScanSyncBadge from '../components/ScanSyncBadge';
 
+const safeFormatTime = (ts) => {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return isNaN(d.getTime()) ? '—' : d.toTimeString().slice(0, 8);
+};
+
 export default function CheckPoint() {
   const {
     events,
@@ -56,20 +62,24 @@ export default function CheckPoint() {
     : (validSelectedCp || (activeCpList[0]?.id || 'A1'));
 
   const handleScan = (bib) => {
-    const result = processScan('CheckPoint', bib, currentCpId);
-    
-    if (!result.success) {
-      setLedState({ 
-        runner: result.runner || { bib, name: 'NOT FOUND', nat: '', age: '', cat: '' }, 
-        message: result.message, 
-        warn: true 
-      });
-    } else {
-      setLedState({ 
-        runner: result.runner, 
-        message: result.message, 
-        warn: false 
-      });
+    try {
+      const result = processScan('CheckPoint', bib, currentCpId);
+      
+      if (!result.success) {
+        setLedState({ 
+          runner: result.runner || { bib: String(bib || '—'), name: 'NOT FOUND', nat: '', age: '', cat: '' }, 
+          message: result.message || 'NOT FOUND', 
+          warn: true 
+        });
+      } else {
+        setLedState({ 
+          runner: result.runner, 
+          message: result.message, 
+          warn: false 
+        });
+      }
+    } catch (e) {
+      console.error('CheckPoint handleScan error:', e);
     }
   };
 
@@ -230,24 +240,33 @@ export default function CheckPoint() {
                 </thead>
                 <tbody>
                   {recentLog.map((log, i) => (
-                    <tr key={i}>
-                      <td className="mono" style={{ width: '165px' }}>{new Date(log.time).toTimeString().slice(0, 8)}</td>
-                      <td className="mono" style={{ width: '155px', fontWeight: 700, color: 'var(--ink)' }}>{log.bib}</td>
-                      <td style={{ minWidth: '260px', fontWeight: 500 }}>{log.name}</td>
+                    <tr key={log.syncId || log.id || `${log.bib}_${i}`}>
+                      <td className="mono" style={{ width: '165px' }}>{safeFormatTime(log.time)}</td>
+                      <td className="mono" style={{ width: '155px', fontWeight: 700, color: 'var(--ink)' }}>{String(log.bib ?? '—')}</td>
+                      <td style={{ minWidth: '260px', fontWeight: 500 }}>{String(log.name ?? '—')}</td>
                       <td style={{ width: '200px', fontSize: '12px', color: 'var(--ink-2)' }}>
                         {log.operator ? `👤 ${log.operator}` : '—'}
                       </td>
                       <td style={{ textAlign: 'center', width: '150px' }}>
                         {log.ok ? (
-                          log.isRescan ? (
-                            <span style={{ color: '#0284c7', fontWeight: 600, fontSize: '11px', background: '#e0f2fe', padding: '2px 8px', borderRadius: '4px' }} title={log.msg || "สแกนซ้ำ — ยึดเวลาแรก"}>
-                              ✓ สแกนซ้ำ
-                            </span>
-                          ) : (
-                            <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '13px' }}>✓</span>
-                          )
+                          <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '13px' }}>✓ ผ่าน</span>
+                        ) : log.isRescan ? (
+                          <span 
+                            style={{ 
+                              color: '#d97706', 
+                              fontWeight: 700, 
+                              fontSize: '11px', 
+                              background: '#fef3c7', 
+                              padding: '2px 8px', 
+                              borderRadius: '4px',
+                              border: '1px solid #fde68a'
+                            }} 
+                            title={log.msg || "สแกนซ้ำ — สแกนได้ครั้งเดียวและยึดเวลาแรกเสมอ"}
+                          >
+                            ⚠️ สแกนซ้ำ (เวลาแรก)
+                          </span>
                         ) : (
-                          <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '13px' }}>✗</span>
+                          <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '13px' }}>✗ ไม่พบข้อมูล</span>
                         )}
                       </td>
                       <td style={{ textAlign: 'right', width: '220px' }}>

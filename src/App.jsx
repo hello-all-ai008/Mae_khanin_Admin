@@ -13,6 +13,7 @@ import EventManager from './pages/EventManager';
 import StaffManager from './pages/StaffManager';
 import StaffLogin from './pages/StaffLogin';
 import AccessDenied from './components/AccessDenied';
+import ErrorBoundary from './components/ErrorBoundary';
 import { useAuth } from './context/AuthContext';
 import { canAccessRoute, landingRouteFor } from './lib/roles';
 
@@ -97,18 +98,20 @@ function App() {
     <div className="app">
       <Navbar />
       <main className="main">
-        <Routes>
-          <Route path="/login" element={<Navigate to={landingPath} replace />} />
-          <Route path="/" element={<Navigate to={landingPath} replace />} />
-          {APP_ROUTES.map(({ path, element }) => (
-            <Route
-              key={path}
-              path={path}
-              element={canAccessRoute(role, path) ? element : <AccessDenied role={role} landingPath={landingPath} />}
-            />
-          ))}
-          <Route path="*" element={<Navigate to={landingPath} replace />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/login" element={<Navigate to={landingPath} replace />} />
+            <Route path="/" element={<Navigate to={landingPath} replace />} />
+            {APP_ROUTES.map(({ path, element }) => (
+              <Route
+                key={path}
+                path={path}
+                element={canAccessRoute(role, path) ? element : <AccessDenied role={role} landingPath={landingPath} />}
+              />
+            ))}
+            <Route path="*" element={<Navigate to={landingPath} replace />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
       <Toast />
     </div>

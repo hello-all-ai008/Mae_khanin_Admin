@@ -78,33 +78,39 @@ export default function LedBoard({ runner, message, warn = false, runners: props
   const overallLeaders = useMemo(() => {
     if (!categoriesList.length) return [];
 
-    return categoriesList.map(catName => {
-      const catObj = Array.isArray(allCategories)
-        ? allCategories.find(c => (typeof c === 'string' ? c : (c.name || c.code)) === catName)
-        : null;
-      const color = (catObj && catObj.color) || '#3b82f6';
+    try {
+      return categoriesList.map(catName => {
+        const catObj = Array.isArray(allCategories)
+          ? allCategories.find(c => (typeof c === 'string' ? c : (c.name || c.code)) === catName)
+          : null;
+        const color = (catObj && catObj.color) || '#3b82f6';
 
-      const catRunners = allRunners.filter(r => {
-        const c = r.cat || r.category || r.distance;
-        return c === catName && parseFinishTime(r);
+        const catRunners = allRunners.filter(r => {
+          if (!r) return false;
+          const c = r.cat || r.category || r.distance;
+          return c === catName && parseFinishTime(r);
+        });
+
+        // Earliest finish = 1st person across finish line
+        const males = catRunners
+          .filter(r => isMale(r.gender))
+          .sort((a, b) => (parseFinishTime(a) || 0) - (parseFinishTime(b) || 0));
+
+        const females = catRunners
+          .filter(r => isFemale(r.gender))
+          .sort((a, b) => (parseFinishTime(a) || 0) - (parseFinishTime(b) || 0));
+
+        return {
+          category: catName,
+          color,
+          male: males[0] || null,
+          female: females[0] || null
+        };
       });
-
-      // Earliest finish = 1st person across finish line
-      const males = catRunners
-        .filter(r => isMale(r.gender))
-        .sort((a, b) => parseFinishTime(a) - parseFinishTime(b));
-
-      const females = catRunners
-        .filter(r => isFemale(r.gender))
-        .sort((a, b) => parseFinishTime(a) - parseFinishTime(b));
-
-      return {
-        category: catName,
-        color,
-        male: males[0] || null,
-        female: females[0] || null
-      };
-    });
+    } catch (e) {
+      console.warn('LedBoard overallLeaders calculation error:', e);
+      return [];
+    }
   }, [categoriesList, allRunners, allCategories]);
 
   const filteredLeaders = useMemo(() => {
@@ -118,10 +124,12 @@ export default function LedBoard({ runner, message, warn = false, runners: props
       <div className={`led ${warn ? 'flash-warn' : (runner ? 'flash-ok' : '')}`}>
         {runner ? (
           <>
-            <div className="bib">{runner.bib}</div>
-            <div className="name">{runner.name ? runner.name.toUpperCase() : ''}</div>
-            <div className="meta">{runner.nat || ''} · {runner.age || ''} · {runner.cat || ''}</div>
-            {message && <div className={`time ${warn ? 'meta-warn' : ''}`}>{message}</div>}
+            <div className="bib">{String(runner.bib ?? '—')}</div>
+            <div className="name">{runner.name != null ? String(runner.name).toUpperCase() : ''}</div>
+            <div className="meta">
+              {[runner.nat, runner.age, runner.cat].filter(Boolean).map(String).join(' · ')}
+            </div>
+            {message && <div className={`time ${warn ? 'meta-warn' : ''}`}>{String(message)}</div>}
           </>
         ) : (
           <div className="idle">— รอการสแกน —</div>

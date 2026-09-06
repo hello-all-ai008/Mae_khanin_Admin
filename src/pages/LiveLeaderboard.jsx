@@ -136,44 +136,97 @@ export default function LiveLeaderboard() {
     };
   }, [selectedEventId, fetchData]);
 
+function isMale(gender) {
+  if (!gender) return false;
+  const g = String(gender).trim().toLowerCase();
+  return g === 'm' || g === 'male' || g.startsWith('ชาย') || g === 'man';
+}
+
+function isFemale(gender) {
+  if (!gender) return false;
+  const g = String(gender).trim().toLowerCase();
+  return g === 'f' || g === 'female' || g.startsWith('หญิง') || g === 'woman';
+}
+
   // Group and rank runners
-  const leaderboards = useMemo(() => {
-    if (!runners.length) return [];
+  const { overallLeaders, leaderboards } = useMemo(() => {
+    if (!runners.length) return { overallLeaders: [], leaderboards: [] };
     
     const startStation = stations.find(s => s.type === 'START');
     
-    // Filter finished runners first
-    let finishedRunners = runners.filter(r => r.finish);
-    
-    if (selectedDistance !== 'ALL') {
-      finishedRunners = finishedRunners.filter(r => r.cat === selectedDistance);
-    }
+    // 1. Process all finished runners
+    const allFinishedRunners = runners.filter(r => r.finish);
 
-    // Calculate time for each
-    const withTimes = finishedRunners.map(r => {
+    const allFinishedWithTimes = allFinishedRunners.map(r => {
       let startTime = null;
       if (startStation && r.cps && r.cps[startStation.id]) {
         startTime = r.cps[startStation.id];
+      } else if (r.gunStartTime) {
+        startTime = r.gunStartTime;
+      } else if (r.checkin) {
+        startTime = typeof r.checkin === 'number' ? r.checkin : new Date(r.checkin).getTime();
       }
       
       let netTimeMs = 0;
       if (startTime && startTime < r.finish) {
-        netTimeMs = r.finish - startTime; // Chip time
+        netTimeMs = r.finish - startTime; // Chip / Net time
       } else {
-        // Fallback if no start time, or if start > finish (anomaly)
-        // Without knowing gun time, we can't reliably sort them, but let's just use finish time as a sort value if needed
-        // Ideally, they have a start time. For now, use finish time as a fallback proxy if start time is missing.
         netTimeMs = r.finish; 
       }
       
       return { ...r, netTimeMs, startTime };
     });
 
+    // 2. Compute 1st Male and 1st Female for each distance (Regardless of age group)
+    const uniqueDistances = [...new Set(allFinishedWithTimes.map(r => r.cat).filter(Boolean))].sort();
+    const overallLeadersAll = [];
+    const overallWinnerBibSet = new Set();
+
+    uniqueDistances.forEach(catName => {
+      const catRunners = allFinishedWithTimes.filter(r => (r.cat || 'Unknown') === catName);
+
+      const males = catRunners
+        .filter(r => isMale(r.gender))
+        .sort((a, b) => a.netTimeMs - b.netTimeMs);
+
+      const females = catRunners
+        .filter(r => isFemale(r.gender))
+        .sort((a, b) => a.netTimeMs - b.netTimeMs);
+
+      const male1 = males[0] || null;
+      const female1 = females[0] || null;
+
+      if (male1 && male1.bib) overallWinnerBibSet.add(String(male1.bib));
+      if (female1 && female1.bib) overallWinnerBibSet.add(String(female1.bib));
+
+      const catObj = categories.find(c => (c.name || c.code) === catName);
+
+      overallLeadersAll.push({
+        cat: catName,
+        color: catObj?.color || 'var(--ink)',
+        male: male1,
+        female: female1,
+      });
+    });
+
+    const filteredOverall = selectedDistance === 'ALL'
+      ? overallLeadersAll
+      : overallLeadersAll.filter(item => item.cat === selectedDistance);
+
+    // 3. Filter finished runners for selected distance AND EXCLUDE overall winners
+    // (1 คนรับได้แค่ 1 รางวัล: คนที่ได้ overall จะต้องไม่แสดงในตารางจัดอันดับปกติ)
+    let eligibleRunners = allFinishedWithTimes.filter(r => !r.bib || !overallWinnerBibSet.has(String(r.bib)));
+
+    if (selectedDistance !== 'ALL') {
+      eligibleRunners = eligibleRunners.filter(r => r.cat === selectedDistance);
+    }
+
     // Group by category (distance), gender, age_group
     const groups = {};
-    withTimes.forEach(r => {
+    eligibleRunners.forEach(r => {
       const cat = r.cat || 'Unknown';
-      const gender = (r.gender || 'Unknown').toLowerCase().startsWith('m') ? 'Male' : (r.gender || 'Unknown').toLowerCase().startsWith('f') ? 'Female' : 'Unknown';
+      const gender = isMale(r.gender) ? 'Male' : (isFemale(r.gender) ? 'Female' : 'Unknown');
+      const genderLabel = gender === 'Male' ? 'ชาย' : (gender === 'Female' ? 'หญิง' : gender);
       const ageGrp = r.age_group || 'Overall';
       
       const groupKey = `${cat}_${gender}_${ageGrp}`;
@@ -182,7 +235,7 @@ export default function LiveLeaderboard() {
           cat,
           gender,
           ageGrp,
-          label: `${ageGrp} ${gender}`,
+          label: `${ageGrp} (${genderLabel})`,
           runners: []
         };
       }
@@ -203,13 +256,11 @@ export default function LiveLeaderboard() {
       return a.ageGrp.localeCompare(b.ageGrp);
     });
 
-    return result;
-  }, [runners, stations, selectedDistance]);
+    return { overallLeaders: filteredOverall, leaderboards: result };
+  }, [runners, stations, selectedDistance, categories]);
 
   const formatMs = (ms, hasStartTime) => {
     if (!hasStartTime) {
-      // If we don't have start time, returning finish epoch isn't useful for display.
-      // We'll just show the finish time of day.
       const d = new Date(ms);
       return `Finish: ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
     }
@@ -300,6 +351,147 @@ export default function LiveLeaderboard() {
             <RefreshCw size={14} /> Refresh
           </button>
         </div>
+      </div>
+
+      {/* 🏆 ทำเนียบผู้นำ Overall (อันดับ 1 ชาย / หญิง แต่ละระยะ ไม่สนรุ่นอายุ) */}
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '16px',
+          padding: '20px 24px',
+          border: '1px solid rgba(245, 182, 10, 0.4)',
+          boxShadow: '0 4px 20px rgba(245, 182, 10, 0.08)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid var(--line)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ background: '#fef3c7', padding: '8px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Trophy size={24} color="#d97706" />
+              </div>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#92400e' }}>
+                  ทำเนียบผู้นำ Overall (อันดับ 1 ชาย / หญิง)
+                </h2>
+                <p style={{ margin: 0, fontSize: '13px', color: '#b45309', fontWeight: 500, marginTop: '2px' }}>
+                  ไม่จำกัดรุ่นอายุ · สนเฉพาะระยะทางและเพศ
+                </p>
+              </div>
+            </div>
+
+            <div style={{ fontSize: '12px', background: '#fffbeb', color: '#b45309', padding: '6px 14px', borderRadius: '99px', border: '1px solid #fde68a', fontWeight: 600 }}>
+              ⭐ ผู้ได้รางวัล Overall จะไม่นำไปจัดอันดับในรุ่นอายุ (1 คนรับได้ 1 รางวัล)
+            </div>
+          </div>
+
+          {overallLeaders.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px', color: 'var(--ink-2)' }}>
+              ยังไม่มีข้อมูลผู้เข้าเส้นชัยในขณะนี้
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
+              {overallLeaders.map(item => (
+                <div key={item.cat} style={{ background: '#fafaf9', borderRadius: '12px', border: '1px solid #e7e5e4', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ background: item.color || '#0f172a', color: '#ffffff', padding: '3px 12px', borderRadius: '99px', fontSize: '12px', fontWeight: 800 }}>
+                      {item.cat}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#78716c', fontWeight: 600 }}>
+                      Overall Champion
+                    </span>
+                  </div>
+
+                  {/* Male Champion */}
+                  <div style={{ background: '#ffffff', borderRadius: '10px', padding: '10px 12px', border: '1px solid #e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                      <div style={{ width: '30px', height: '30px', borderRadius: '6px', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
+                        ชาย
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        {item.male ? (
+                          <>
+                            <div style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              🥇 {item.male.name}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              <span style={{ fontWeight: 700, color: '#0284c7' }}>BIB: {item.male.bib}</span>
+                              {item.male.age_group && <span>· รุ่น {item.male.age_group}</span>}
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '12px' }}>— ยังไม่มีผู้เข้าเส้นชัย —</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: item.male ? '#16a34a' : '#94a3b8' }}>
+                        {item.male ? formatMs(item.male.netTimeMs, !!item.male.startTime) : '--:--:--'}
+                      </div>
+                      {item.male && (
+                        <button 
+                          onClick={() => setSelectedSlip({ runner: item.male, catRank: 'Overall 1' })} 
+                          style={{ background: 'transparent', border: 'none', color: 'var(--ink-2)', cursor: 'pointer', padding: '4px', display: 'flex' }}
+                          title="Print E-Slip"
+                        >
+                          <Printer size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Female Champion */}
+                  <div style={{ background: '#ffffff', borderRadius: '10px', padding: '10px 12px', border: '1px solid #fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                      <div style={{ width: '30px', height: '30px', borderRadius: '6px', background: '#fce7f3', color: '#db2777', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
+                        หญิง
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        {item.female ? (
+                          <>
+                            <div style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              🥇 {item.female.name}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              <span style={{ fontWeight: 700, color: '#db2777' }}>BIB: {item.female.bib}</span>
+                              {item.female.age_group && <span>· รุ่น {item.female.age_group}</span>}
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '12px' }}>— ยังไม่มีผู้เข้าเส้นชัย —</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: item.female ? '#16a34a' : '#94a3b8' }}>
+                        {item.female ? formatMs(item.female.netTimeMs, !!item.female.startTime) : '--:--:--'}
+                      </div>
+                      {item.female && (
+                        <button 
+                          onClick={() => setSelectedSlip({ runner: item.female, catRank: 'Overall 1' })} 
+                          style={{ background: 'transparent', border: 'none', color: 'var(--ink-2)', cursor: 'pointer', padding: '4px', display: 'flex' }}
+                          title="Print E-Slip"
+                        >
+                          <Printer size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 🏃 ตารางจัดอันดับตามรุ่นอายุ */}
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: 'var(--ink)' }}>
+          ตารางจัดอันดับตามรุ่นอายุ (Top 5)
+        </h2>
+        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--ink-2)' }}>
+          * นักวิ่งที่ได้รับรางวัล Overall อันดับ 1 ชาย/หญิง ได้รับการตัดสิทธิ์ออกจากรุ่นอายุแล้ว เพื่อส่งต่อรางวัลให้ลำดับถัดไป (1 คนรับได้ 1 รางวัล)
+        </p>
       </div>
 
       {loading ? (
