@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
 import { isAuthError, writeFailureReason, writeErrorMessage } from '../lib/supabaseResult';
 import { fetchAllRows } from '../lib/supabaseFetch';
+import { normalizeScannedBib, smartFindRunner } from '../lib/bibUtils';
 
 const RaceContext = createContext();
 
@@ -890,7 +891,7 @@ export function RaceProvider({ children }) {
     return c ? c.name : id;
   };
 
-  const findRunner = (bib) => runners.find(r => String(r.bib).trim() === String(bib).trim());
+  const findRunner = (bib) => smartFindRunner(bib, runners);
 
   const addLog = (entry) => {
     setScanLog(prev => [entry, ...prev].sort((a, b) => b.time - a.time));
@@ -939,8 +940,9 @@ export function RaceProvider({ children }) {
     let result = { success: false, runner: r, now, message: '', stationName: '', operator };
 
     if (!r) {
-      addLog({ time: now, station: stationType === 'CheckPoint' ? getCpName(stationId) : stationType, bib, name: 'ไม่พบในระบบ', ok: false, operator });
-      addToast(`ไม่พบ BIB ${bib} ในฐานข้อมูลงานนี้`, true);
+      const cleanBib = normalizeScannedBib(bib) || String(bib || '').trim();
+      addLog({ time: now, station: stationType === 'CheckPoint' ? getCpName(stationId) : stationType, bib: cleanBib, name: 'ไม่พบในระบบ', ok: false, operator });
+      addToast(`ไม่พบ BIB ${cleanBib} ในฐานข้อมูลงานนี้`, true);
       result.message = 'NOT FOUND · ไม่พบในระบบ';
       return result;
     }
@@ -1080,6 +1082,8 @@ export function RaceProvider({ children }) {
       addStaff,
       toastMsg,
       processScan,
+      findRunner,
+      normalizeScannedBib,
       addToast,
       showConfirm,
       getCpName,
