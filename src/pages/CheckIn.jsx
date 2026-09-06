@@ -88,12 +88,12 @@ export default function CheckIn() {
     }
   };
 
-  const handleScan = (bib) => {
+  const handleScan = (bib, preResolvedRunner = null) => {
     try {
-      const result = processScan('Check-in', bib);
+      const result = processScan('Check-in', bib, null, preResolvedRunner);
       
       if (!result.success) {
-        const notFoundRunner = result.runner || { bib: String(bib || '—'), name: 'NOT FOUND', nat: '', age: '', cat: '' };
+        const notFoundRunner = result.runner || preResolvedRunner || { bib: String(bib || '—'), name: 'NOT FOUND', nat: '', age: '', cat: '' };
         setLedState({ 
           runner: notFoundRunner, 
           message: result.message || 'NOT FOUND', 

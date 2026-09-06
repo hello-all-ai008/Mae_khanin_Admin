@@ -37,13 +37,13 @@ export default function FinishLine() {
     return `${h}:${m}:${ss}`;
   };
 
-  const handleScan = (bib) => {
+  const handleScan = (bib, preResolvedRunner = null) => {
     try {
-      const result = processScan('Finish', bib);
+      const result = processScan('Finish', bib, null, preResolvedRunner);
       
       if (!result.success) {
         setLedState({ 
-          runner: result.runner || { bib: String(bib || '—'), name: 'NOT FOUND', nat: '', age: '', cat: '' }, 
+          runner: result.runner || preResolvedRunner || { bib: String(bib || '—'), name: 'NOT FOUND', nat: '', age: '', cat: '' }, 
           message: result.message || 'NOT FOUND', 
           warn: true 
         });

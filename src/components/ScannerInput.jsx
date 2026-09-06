@@ -77,6 +77,13 @@ export default function ScannerInput({ onScan }) {
   const lastScanTimestampRef = useRef(0);
   const lastBeepTimeRef = useRef(0);
 
+  // Keep fresh mutable references so camera scan callback never suffers from stale closure
+  const runnersRef = useRef(runners);
+  runnersRef.current = runners;
+
+  const onScanRef = useRef(onScan);
+  onScanRef.current = onScan;
+
   // Save persistent preferences
   useEffect(() => {
     localStorage.setItem('trail_camera_active', showCamera);
@@ -139,8 +146,9 @@ export default function ScannerInput({ onScan }) {
     if (!raw || !String(raw).trim()) return;
     const rawTrimmed = String(raw).trim();
 
+    const currentRunners = runnersRef.current || runners || [];
     // 1. Try smart matching against currently loaded runners
-    const matchedRunner = smartFindRunner(rawTrimmed, runners);
+    const matchedRunner = smartFindRunner(rawTrimmed, currentRunners);
     const resolvedBib = matchedRunner?.bib
       ? String(matchedRunner.bib).trim()
       : (normalizeScannedBib(rawTrimmed) || rawTrimmed);
@@ -156,7 +164,9 @@ export default function ScannerInput({ onScan }) {
     });
 
     playBeep();
-    onScan(resolvedBib);
+    if (onScanRef.current) {
+      onScanRef.current(resolvedBib, matchedRunner);
+    }
     setBibInput('');
   };
 
@@ -346,16 +356,17 @@ export default function ScannerInput({ onScan }) {
           // Global camera throttle: ignore frames within 750ms of previous scan
           if (timeSinceLast < 750) return;
 
-          // 1. Resolve runner using smartFindRunner against loaded runners
-          const matchedRunner = smartFindRunner(cleanText, runners);
+          // 1. Resolve runner using smartFindRunner against loaded runners via runnersRef
+          const currentRunners = runnersRef.current || runners || [];
+          const matchedRunner = smartFindRunner(cleanText, currentRunners);
           const resolvedBib = matchedRunner?.bib
             ? String(matchedRunner.bib).trim()
             : (normalizeScannedBib(cleanText) || cleanText);
 
           if (!resolvedBib) return;
 
-          // Filter out optical noise: strings shorter than 2 chars that don't match any runner
-          if (!matchedRunner && resolvedBib.length < 2) return;
+          // Filter out optical noise: empty or single delimiter
+          if (!matchedRunner && resolvedBib.length < 1) return;
 
           // If same bib was scanned within debounce window, ignore
           const isSameBib = resolvedBib === lastScanned.current;
@@ -376,7 +387,9 @@ export default function ScannerInput({ onScan }) {
           playBeep();
 
           try {
-            onScan(resolvedBib);
+            if (onScanRef.current) {
+              onScanRef.current(resolvedBib, matchedRunner);
+            }
           } catch (scanErr) {
             console.error('onScan execution error:', scanErr);
           }

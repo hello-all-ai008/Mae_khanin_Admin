@@ -61,13 +61,13 @@ export default function CheckPoint() {
     ? lockedStationId
     : (validSelectedCp || (activeCpList[0]?.id || 'A1'));
 
-  const handleScan = (bib) => {
+  const handleScan = (bib, preResolvedRunner = null) => {
     try {
-      const result = processScan('CheckPoint', bib, currentCpId);
+      const result = processScan('CheckPoint', bib, currentCpId, preResolvedRunner);
       
       if (!result.success) {
         setLedState({ 
-          runner: result.runner || { bib: String(bib || '—'), name: 'NOT FOUND', nat: '', age: '', cat: '' }, 
+          runner: result.runner || preResolvedRunner || { bib: String(bib || '—'), name: 'NOT FOUND', nat: '', age: '', cat: '' }, 
           message: result.message || 'NOT FOUND', 
           warn: true 
         });

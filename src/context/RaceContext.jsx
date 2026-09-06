@@ -87,6 +87,8 @@ export function RaceProvider({ children }) {
   const [selectedEventId, setSelectedEventId] = useState('');
   const [categories, setCategories] = useState([]);
   const [runners, setRunners] = useState([]);
+  const runnersRef = useRef(runners);
+  runnersRef.current = runners;
   const [checkpoints, setCheckpoints] = useState(CHECKPOINTS);
   const [scanLog, setScanLog] = useState(() => {
     try {
@@ -915,7 +917,7 @@ export function RaceProvider({ children }) {
     return c ? c.name : id;
   };
 
-  const findRunner = (bib) => smartFindRunner(bib, runners);
+  const findRunner = (bib) => smartFindRunner(bib, runnersRef.current || runners);
 
   const addLog = (entry) => {
     setScanLog(prev => {
@@ -931,7 +933,11 @@ export function RaceProvider({ children }) {
   };
 
   const updateRunner = (updatedRunner) => {
-    setRunners(prev => prev.map(r => String(r.bib).trim() === String(updatedRunner.bib).trim() ? updatedRunner : r));
+    setRunners(prev => {
+      const next = prev.map(r => String(r.bib).trim() === String(updatedRunner.bib).trim() ? updatedRunner : r);
+      runnersRef.current = next;
+      return next;
+    });
   };
 
   // Adding a staff record never switches the current operator: the operator
@@ -974,12 +980,17 @@ export function RaceProvider({ children }) {
     return `${h}:${m}:${ss}`;
   };
 
-  const processScan = (stationType, bib, stationId = null) => {
+  const processScan = (stationType, bib, stationId = null, preResolvedRunner = null) => {
     const now = Date.now();
     const operator = currentOperator || 'Staff';
     try {
+      const currentRunners = runnersRef.current || runners || [];
       const cleanBib = normalizeScannedBib(bib) || String(bib || '').trim();
-      const r = findRunner(bib) || (cleanBib ? findRunner(cleanBib) : null);
+      const r = preResolvedRunner 
+        || findRunner(bib) 
+        || (cleanBib ? findRunner(cleanBib) : null)
+        || smartFindRunner(bib, currentRunners)
+        || (cleanBib ? smartFindRunner(cleanBib, currentRunners) : null);
       let result = { 
         success: false, 
         runner: r, 
