@@ -147,7 +147,7 @@ export default function CheckPoint() {
           </div>
           
           <ScannerInput onScan={handleScan} />
-          <p className="scan-hint">นักวิ่งต้องผ่าน Check-in ก่อน จึงจะบันทึกเวลาที่จุดนี้ได้</p>
+          <p className="scan-hint">นักวิ่งต้องผ่าน Check-in ก่อน จึงจะบันทึกเวลาที่จุดนี้ได้ · พิมพ์หมายเลข BIB แล้วกดปุ่ม <span className="kbd">Enter BIB</span> ได้</p>
           
           <div className="card" style={{ marginTop: '16px', overflow: 'hidden' }}>
             {/* Real-time Database Status Header Bar */}

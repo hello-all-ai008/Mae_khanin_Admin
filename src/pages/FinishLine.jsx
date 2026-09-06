@@ -100,7 +100,7 @@ export default function FinishLine() {
       <div className="station">
         <div>
           <ScannerInput onScan={handleScan} />
-          <p className="scan-hint">สแกนซ้ำจะไม่ทับเวลาเดิม — ยึดเวลา Finish ครั้งแรกเสมอ</p>
+          <p className="scan-hint">สแกนซ้ำจะไม่ทับเวลาเดิม — ยึดเวลา Finish ครั้งแรกเสมอ · พิมพ์หมายเลข BIB แล้วกดปุ่ม <span className="kbd">Enter BIB</span> ได้</p>
           
           <div className="card" style={{ marginTop: '16px', overflow: 'hidden' }}>
             {/* Real-time Database Status Header Bar */}

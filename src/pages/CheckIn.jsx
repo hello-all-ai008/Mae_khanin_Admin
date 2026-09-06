@@ -196,7 +196,7 @@ export default function CheckIn() {
       <div className="station">
         <div>
           <ScannerInput onScan={handleScan} />
-          <p className="scan-hint">เครื่องยิงบาร์โค้ดจะพิมพ์หมายเลขและกด <span className="kbd">Enter</span> ให้อัตโนมัติ · โฟกัสค้างที่ช่องนี้เสมอ</p>
+          <p className="scan-hint">ยิงบาร์โค้ด หรือพิมพ์หมายเลข BIB แล้วกดปุ่ม <span className="kbd">Enter BIB</span> หรือกด Enter บนแป้นพิมพ์</p>
           
           <div className="card" style={{ marginTop: '16px', overflow: 'hidden' }}>
             {/* Real-time Database Status Header Bar */}

@@ -16,7 +16,8 @@ import {
   Sparkles,
   Volume2,
   VolumeX,
-  UserCheck
+  UserCheck,
+  CornerDownLeft
 } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useRace } from '../context/RaceContext';
@@ -121,11 +122,18 @@ export default function ScannerInput({ onScan }) {
     }
   };
 
+  const submitBib = (val) => {
+    const target = (typeof val === 'string' ? val : bibInput).trim();
+    if (!target) return;
+    playBeep();
+    onScan(target);
+    setBibInput('');
+  };
+
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && bibInput.trim()) {
-      playBeep();
-      onScan(bibInput.trim());
-      setBibInput('');
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitBib();
     }
   };
 
@@ -402,21 +410,73 @@ export default function ScannerInput({ onScan }) {
       </div>
 
       {/* ── Main Input & Action Buttons Bar ── */}
-      <div className="scan-flex" style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
-        <div className="scan-input-wrap" style={{ flex: 1, position: 'relative', margin: 0 }}>
+      <div className="scan-flex" style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
+        <div className="scan-input-wrap" style={{ flex: '1 1 260px', position: 'relative', margin: 0, minWidth: '200px' }}>
           <ScanLine size={22} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-2)' }} />
           <input 
             className="scan-input" 
-            placeholder="สแกน BIB Barcode / QR Code…" 
+            placeholder="สแกน BIB หรือพิมพ์หมายเลข…" 
             autoComplete="off" 
             inputMode="numeric"
             value={bibInput}
             onChange={(e) => setBibInput(e.target.value)}
             onKeyDown={handleKeyDown}
             autoFocus={!showCamera}
-            style={{ width: '100%', paddingLeft: '48px' }}
+            style={{ width: '100%', paddingLeft: '48px', paddingRight: bibInput ? '38px' : '16px' }}
           />
+          {bibInput && (
+            <button
+              type="button"
+              onClick={() => setBibInput('')}
+              title="ล้างหมายเลขที่พิมพ์"
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--ink-2)',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
+
+        {/* Enter BIB Button for Manual Typing */}
+        <button 
+          type="button"
+          onClick={() => submitBib()}
+          disabled={!bibInput.trim()}
+          title="กดเพื่อบันทึกหมายเลข BIB ที่พิมพ์ (Enter BIB)"
+          style={{ 
+            height: '46px',
+            padding: '0 16px', 
+            borderRadius: '10px', 
+            fontWeight: 700, 
+            fontSize: '13.5px', 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '6px', 
+            whiteSpace: 'nowrap',
+            background: bibInput.trim() ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : 'var(--bg-soft)', 
+            color: bibInput.trim() ? '#ffffff' : 'var(--ink-2)', 
+            border: bibInput.trim() ? 'none' : '1px solid var(--line)', 
+            cursor: bibInput.trim() ? 'pointer' : 'not-allowed',
+            boxShadow: bibInput.trim() ? '0 4px 12px rgba(37, 99, 235, 0.35)' : 'none',
+            transition: 'all 0.2s ease',
+            opacity: bibInput.trim() ? 1 : 0.65
+          }}
+        >
+          <CornerDownLeft size={16} />
+          <span>Enter BIB</span>
+        </button>
         
         {/* Toggle Sound */}
         <button 
