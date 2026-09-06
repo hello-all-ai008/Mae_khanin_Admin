@@ -5,6 +5,7 @@ import { useRace } from '../context/RaceContext';
 import AdvancedTable from '../components/AdvancedTable';
 import ESlipModal from '../components/ESlipModal';
 import { RefreshCw, Printer } from 'lucide-react';
+import { fetchCategoryStartMap, attachGunStartTime } from '../lib/categoryStartTimes';
 
 export default function OverallDashboard() {
   const { addToast } = useRace();
@@ -47,6 +48,15 @@ export default function OverallDashboard() {
       if (stError) throw stError;
       setStations(stData || []);
 
+      // Fetch categories
+      const { data: catData, error: catError } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('event_id', selectedEventId);
+      if (catError) console.warn('Categories fetch error', catError);
+
+      const catStartMap = await fetchCategoryStartMap(supabase, catData || []);
+
       // Fetch runners
       const { data: runData, error: runError } = await fetchAllRows((from, to) =>
         supabase
@@ -57,7 +67,9 @@ export default function OverallDashboard() {
           .range(from, to)
       );
       if (runError) throw runError;
-      setRunners(runData || []);
+      let actualRunners = runData || [];
+      actualRunners = actualRunners.map(r => attachGunStartTime(r, catStartMap));
+      setRunners(actualRunners);
 
     } catch (err) {
       console.error('Fetch dashboard error:', err);

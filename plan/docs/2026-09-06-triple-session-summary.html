@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุป 3 เซสชัน — 2026-09-05</title>
+<style>
+  :root{
+    --bg:#efe9e0;
+    --bg-alt:#e6ded1;
+    --surface:#f7f2e9;
+    --surface-2:#fbf8f2;
+    --ink:#3a342b;
+    --ink-soft:#6b6153;
+    --line:#d8cfbe;
+    --accent:#8a6d4b;
+    --accent-2:#5f7a6a;
+    --amber:#b8853a;
+    --danger:#a85c4a;
+    --danger-bg:#f3e3dd;
+    --ok-bg:#e7ede4;
+    --ok:#4f7a5a;
+    --code-bg:#3a342b;
+    --code-ink:#efe9e0;
+    --shadow: 0 2px 10px rgba(58,52,43,0.08), 0 8px 24px rgba(58,52,43,0.06);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family: "Sarabun", "Noto Sans Thai", "Segoe UI", system-ui, sans-serif;
+    line-height:1.65;
+    padding:0 0 64px;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px;}
+  header.hero{
+    background:linear-gradient(135deg,#4a4436,#5f5847 55%,#6b6350);
+    color:#f3ede1;
+    padding:44px 0 36px;
+    margin-bottom:36px;
+  }
+  header.hero .wrap > .eyebrow{
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    font-size:12px;
+    color:#d8cba9;
+    margin-bottom:10px;
+  }
+  header.hero h1{
+    margin:0 0 10px;
+    font-size:clamp(24px,3.6vw,34px);
+    font-weight:700;
+  }
+  header.hero p{margin:4px 0;color:#e6ddc9;font-size:14.5px;}
+  header.hero .sessions{
+    display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;
+  }
+  header.hero .sessions span{
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.25);
+    border-radius:999px;
+    padding:5px 12px;
+    font-size:12.5px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  section{margin-bottom:34px;}
+  h2.section-title{
+    font-size:20px;
+    margin:0 0 16px;
+    padding-bottom:10px;
+    border-bottom:2px solid var(--line);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  h2.section-title .num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:28px;height:28px;border-radius:8px;
+    background:var(--accent);color:#fff;font-size:14px;font-weight:700;
+    flex:none;
+  }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px 24px;
+    box-shadow:var(--shadow);
+    margin-bottom:18px;
+  }
+  .card h3{margin:0 0 4px;font-size:17px;}
+  .card .meta{color:var(--ink-soft);font-size:13px;margin-bottom:16px;}
+  .card .meta code{
+    background:var(--bg-alt);padding:1px 6px;border-radius:5px;font-size:12px;
+  }
+
+  .tag{
+    display:inline-block;font-size:12px;font-weight:600;
+    padding:3px 10px;border-radius:999px;margin-right:6px;margin-bottom:6px;
+  }
+  .tag.add{background:var(--ok-bg);color:var(--ok);}
+  .tag.fix{background:#eee3cf;color:var(--amber);}
+  .tag.investigate{background:#e6e2d6;color:var(--ink-soft);}
+  .tag.open{background:var(--danger-bg);color:var(--danger);}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:680px){.grid-2{grid-template-columns:1fr;}}
+
+  .box{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .box h4{margin:0 0 8px;font-size:13.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
+  .box ul{margin:0;padding-left:20px;font-size:14px;}
+  .box ul li{margin-bottom:6px;}
+  .box code{
+    background:var(--bg-alt);
+    padding:1px 6px;border-radius:5px;font-size:12.5px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .filelist{font-size:13px;color:var(--ink-soft);margin-top:12px;}
+  .filelist code{display:block;background:var(--bg-alt);padding:6px 10px;border-radius:6px;margin-top:4px;font-family:ui-monospace,monospace;}
+
+  .callout{
+    border-radius:12px;
+    padding:18px 20px;
+    border:1px solid #e0b98a;
+    background:#f6e9d3;
+  }
+  .callout.danger{border-color:#d6a793;background:var(--danger-bg);}
+  .callout h4{margin:0 0 10px;font-size:15px;color:#7a5322;}
+  .callout.danger h4{color:#7a4032;}
+  .callout ul{margin:0;padding-left:20px;font-size:14px;}
+  .callout li{margin-bottom:6px;}
+
+  /* mockup: stat row */
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
+  @media (max-width:680px){.stat-row{grid-template-columns:1fr;}}
+  .stat{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+    padding:16px;text-align:center;
+  }
+  .stat .label{font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;}
+  .stat .value{font-size:15px;font-weight:700;}
+  .stat .value .before{color:var(--ink-soft);font-weight:500;text-decoration:line-through;margin-right:6px;}
+  .stat .value .after{color:var(--accent-2);}
+  .stat .sub{font-size:12px;color:var(--ink-soft);margin-top:6px;}
+
+  /* mockup: timeline */
+  .timeline-mock{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+    padding:20px;margin-top:14px;
+  }
+  .timeline-mock .tm-head{font-size:13px;color:var(--ink-soft);margin-bottom:14px;}
+  .tl-item{display:flex;align-items:flex-start;gap:14px;padding-bottom:16px;position:relative;}
+  .tl-item:not(:last-child)::before{
+    content:"";position:absolute;left:9px;top:22px;bottom:-4px;width:2px;background:var(--line);
+  }
+  .tl-dot{
+    width:20px;height:20px;border-radius:50%;background:var(--accent-2);flex:none;margin-top:2px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .tl-dot::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff;}
+  .tl-item.finish .tl-dot{background:var(--amber);}
+  .tl-body .tl-title{font-weight:700;font-size:14.5px;}
+  .tl-body .tl-time{font-size:12.5px;color:var(--ink-soft);font-family:ui-monospace,monospace;}
+
+  /* mockup: before/after code-ish */
+  .diff-mock{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
+  @media (max-width:680px){.diff-mock{grid-template-columns:1fr;}}
+  .diff-col{border-radius:10px;padding:14px 16px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px;}
+  .diff-col.bad{background:var(--danger-bg);border:1px solid #d6a793;}
+  .diff-col.good{background:var(--ok-bg);border:1px solid #a9c2ab;}
+  .diff-col .diff-label{font-family:"Sarabun","Noto Sans Thai",sans-serif;font-weight:700;font-size:12.5px;margin-bottom:8px;}
+  .diff-col.bad .diff-label{color:var(--danger);}
+  .diff-col.good .diff-label{color:var(--ok);}
+  .diff-col div.line{padding:2px 0;}
+
+  table.simple{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px;}
+  table.simple th, table.simple td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;}
+  table.simple th{color:var(--ink-soft);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;}
+
+  footer{text-align:center;color:var(--ink-soft);font-size:12.5px;margin-top:40px;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Mae Khanin Admin · สรุปงาน 2026-09-05</div>
+    <h1>สรุป 3 เซสชัน: เพิ่มนักวิ่ง, แก้ปัญหา 1000 แถว, ฟีเจอร์เวลาสตาร์ท</h1>
+    <p>ช่วงเวลา 05:27 – 17:04 น. · ระบบที่แตะ: Mae_khanin_Admin, ROHN-RUNNER, Supabase (kjtbfzsgnsvkfjgayuys)</p>
+    <div class="sessions">
+      <span>7b8d570a…8b8e</span>
+      <span>682f2926…7227f</span>
+      <span>cab09f43…215f</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <h2 class="section-title"><span class="num">1</span>เซสชัน 7b8d570a — เพิ่มนักวิ่งบ้านปง 5 คน</h2>
+    <div class="card">
+      <h3>Baanpong Trail 2026 — เข้า Supabase <code>runners</code> table เท่านั้น</h3>
+      <div class="meta">05:30–17:04 · ไม่แตะไฟล์ในโค้ด, ไม่แก้ไฟล์ FINAL.xlsx</div>
+      <span class="tag add">เพิ่มข้อมูล</span>
+      <p style="margin:12px 0 0;font-size:14.5px;">
+        เพิ่มนักวิ่งใหม่ 5 คน จากไฟล์ <code>BIB-NUMBER-BAANPONG-2026-RUNNER.xlsx</code> —
+        4 คนเข้าสาย 10Km (Hard Rock) ต่อจากลำดับเดิม, 1 คนเข้าสาย 5Km (Soft Rock)
+      </p>
+      <table class="simple">
+        <tr><th>BIB</th><th>ชื่อ</th><th>เพศ</th><th>รุ่นอายุ</th><th>สาย</th></tr>
+        <tr><td>1855</td><td>Naruebodin Wuttiphiang</td><td>ชาย</td><td>ไม่เกิน 29 ปี</td><td>10Km Hard Rock</td></tr>
+        <tr><td>1856</td><td>Natnicha Srilawongseree</td><td>หญิง</td><td>50 ปีขึ้นไป</td><td>10Km Hard Rock</td></tr>
+        <tr><td>1857</td><td>Somboon Karnjanakit</td><td>ชาย</td><td>50 ปีขึ้นไป</td><td>10Km Hard Rock</td></tr>
+        <tr><td>1858</td><td>Sunanta Karnjanakit</td><td>หญิง</td><td>50 ปีขึ้นไป</td><td>10Km Hard Rock</td></tr>
+        <tr><td>5228</td><td>Waraporn Singyoocharoen</td><td>หญิง</td><td>40-49 ปี</td><td>5Km Soft Rock</td></tr>
+      </table>
+
+      <div class="stat-row">
+        <div class="stat">
+          <div class="label">รวมทั้งหมด</div>
+          <div class="value"><span class="before">1061</span><span class="after">1066</span></div>
+          <div class="sub">+5 คน</div>
+        </div>
+        <div class="stat">
+          <div class="label">10Km Hard Rock</div>
+          <div class="value"><span class="before">843</span><span class="after">848</span></div>
+          <div class="sub">BIB 1011–1858</div>
+        </div>
+        <div class="stat">
+          <div class="label">5Km Soft Rock</div>
+          <div class="value"><span class="before">217</span><span class="after">218</span></div>
+          <div class="sub">BIB 5011–5228</div>
+        </div>
+      </div>
+      <div class="filelist">ตรวจสอบแล้ว: BIB ซ้ำ = 0 รายการ</div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num">2</span>เซสชัน 682f2926 — แก้ปัญหาแคป 1000 แถว + dropdown ผิด</h2>
+    <div class="card">
+      <h3>Mae_khanin_Admin — CheckIn / CheckPoint / FinishLine ยังโชว์แค่ 1000 คน</h3>
+      <div class="meta">05:29–07:16 · ยังไม่ commit/push</div>
+      <span class="tag fix">แก้ไข</span>
+      <div class="grid-2" style="margin-top:14px;">
+        <div class="box">
+          <h4>สาเหตุ</h4>
+          <ul>
+            <li><code>RaceContext.jsx</code>, <code>OverallDashboard.jsx</code>, <code>LiveLeaderboard.jsx</code> ดึงข้อมูลนักวิ่งแบบไม่แบ่งหน้า (<code>.select('*')</code> ไม่มี <code>.range()</code>) → PostgREST ตัดที่ 1000 แถวอัตโนมัติ</li>
+            <li><code>registration_status</code> เป็น ENUM จริงแค่ 2 ค่า (<code>PRE_REGISTERED</code>, <code>CHECKED_IN</code>) — ความคืบหน้า CP1-5/FINISH เก็บแยกใน <code>cps</code>/<code>finish</code> อยู่แล้ว ไม่ใช่บั๊ก</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h4>แก้แล้ว</h4>
+          <ul>
+            <li>ทั้ง 3 ไฟล์เปลี่ยนไปใช้ <code>fetchAllRows</code> (helper เดิม) + <code>.order('id')</code></li>
+            <li><code>EditRunnerModal.jsx</code> — dropdown มีตัวเลือกผิด (<code>CONFIRMED</code>/<code>CANCELLED</code>) แก้เป็น 2 ค่าจริง</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="diff-mock">
+        <div class="diff-col bad">
+          <div class="diff-label">❌ ก่อนแก้ (ผิด enum)</div>
+          <div class="line">&lt;option&gt;CONFIRMED&lt;/option&gt;</div>
+          <div class="line">&lt;option&gt;CANCELLED&lt;/option&gt;</div>
+        </div>
+        <div class="diff-col good">
+          <div class="diff-label">✅ หลังแก้ (ตรง enum จริง)</div>
+          <div class="line">&lt;option&gt;PRE_REGISTERED&lt;/option&gt;</div>
+          <div class="line">&lt;option&gt;CHECKED_IN&lt;/option&gt;</div>
+        </div>
+      </div>
+
+      <div class="filelist">
+        ไฟล์ที่แก้:
+        <code>src/context/RaceContext.jsx</code>
+        <code>src/pages/OverallDashboard.jsx</code>
+        <code>src/pages/LiveLeaderboard.jsx</code>
+        <code>src/components/EditRunnerModal.jsx</code>
+      </div>
+      <div style="margin-top:14px;"><span class="tag open">ค้างอยู่</span> <code>GenerateBibModal.jsx</code> มีบั๊กแคป 1000 แถวแบบเดียวกัน — ยังไม่แก้ (เลื่อนมาแล้ว 2 รอบ) ต้องแก้ก่อนวันแข่ง</div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num">3</span>เซสชัน cab09f43 — เวลา Check-in / Official Gun Start บน e-Slip</h2>
+
+    <div class="card">
+      <h3>ตรวจสอบ 2 เรื่อง — ไม่ใช่บั๊ก</h3>
+      <div class="meta">05:27–17:02 · ROHN-RUNNER + Mae_khanin_Admin + Supabase</div>
+      <span class="tag investigate">ตรวจสอบแล้ว</span>
+      <ul style="font-size:14px;margin-top:10px;">
+        <li><b>Local dev 403</b> ที่ <code>/eslip/&lt;bib&gt;</code> — เกิดจาก Chrome extension บล็อก request ฝั่งเครื่อง ไม่ใช่ปัญหา Supabase/RLS (ฝั่ง Supabase ถูกต้อง 100%) → แนะนำเทส Incognito ปิด extension</li>
+        <li><b>BIB 1860 ไม่มีข้อมูล checkpoint</b> — ถูกต้องแล้ว เพราะสแกนแค่ Check-in กับ Finish ไม่เคยผ่านจุด CP จริง</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>เพิ่มเวลา "Check in" + "Official Gun Start" ใน Race Splits</h3>
+      <span class="tag add">เพิ่มฟีเจอร์</span>
+      <span class="tag fix">แก้ไข</span>
+      <p style="margin:12px 0 0;font-size:14.5px;">
+        เดิม e-Slip แสดงแค่ Finish ไม่มีเวลาเริ่มต้น Gong อยากเห็นเวลา Check-in และเวลาสตาร์ทตามรุ่น (Gun Start) ด้วย —
+        เพิ่มทั้งฝั่ง printed e-Slip (Admin) และฝั่งสาธารณะ (ROHN-RUNNER)
+      </p>
+
+      <div class="timeline-mock">
+        <div class="tm-head">ตัวอย่าง Race Splits — BIB 1860 (ลำดับสุดท้ายตามที่ Gong ยืนยัน)</div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-body"><div class="tl-title">Check in</div><div class="tl-time">06:19:00 น.</div></div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-body"><div class="tl-title">Start (Official Gun Start — Hard Rock)</div><div class="tl-time">06:00:00 น.</div></div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-body"><div class="tl-title">Checkpoint 2</div><div class="tl-time">— ไม่มีข้อมูล (ไม่เคยสแกน)</div></div>
+        </div>
+        <div class="tl-item finish">
+          <div class="tl-dot"></div>
+          <div class="tl-body"><div class="tl-title">Finish</div><div class="tl-time">07:21:00 น.</div></div>
+        </div>
+      </div>
+
+      <div class="box" style="margin-top:16px;">
+        <h4>สิ่งที่ทำฝั่งฐานข้อมูล (Supabase, apply แล้วจริง)</h4>
+        <ul>
+          <li>Migration ใหม่ 2 ไฟล์ — เปิดสิทธิ์ anon อ่าน <code>checked_in_at</code> และ <code>gun_start_time</code> (จำกัดเฉพาะจุด <code>type='START'</code> เท่านั้น ไม่เห็นจุดอื่น)</li>
+          <li>ปรับ view <code>public_results</code> ให้รวมทั้งสองค่า + broadcast realtime</li>
+          <li>ตรวจสอบ security advisor แล้ว — ไม่มีจุดใหม่ที่น่ากังวล (เท่าเดิม 4 จุดเก่า)</li>
+        </ul>
+      </div>
+
+      <div class="filelist">
+        ไฟล์ที่แตะ:
+        <code>Mae_khanin_Admin/supabase/migrations/20260905120000_expose_checked_in_at_to_anon.sql</code>
+        <code>Mae_khanin_Admin/supabase/migrations/20260905130000_expose_gun_start_to_anon.sql</code>
+        <code>Mae_khanin_Admin/src/lib/categoryStartTimes.js (ไฟล์ใหม่)</code>
+        <code>Mae_khanin_Admin/src/pages/LiveLeaderboard.jsx</code>
+        <code>Mae_khanin_Admin/src/pages/OverallDashboard.jsx</code>
+        <code>Mae_khanin_Admin/src/components/ESlip.jsx (แก้ checkin → checked_in_at)</code>
+        <code>ROHN-RUNNER/src/lib/results.js</code>
+        <code>ROHN-RUNNER/src/pages/ESlip.jsx</code>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num">!</span>ค้างอยู่ / ต้องตัดสินใจ</h2>
+    <div class="callout danger">
+      <h4>ต้องการคำตอบจาก Gong</h4>
+      <ul>
+        <li><b>ยังไม่ commit/push</b> — งานทั้งเซสชัน 682f2926 และ cab09f43 ยัง apply แค่ live ที่ Supabase/ในเครื่อง ยังไม่เข้า git</li>
+        <li><b>Ally Taylor (BIB 1024)</b> เพศไม่ตรงกันในไฟล์ FINAL.xlsx เอง (คนละ sheet บอกไม่ตรงกัน) — ค้างมาตั้งแต่ 2026-09-04</li>
+        <li><b>main vs dev-gong / Vercel Production Branch</b> — ยังไม่ได้เช็คซ้ำว่าตอนนี้ตรงกันหรือยัง</li>
+      </ul>
+    </div>
+    <div class="callout" style="margin-top:14px;">
+      <h4>รู้ไว้ ยังไม่ด่วน</h4>
+      <ul>
+        <li><code>GenerateBibModal.jsx</code> ยังมีบั๊กแคป 1000 แถว — ต้องแก้ก่อนวันแข่ง (ซ้อม 09-06, แข่งจริง 09-12/13)</li>
+        <li> Migration บางไฟล์ชื่อไม่ตรงกับเวอร์ชันที่ apply จริงบน remote — แก้ทีหลังด้วย <code>supabase migration repair</code> ได้</li>
+      </ul>
+    </div>
+  </section>
+
+</div>
+
+<footer>เอกสารนี้สร้างจากการอ่าน transcript จริงของทั้ง 3 เซสชัน (2026-09-05) — ไม่มีการเดา · อัปเดต 2026-09-06</footer>
+
+</body>
+</html>
