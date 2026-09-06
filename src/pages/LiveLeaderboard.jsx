@@ -148,33 +148,129 @@ function isFemale(gender) {
   return g === 'f' || g === 'female' || g.startsWith('หญิง') || g === 'woman';
 }
 
+function parseTimeToEpoch(timeVal, refTimestamp) {
+  if (timeVal == null || timeVal === '') return null;
+  if (typeof timeVal === 'number') {
+    return isNaN(timeVal) ? null : timeVal;
+  }
+  const s = String(timeVal).trim();
+  if (!s) return null;
+
+  // Numeric epoch string (10 to 13 digits)
+  if (/^\d{10,13}$/.test(s)) {
+    const num = Number(s);
+    return isNaN(num) ? null : num;
+  }
+
+  // Full ISO string or date with '-' or '/'
+  if (s.includes('-') || s.includes('/')) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+
+  // Time of day "HH:mm:ss" or "HH:mm"
+  const parts = s.split(':').map(Number);
+  if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+    const baseDate = refTimestamp ? new Date(refTimestamp) : new Date();
+    baseDate.setHours(parts[0] || 0, parts[1] || 0, parts[2] || 0, 0);
+    let epoch = baseDate.getTime();
+    if (refTimestamp && epoch > refTimestamp) {
+      baseDate.setDate(baseDate.getDate() - 1);
+      epoch = baseDate.getTime();
+    }
+    return epoch;
+  }
+
+  return null;
+}
+
+function getRunnerStartEpoch(r, finishEpoch, stations = [], categories = []) {
+  if (!r) return null;
+
+  // 1. Explicit start fields
+  const candidates = [
+    r.gunStartTime,
+    r.gun_start_time,
+    r.start_time,
+    r.startTime,
+    r.start
+  ];
+  for (const c of candidates) {
+    if (c != null && c !== '') {
+      const ep = parseTimeToEpoch(c, finishEpoch);
+      if (ep != null) return ep;
+    }
+  }
+
+  // 2. Check in cps for START station
+  if (r.cps && typeof r.cps === 'object') {
+    const startStationIds = new Set(
+      stations
+        .filter(s => s.type === 'START' || /start|ปล่อยตัว/i.test(s.name || ''))
+        .map(s => s.id)
+    );
+    for (const [key, val] of Object.entries(r.cps)) {
+      if (startStationIds.has(key) || /start|ปล่อยตัว/i.test(String(key))) {
+        const ep = parseTimeToEpoch(val, finishEpoch);
+        if (ep != null) return ep;
+      }
+    }
+  }
+
+  // 3. Category start_time
+  if (categories && categories.length > 0 && r.cat) {
+    const matchedCat = categories.find(c => 
+      (c.name || c.code || c.id) === r.cat || c.id === r.category_id
+    );
+    if (matchedCat?.start_time) {
+      const ep = parseTimeToEpoch(matchedCat.start_time, finishEpoch);
+      if (ep != null) return ep;
+    }
+  }
+
+  // 4. Check-in time
+  const checkinVal = r.checkin || r.checked_in_at;
+  if (checkinVal != null && checkinVal !== '') {
+    const ep = parseTimeToEpoch(checkinVal, finishEpoch);
+    if (ep != null) return ep;
+  }
+
+  // 5. Earliest checkpoint in cps before finish
+  if (r.cps && typeof r.cps === 'object') {
+    const cpTimes = Object.values(r.cps)
+      .map(v => parseTimeToEpoch(v, finishEpoch))
+      .filter(t => t != null && (!finishEpoch || t < finishEpoch));
+    if (cpTimes.length > 0) {
+      return Math.min(...cpTimes);
+    }
+  }
+
+  return null;
+}
+
   // Group and rank runners
   const { overallLeaders, leaderboards } = useMemo(() => {
     if (!runners.length) return { overallLeaders: [], leaderboards: [] };
-    
-    const startStation = stations.find(s => s.type === 'START');
     
     // 1. Process all finished runners
     const allFinishedRunners = runners.filter(r => r.finish);
 
     const allFinishedWithTimes = allFinishedRunners.map(r => {
-      let startTime = null;
-      if (startStation && r.cps && r.cps[startStation.id]) {
-        startTime = r.cps[startStation.id];
-      } else if (r.gunStartTime) {
-        startTime = r.gunStartTime;
-      } else if (r.checkin) {
-        startTime = typeof r.checkin === 'number' ? r.checkin : new Date(r.checkin).getTime();
+      const finishEpoch = parseTimeToEpoch(r.finish);
+      const startEpoch = getRunnerStartEpoch(r, finishEpoch, stations, categories);
+
+      let netTimeMs = null;
+      if (finishEpoch && startEpoch && finishEpoch > startEpoch) {
+        netTimeMs = finishEpoch - startEpoch; // Elapsed Net time (finish - start)
       }
-      
-      let netTimeMs = 0;
-      if (startTime && startTime < r.finish) {
-        netTimeMs = r.finish - startTime; // Chip / Net time
-      } else {
-        netTimeMs = r.finish; 
-      }
-      
-      return { ...r, netTimeMs, startTime };
+
+      return { 
+        ...r, 
+        finishEpoch, 
+        startEpoch, 
+        netTimeMs,
+        sortTime: netTimeMs != null ? netTimeMs : (finishEpoch || Infinity)
+      };
     });
 
     // 2. Compute 1st Male and 1st Female for each distance (Regardless of age group)
@@ -187,11 +283,11 @@ function isFemale(gender) {
 
       const males = catRunners
         .filter(r => isMale(r.gender))
-        .sort((a, b) => a.netTimeMs - b.netTimeMs);
+        .sort((a, b) => a.sortTime - b.sortTime);
 
       const females = catRunners
         .filter(r => isFemale(r.gender))
-        .sort((a, b) => a.netTimeMs - b.netTimeMs);
+        .sort((a, b) => a.sortTime - b.sortTime);
 
       const male1 = males[0] || null;
       const female1 = females[0] || null;
@@ -244,7 +340,7 @@ function isFemale(gender) {
 
     // Sort each group and take top 5
     const result = Object.values(groups).map(g => {
-      g.runners.sort((a, b) => a.netTimeMs - b.netTimeMs);
+      g.runners.sort((a, b) => a.sortTime - b.sortTime);
       g.runners = g.runners.slice(0, 5);
       return g;
     });
@@ -259,23 +355,23 @@ function isFemale(gender) {
     return { overallLeaders: filteredOverall, leaderboards: result };
   }, [runners, stations, selectedDistance, categories]);
 
-  const formatMs = (ms, hasStartTime) => {
-    if (!hasStartTime) {
-      const d = new Date(ms);
-      return `Finish: ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
+  const formatMs = (ms, finishFallback) => {
+    if (ms != null && ms > 0) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const mins = Math.floor((totalSeconds % 3600) / 60);
+      const secs = totalSeconds % 60;
+      return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
     
-    // Duration
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-    
-    const hh = hours.toString().padStart(2, '0');
-    const mm = mins.toString().padStart(2, '0');
-    const ss = secs.toString().padStart(2, '0');
-    
-    return `${hh}:${mm}:${ss}`;
+    if (finishFallback != null) {
+      const d = new Date(finishFallback);
+      if (!isNaN(d.getTime())) {
+        return d.toTimeString().slice(0, 8);
+      }
+    }
+
+    return '--:--:--';
   };
 
   return (
@@ -423,8 +519,13 @@ function isFemale(gender) {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: item.male ? '#16a34a' : '#94a3b8' }}>
-                        {item.male ? formatMs(item.male.netTimeMs, !!item.male.startTime) : '--:--:--'}
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: item.male ? '#16a34a' : '#94a3b8', fontFamily: 'var(--mono)' }}>
+                          {item.male ? formatMs(item.male.netTimeMs, item.male.finishEpoch) : '--:--:--'}
+                        </div>
+                        {item.male?.netTimeMs != null && (
+                          <div style={{ fontSize: '10px', color: '#64748b' }}>Net Time</div>
+                        )}
                       </div>
                       {item.male && (
                         <button 
@@ -462,8 +563,13 @@ function isFemale(gender) {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: item.female ? '#16a34a' : '#94a3b8' }}>
-                        {item.female ? formatMs(item.female.netTimeMs, !!item.female.startTime) : '--:--:--'}
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: item.female ? '#16a34a' : '#94a3b8', fontFamily: 'var(--mono)' }}>
+                          {item.female ? formatMs(item.female.netTimeMs, item.female.finishEpoch) : '--:--:--'}
+                        </div>
+                        {item.female?.netTimeMs != null && (
+                          <div style={{ fontSize: '10px', color: '#64748b' }}>Net Time</div>
+                        )}
                       </div>
                       {item.female && (
                         <button 
@@ -550,8 +656,13 @@ function isFemale(gender) {
                       </div>
                       
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 600, color: runner ? '#16a34a' : 'var(--line-heavy)' }}>
-                          {runner ? formatMs(runner.netTimeMs, !!runner.startTime) : '--:--:--'}
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '14px', fontWeight: 600, color: runner ? '#16a34a' : 'var(--line-heavy)', fontFamily: 'var(--mono)' }}>
+                            {runner ? formatMs(runner.netTimeMs, runner.finishEpoch) : '--:--:--'}
+                          </div>
+                          {runner?.netTimeMs != null && (
+                            <div style={{ fontSize: '10px', color: 'var(--ink-2)' }}>Net Time</div>
+                          )}
                         </div>
                         {runner && (
                           <button 

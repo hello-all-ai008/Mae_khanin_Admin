@@ -34,6 +34,42 @@ export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
     hour: '2-digit', minute: '2-digit'
   });
 
+  const parseEpoch = (v, ref) => {
+    if (v == null || v === '') return null;
+    if (typeof v === 'number') return isNaN(v) ? null : v;
+    const s = String(v).trim();
+    if (/^\d{10,13}$/.test(s)) return Number(s);
+    if (s.includes('-') || s.includes('/')) {
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d.getTime();
+    }
+    const parts = s.split(':').map(Number);
+    if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      const baseDate = ref ? new Date(ref) : new Date();
+      baseDate.setHours(parts[0] || 0, parts[1] || 0, parts[2] || 0, 0);
+      let epoch = baseDate.getTime();
+      if (ref && epoch > ref) {
+        baseDate.setDate(baseDate.getDate() - 1);
+        epoch = baseDate.getTime();
+      }
+      return epoch;
+    }
+    return null;
+  };
+
+  const finishEpoch = parseEpoch(runner.finish);
+  const startEpoch = runner.netTimeMs != null 
+    ? (finishEpoch ? finishEpoch - runner.netTimeMs : null)
+    : (parseEpoch(runner.gunStartTime, finishEpoch) ||
+       parseEpoch(runner.gun_start_time, finishEpoch) ||
+       parseEpoch(runner.checkin, finishEpoch) ||
+       parseEpoch(runner.checked_in_at, finishEpoch) ||
+       (runner.cps && Object.keys(runner.cps).length > 0 ? Math.min(...Object.values(runner.cps).map(v => parseEpoch(v, finishEpoch)).filter(Boolean)) : null));
+
+  const netMs = runner.netTimeMs != null 
+    ? runner.netTimeMs 
+    : (finishEpoch && startEpoch && finishEpoch > startEpoch ? finishEpoch - startEpoch : null);
+
   return (
     <div className="eslip" style={{ position: 'relative' }}>
       <div style={{ position: 'absolute', top: '12px', right: '16px', fontSize: '9px', color: 'var(--ink-2, #64748b)' }}>
@@ -48,35 +84,40 @@ export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
         <span style={{ fontSize: '13px', fontWeight: 600 }}>Official e-Slip</span>
       </div>
 
-      <div className="row">
-        <span>Name</span>
-        <b style={{ textAlign: 'right' }}>{runner.name || '—'}</b>
+      <div className="event-name">
+        {runner.event_name || 'Baan Pong Trail 2026'}
       </div>
-      <div className="row">
-        <span>BIB</span>
-        <b>{runner.bib || '—'}</b>
+
+      <div className="bib">
+        {runner.bib || '—'}
       </div>
-      <div className="row">
-        <span>Category</span>
-        <b>{runner.cat || '—'}</b>
+
+      <div className="name">
+        {runner.name || '—'}
       </div>
-      <div className="row">
-        <span>Gender/Age Group</span>
-        <b>{runner.gender || '—'} · {runner.age_group || runner.ageGroup || runner.age || '—'}</b>
+
+      <div className="meta">
+        <div className="meta-col">
+          <div className="meta-label">Category</div>
+          <div className="meta-val">{runner.cat || '—'}</div>
+        </div>
+        <div className="meta-col">
+          <div className="meta-label">Gender</div>
+          <div className="meta-val">{runner.gender || '—'}</div>
+        </div>
+        <div className="meta-col">
+          <div className="meta-label">Age group</div>
+          <div className="meta-val">{runner.age_group || '—'}</div>
+        </div>
       </div>
 
       <div className="hr"></div>
 
-      <div className="row">
-        <span>Check-in Scan</span>
-        <span style={{ fontFamily: 'var(--mono)' }}>{fmtTime(runner.checked_in_at)}</span>
-      </div>
-
-      {runner.cps && Object.entries(runner.cps).map(([cp, ts]) => {
-        const stationName = stations?.find(s => s.id === cp)?.name || cp;
+      {stations.map(st => {
+        const ts = runner.cps ? runner.cps[st.id] : null;
         return (
-          <div className="row" key={cp}>
-            <span>{stationName}</span>
+          <div className="row" key={st.id}>
+            <span>{st.name}</span>
             <span style={{ fontFamily: 'var(--mono)' }}>{fmtTime(ts)}</span>
           </div>
         );
@@ -95,19 +136,13 @@ export default function ESlip({ runner, overallRank, catRank, stations = [] }) {
           <div style={{ fontSize: '15px', fontWeight: 700, fontFamily: 'var(--mono)' }}>
             {runner.start_date
               ? fmtDate(runner.start_date)
-              : (runner.gunStartTime
-                  ? fmtDate(runner.gunStartTime)
-                  : (runner.cps && Object.keys(runner.cps).length > 0
-                      ? fmtDate(Math.min(...Object.values(runner.cps)))
-                      : (runner.checked_in_at ? fmtDate(runner.checked_in_at) : (runner.checkin ? fmtDate(runner.checkin) : fmtDate(Date.now())))))}
+              : (startEpoch ? fmtDate(startEpoch) : fmtDate(Date.now()))}
           </div>
         </div>
         <div style={{ background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
           <div style={{ color: 'var(--ink-2, #64748b)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Net Time (Start-Finish)</div>
           <div style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'var(--mono)', color: 'var(--start, #3b82f6)' }}>
-            {runner.finish && runner.cps && Object.keys(runner.cps).length > 0
-              ? fmtDur(runner.finish - Math.min(...Object.values(runner.cps)))
-              : '—'}
+            {netMs != null ? fmtDur(netMs) : '—'}
           </div>
         </div>
       </div>
