@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { assertWriteOk } from '../lib/supabaseResult';
 import { fetchAllRows } from '../lib/supabaseFetch';
@@ -9,11 +9,19 @@ import { Trash2, RefreshCw, Users } from 'lucide-react';
 
 export default function RunnersList() {
   const { addToast, showConfirm } = useRace();
+  // addToast comes from RaceContext and gets a new identity on every context
+  // render — read it via ref so fetchRunners's own identity stays stable and
+  // doesn't re-trigger the fetch/realtime-resubscribe effects below.
+  const addToastRef = useRef(addToast);
+  useEffect(() => {
+    addToastRef.current = addToast;
+  });
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
 
   const [categories, setCategories] = useState([]);
   const [runners, setRunners] = useState([]);
+  const [stations, setStations] = useState([]);
 
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
@@ -34,10 +42,18 @@ export default function RunnersList() {
     fetchEvents();
   }, []);
 
-  const fetchRunners = async () => {
+  const fetchRunners = useCallback(async (silent = false) => {
     if (!selectedEventId) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
+      const { data: stData, error: stError } = await supabase
+        .from('stations')
+        .select('*')
+        .eq('event_id', selectedEventId)
+        .order('sequence_order', { ascending: true });
+      if (stError) throw stError;
+      setStations(stData || []);
+
       // PostgREST caps a single response at 1000 rows by default — page
       // through the full table instead of silently truncating past that.
       // `.order('id')` gives Postgres a deterministic sort so consecutive
@@ -60,16 +76,50 @@ export default function RunnersList() {
       }
     } catch (err) {
       console.error('Fetch runners error:', err);
-      addToast(`ดึงข้อมูลไม่สำเร็จ: ${err.message}`, true);
+      addToastRef.current(`ดึงข้อมูลไม่สำเร็จ: ${err.message}`, true);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, [selectedEventId]);
 
   // Fetch Categories & Runners on Event change
   useEffect(() => {
     fetchRunners();
-  }, [selectedEventId]);
+  }, [fetchRunners]);
+
+  // Live update: any CP/finish scan writes to public.runners (from any
+  // station device). Re-pull silently instead of forcing a manual refresh.
+  // Debounced so a burst of scans coalesces into one re-fetch.
+  useEffect(() => {
+    if (!selectedEventId) return undefined;
+    let debounceTimer = null;
+    const scheduleRefetch = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchRunners(true), 400);
+    };
+    const channel = supabase
+      .channel(`runners-live-runnerslist-${selectedEventId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'runners', filter: `event_id=eq.${selectedEventId}` },
+        scheduleRefetch
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'runners', filter: `event_id=eq.${selectedEventId}` },
+        scheduleRefetch
+      )
+      .subscribe((status, err) => {
+        if (err || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('Realtime subscribe error (runners list):', status, err);
+        }
+      });
+
+    return () => {
+      clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [selectedEventId, fetchRunners]);
 
   const handleEdit = (runner) => {
     setSelectedRunner(runner);
@@ -130,18 +180,52 @@ export default function RunnersList() {
     }
   };
 
-  const statusOf = (r) => {
+  const statusOf = (r, stations) => {
     if (r.finish) return { cls: 'b-fin', txt: 'Finished' };
-    if (r.checkin) return { cls: 'b-start', txt: 'Checked-in' };
+
+    // Furthest checkpoint reached: highest sequence_order station whose id
+    // is a key in r.cps (same lookup pattern as OverallDashboard.jsx's
+    // per-station columns and LiveLeaderboard.jsx's getRunnerStartEpoch).
+    if (r.cps && typeof r.cps === 'object') {
+      const reached = stations
+        .filter(st => r.cps[st.id] != null)
+        .sort((a, b) => (b.sequence_order ?? 0) - (a.sequence_order ?? 0))[0];
+      const hasCheckedIn = !!(r.checked_in_at || r.registration_status === 'CHECKED_IN');
+      // The Start badge specifically requires check-in first — a runner
+      // scanned at Start but never checked in falls through to the
+      // checked-in/registration fallback below instead. Other CP stations
+      // are unaffected: the app deliberately allows scanning any CP in any
+      // order (see RaceContext.jsx's CP branch — "ไม่อิงลำดับขั้น").
+      if (reached && !(reached.type === 'START' && !hasCheckedIn)) {
+        return { cls: reached.type === 'START' ? 'b-start' : 'b-cp', txt: reached.name };
+      }
+    }
+
+    // r.checkin is never present on a real fetched row (RaceContext only ever
+    // writes checked_in_at/registration_status to Supabase), so the old check
+    // on r.checkin was dead code. Match OverallDashboard.jsx's correct check.
+    if (r.checked_in_at || r.registration_status === 'CHECKED_IN') {
+      return { cls: 'b-start', txt: 'Checked-in' };
+    }
     if (r.registration_status) return { cls: 'b-reg', txt: r.registration_status };
     return { cls: 'b-reg', txt: 'Registered' };
   };
 
-  const filtered = runners.filter(r => {
-    const matchSearch = search ? (r.bib?.includes(search) || r.name?.toLowerCase().includes(search.toLowerCase())) : true;
-    const matchCat = catFilter ? r.cat === catFilter : true;
-    return matchSearch && matchCat;
-  });
+  const filtered = runners
+    .filter(r => {
+      const matchSearch = search ? (r.bib?.includes(search) || r.name?.toLowerCase().includes(search.toLowerCase())) : true;
+      const matchCat = catFilter ? r.cat === catFilter : true;
+      return matchSearch && matchCat;
+    })
+    .sort((a, b) => {
+      // Default view order: BIB ascending. Numeric compare so "2" sorts before
+      // "10" (a plain string sort would put "10" first); fall back to a
+      // string compare for any non-numeric bib (e.g. a stray test bib).
+      const bibA = Number(a.bib);
+      const bibB = Number(b.bib);
+      if (!Number.isNaN(bibA) && !Number.isNaN(bibB)) return bibA - bibB;
+      return String(a.bib ?? '').localeCompare(String(b.bib ?? ''));
+    });
 
   const columns = [
     {
@@ -167,7 +251,7 @@ export default function RunnersList() {
       label: 'Status',
       defaultWidth: 230,
       render: (_, r) => {
-        const s = statusOf(r);
+        const s = statusOf(r, stations);
         return (
           <span className={`badge ${s.cls}`}>
             <span className="dot"></span>{s.txt}
@@ -194,7 +278,7 @@ export default function RunnersList() {
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button
             className="btn btn-sm"
-            onClick={fetchRunners}
+            onClick={() => fetchRunners()}
             disabled={loading}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px' }}
           >

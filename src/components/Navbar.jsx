@@ -55,7 +55,7 @@ const NAV_GROUPS = [
     id: 'stations',
     title: 'SCAN STATIONS',
     items: [
-      { to: '/checkin', label: 'Start', mobileLabel: 'Check-in (Start)', dotColor: 'var(--start)' },
+      { to: '/checkin', label: 'Check-in', mobileLabel: 'Check-in', dotColor: 'var(--start)' },
       { to: '/checkpoint', label: 'CP', mobileLabel: 'Check Point', dotColor: 'var(--cp)' },
       { to: '/finish', label: 'Finish', mobileLabel: 'Finish Line', dotColor: 'var(--finish)' },
     ],

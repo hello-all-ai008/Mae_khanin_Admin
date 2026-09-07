@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุป 3 เซสชัน #2 — 2026-09-07/08</title>
+<style>
+  :root{
+    --bg:#efe9e0;
+    --bg-alt:#e6ded1;
+    --surface:#f7f2e9;
+    --surface-2:#fbf8f2;
+    --ink:#3a342b;
+    --ink-soft:#6b6153;
+    --line:#d8cfbe;
+    --accent:#8a6d4b;
+    --accent-2:#5f7a6a;
+    --amber:#b8853a;
+    --danger:#a85c4a;
+    --danger-bg:#f3e3dd;
+    --ok-bg:#e7ede4;
+    --ok:#4f7a5a;
+    --code-bg:#3a342b;
+    --code-ink:#efe9e0;
+    --shadow: 0 2px 10px rgba(58,52,43,0.08), 0 8px 24px rgba(58,52,43,0.06);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family: "Sarabun", "Noto Sans Thai", "Segoe UI", system-ui, sans-serif;
+    line-height:1.65;
+    padding:0 0 64px;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px;}
+  header.hero{
+    background:linear-gradient(135deg,#4a4436,#5f5847 55%,#6b6350);
+    color:#f3ede1;
+    padding:44px 0 36px;
+    margin-bottom:36px;
+  }
+  header.hero .wrap > .eyebrow{
+    text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:#d8cba9;margin-bottom:10px;
+  }
+  header.hero h1{margin:0 0 10px;font-size:clamp(24px,3.6vw,34px);font-weight:700;}
+  header.hero p{margin:4px 0;color:#e6ddc9;font-size:14.5px;}
+  header.hero .sessions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+  header.hero .sessions span{
+    background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);
+    border-radius:999px;padding:5px 12px;font-size:12.5px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  section{margin-bottom:34px;}
+  h2.section-title{
+    font-size:20px;margin:0 0 16px;padding-bottom:10px;border-bottom:2px solid var(--line);
+    display:flex;align-items:center;gap:10px;
+  }
+  h2.section-title .num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:28px;height:28px;border-radius:8px;
+    background:var(--accent);color:#fff;font-size:14px;font-weight:700;flex:none;
+  }
+  h3.sub-title{font-size:15.5px;margin:22px 0 10px;color:var(--ink);}
+
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:22px 24px;box-shadow:var(--shadow);margin-bottom:18px;
+  }
+  .card h3{margin:0 0 4px;font-size:17px;}
+  .card .meta{color:var(--ink-soft);font-size:13px;margin-bottom:16px;}
+  .card .meta code{background:var(--bg-alt);padding:1px 6px;border-radius:5px;font-size:12px;}
+
+  .tag{
+    display:inline-block;font-size:12px;font-weight:600;
+    padding:3px 10px;border-radius:999px;margin-right:6px;margin-bottom:6px;
+  }
+  .tag.add{background:var(--ok-bg);color:var(--ok);}
+  .tag.fix{background:#eee3cf;color:var(--amber);}
+  .tag.investigate{background:#e6e2d6;color:var(--ink-soft);}
+  .tag.open{background:var(--danger-bg);color:var(--danger);}
+  .tag.critical{background:#f3e3dd;color:var(--danger);border:1px solid #d6a793;}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:680px){.grid-2{grid-template-columns:1fr;}}
+
+  .box{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .box h4{margin:0 0 8px;font-size:13.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
+  .box ul{margin:0;padding-left:20px;font-size:14px;}
+  .box ul li{margin-bottom:6px;}
+  .box code{background:var(--bg-alt);padding:1px 6px;border-radius:5px;font-size:12.5px;font-family: ui-monospace, "SF Mono", Menlo, monospace;}
+  .filelist{font-size:13px;color:var(--ink-soft);margin-top:12px;}
+  .filelist code{display:block;background:var(--bg-alt);padding:6px 10px;border-radius:6px;margin-top:4px;font-family:ui-monospace,monospace;}
+
+  .callout{border-radius:12px;padding:18px 20px;border:1px solid #e0b98a;background:#f6e9d3;}
+  .callout.danger{border-color:#d6a793;background:var(--danger-bg);}
+  .callout.ok{border-color:#a9c2ab;background:var(--ok-bg);}
+  .callout h4{margin:0 0 10px;font-size:15px;color:#7a5322;}
+  .callout.danger h4{color:#7a4032;}
+  .callout.ok h4{color:#3f5f47;}
+  .callout ul{margin:0;padding-left:20px;font-size:14px;}
+  .callout li{margin-bottom:6px;}
+
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
+  @media (max-width:680px){.stat-row{grid-template-columns:1fr;}}
+  .stat{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center;}
+  .stat .label{font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;}
+  .stat .value{font-size:15px;font-weight:700;}
+  .stat .value .before{color:var(--ink-soft);font-weight:500;text-decoration:line-through;margin-right:6px;}
+  .stat .value .after{color:var(--accent-2);}
+  .stat .sub{font-size:12px;color:var(--ink-soft);margin-top:6px;}
+
+  .timeline-mock{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:20px;margin-top:14px;}
+  .timeline-mock .tm-head{font-size:13px;color:var(--ink-soft);margin-bottom:14px;}
+  .tl-item{display:flex;align-items:flex-start;gap:14px;padding-bottom:16px;position:relative;}
+  .tl-item:not(:last-child)::before{content:"";position:absolute;left:9px;top:22px;bottom:-4px;width:2px;background:var(--line);}
+  .tl-dot{width:20px;height:20px;border-radius:50%;background:var(--accent-2);flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;}
+  .tl-dot::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff;}
+  .tl-item.bad .tl-dot{background:var(--danger);}
+  .tl-item.finish .tl-dot{background:var(--amber);}
+  .tl-body .tl-title{font-weight:700;font-size:14.5px;}
+  .tl-body .tl-title .who{font-weight:500;color:var(--ink-soft);font-size:12.5px;}
+  .tl-body .tl-time{font-size:12.5px;color:var(--ink-soft);font-family:ui-monospace,monospace;}
+  .tl-body .tl-note{font-size:13px;color:var(--danger);margin-top:2px;}
+
+  .diff-mock{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
+  @media (max-width:680px){.diff-mock{grid-template-columns:1fr;}}
+  .diff-col{border-radius:10px;padding:14px 16px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px;}
+  .diff-col.bad{background:var(--danger-bg);border:1px solid #d6a793;}
+  .diff-col.good{background:var(--ok-bg);border:1px solid #a9c2ab;}
+  .diff-col .diff-label{font-family:"Sarabun","Noto Sans Thai",sans-serif;font-weight:700;font-size:12.5px;margin-bottom:8px;}
+  .diff-col.bad .diff-label{color:var(--danger);}
+  .diff-col.good .diff-label{color:var(--ok);}
+  .diff-col div.line{padding:2px 0;}
+
+  table.simple{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px;}
+  table.simple th, table.simple td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;}
+  table.simple th{color:var(--ink-soft);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;}
+
+  /* mockup: dashboard cards */
+  .dash-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
+  @media (max-width:680px){.dash-cards{grid-template-columns:repeat(2,1fr);}}
+  .dash-card{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center;}
+  .dash-card .n{font-size:20px;font-weight:800;}
+  .dash-card .l{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .dash-card.finished .n{color:var(--ok);}
+  .dash-card.inrace .n{color:var(--accent-2);}
+  .dash-card.dns .n{color:var(--ink-soft);}
+  .dash-card.dnf .n{color:var(--danger);}
+
+  /* mockup: status badges */
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;}
+  .badge.finished{background:var(--ok-bg);color:var(--ok);}
+  .badge.inrace{background:#e3e9f0;color:#3d5a8a;}
+  .badge.dns{background:#e6e2d6;color:var(--ink-soft);}
+  .badge.dnf{background:var(--danger-bg);color:var(--danger);}
+  .badge.start{background:#f6e9d3;color:var(--amber);}
+
+  /* mockup: table toolbar */
+  .toolbar-mock{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .toolbar-mock .search-box{flex:1;min-width:180px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--ink-soft);display:flex;align-items:center;gap:6px;}
+  .toolbar-mock .search-box.active{border-color:var(--accent-2);color:var(--ink);}
+  .toolbar-mock .pill{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;color:var(--ink-soft);}
+
+  /* mockup: git branch */
+  .git-mock{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-top:14px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;}
+  .git-row{display:flex;align-items:center;gap:10px;padding:6px 0;}
+  .git-row .branch{width:120px;flex:none;font-weight:700;font-family:"Sarabun",sans-serif;}
+  .git-row .hash{background:var(--bg-alt);padding:2px 8px;border-radius:5px;}
+  .git-row .hash.new{background:var(--ok-bg);color:var(--ok);}
+  .git-row .arrow{color:var(--ink-soft);}
+
+  footer{text-align:center;color:var(--ink-soft);font-size:12.5px;margin-top:40px;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Mae Khanin Admin · สรุปงาน 2026-09-07/08</div>
+    <h1>สรุป 3 เซสชัน #2: แก้บั๊กข้อมูลหาย, ปรับ Leaderboard/Dashboard, sync branch</h1>
+    <p>ช่วงเวลา 2026-09-05 05:29 – 2026-09-07 17:22 น. (คาบเกี่ยว 3 วัน) · ระบบที่แตะ: Mae_khanin_Admin, ROHN-RUNNER, Supabase (kjtbfzsgnsvkfjgayuys)</p>
+    <div class="sessions">
+      <span>682f2926…7227f</span>
+      <span>f9414715…d5f78b</span>
+      <span>1fd83c45…07cd88</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="callout danger" style="margin-bottom:28px;">
+    <h4>⚠ สรุปสั้น: มีบั๊กข้อมูลนักวิ่งหายจริงบนระบบ — แก้แล้ว + กู้คืนแล้ว</h4>
+    <p style="margin:0;font-size:14.5px;">การยิง CP ผ่านมือถือ/แท็บเล็ตหลายเครื่อง เขียนทับข้อมูล <code>cps</code> ทั้งก้อนแทนที่จะรวมกัน ทำให้สแกนจุดตรวจก่อนหน้าหายไปเวลามีการสแกนจุดใหม่จากเครื่องที่ข้อมูลไม่อัพเดท (BIB 1860 เป็นตัวอย่างจริงที่เจอ) ตอนนี้แก้เป็นเขียนผ่าน RPC ฝั่ง server ที่ merge ทีละจุดแล้ว และกู้คืนข้อมูลที่หายของ 4 คน (BIB 1860, 5114, 5115, 5134) เรียบร้อย — <b>ยังไม่ commit/push</b> ดูรายละเอียดหัวข้อ 1.3</p>
+  </div>
+
+  <!-- ============ SESSION 682f2926 ============ -->
+  <section>
+    <h2 class="section-title"><span class="num">1</span>เซสชัน 682f2926 — แก้แคป 1000 แถว, dropdown ผิด, บั๊กข้อมูล CP หาย</h2>
+
+    <h3 class="sub-title">1.1 CheckIn/CheckPoint/FinishLine โชว์แค่ 1000 คน + dropdown status ผิด</h3>
+    <div class="card">
+      <div class="meta">09-05 05:29–07:16 · <code>Mae_khanin_Admin</code> · ยังไม่ commit/push</div>
+      <span class="tag fix">แก้ไข</span>
+      <div class="grid-2" style="margin-top:14px;">
+        <div class="box">
+          <h4>สาเหตุ</h4>
+          <ul>
+            <li><code>RaceContext.jsx</code>, <code>OverallDashboard.jsx</code>, <code>LiveLeaderboard.jsx</code> ดึงข้อมูลแบบไม่แบ่งหน้า → PostgREST ตัดที่ 1000 แถว, กด Refresh ก็ไม่ช่วยเพราะเรียก query เดิม</li>
+            <li><code>registration_status</code> เป็น ENUM จริงแค่ 2 ค่า — ไม่ใช่บั๊ก แต่ dropdown ใน <code>EditRunnerModal.jsx</code> มีค่าปลอม <code>CONFIRMED</code>/<code>CANCELLED</code> (ไม่มีจริงในระบบ กด save จะ error) และขาด <code>CHECKED_IN</code></li>
+          </ul>
+        </div>
+        <div class="box">
+          <h4>แก้แล้ว</h4>
+          <ul>
+            <li>3 ไฟล์ → เปลี่ยนไปใช้ <code>fetchAllRows</code> + <code>.order('id')</code></li>
+            <li><code>EditRunnerModal.jsx</code> → dropdown เหลือ 2 ค่าจริงเท่านั้น</li>
+            <li>verifier PASS, oxlint 77/77 คงเดิม</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:14px;">
+        <h4>ยังไม่แก้ (เลื่อนมาครั้งที่ 3 แล้ว)</h4>
+        <p style="margin:0;font-size:14px;"><code>GenerateBibModal.jsx</code> มีบั๊กแคป 1000 แถวแบบเดียวกัน — ใช้สร้าง PDF BIB ตอนนี้มีคนวิ่ง 1064+ คนแล้ว เกิน 1000 จะพิมพ์ไม่ครบเงียบๆ ต้องแก้ก่อนวันแข่ง</p>
+      </div>
+    </div>
+
+    <h3 class="sub-title">1.2 รีเซ็ตข้อมูล Dry Run</h3>
+    <div class="card">
+      <div class="meta">09-06 04:14–04:20 · <code>Mae_khanin_Admin</code> · Supabase runners table</div>
+      <span class="tag add">SQL</span>
+      <p style="margin:12px 0 0;font-size:14.5px;">รีเซ็ต <code>registration_status</code>, <code>checked_in_at</code>, <code>cps</code>, <code>finish</code> ของทุกคนในอีเวนต์กลับเป็นค่าเริ่มต้น เตรียมซ้อมสแกนจริง</p>
+      <div class="stat-row">
+        <div class="stat"><div class="label">Check-in แล้ว</div><div class="value"><span class="before">20</span><span class="after">0</span></div></div>
+        <div class="stat"><div class="label">เข้าเส้นชัยแล้ว</div><div class="value"><span class="before">1</span><span class="after">0</span></div></div>
+        <div class="stat"><div class="label">มีข้อมูล CP</div><div class="value"><span class="before">0</span><span class="after">0</span></div></div>
+      </div>
+    </div>
+
+    <h3 class="sub-title">1.3 บั๊กใหญ่: สแกน CP เขียนทับข้อมูลทั้งก้อน → ข้อมูลหายจริง</h3>
+    <div class="card">
+      <div class="meta">09-07 14:09–17:22 · <code>Mae_khanin_Admin</code> · builder → verifier (พบ 1 MEDIUM แก้แล้ว) · migration applied live · ยังไม่ commit/push</div>
+      <span class="tag critical">บั๊กข้อมูลหาย</span>
+      <p style="margin:12px 0 0;font-size:14.5px;">Gong แจ้งว่า BIB 1860 สแกน CP1 ไปแล้วแต่สถานะยังโชว์ "start" — ตามรอยเจอว่าทุกครั้งที่สแกนจุดใหม่ ระบบเขียนทับ column <code>cps</code> ทั้งก้อนด้วยข้อมูลแคชในเครื่องสแกนเอง (ไม่ใช่ merge ทีละจุด) — เครื่องที่แคชเก่าจะลบจุดที่เครื่องอื่นสแกนไปแล้วโดยไม่รู้ตัว</p>
+
+      <div class="timeline-mock">
+        <div class="tm-head">ย้อนรอยจริงของ BIB 1860 (จาก scan_logs)</div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-body"><div class="tl-title">Check-in <span class="who">· 09-06 06:39</span></div></div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-body"><div class="tl-title">สแกน Start <span class="who">· โดย ADMIN-Gong · 09-06 06:39:11</span></div></div>
+        </div>
+        <div class="tl-item bad">
+          <div class="tl-dot"></div>
+          <div class="tl-body">
+            <div class="tl-title">สแกน Start ซ้ำ <span class="who">· โดยเครื่อง Whale · 09-07 14:07:27</span></div>
+            <div class="tl-note">เครื่องนี้แคชเก่า ไม่รู้ว่ามีคนสแกน Start ไปแล้ว → เขียนทับ cps เหลือแค่ Start</div>
+          </div>
+        </div>
+        <div class="tl-item bad">
+          <div class="tl-dot"></div>
+          <div class="tl-body"><div class="tl-title">สแกน A1 <span class="who">· 09-07 14:27:01</span></div><div class="tl-note">เขียนทับอีกครั้ง</div></div>
+        </div>
+        <div class="tl-item finish">
+          <div class="tl-dot"></div>
+          <div class="tl-body"><div class="tl-title">สแกน A2 <span class="who">· 09-07 14:27:18</span></div><div class="tl-note">ผลสุดท้ายก่อนแก้: cps = {} (ว่างเปล่า!)</div></div>
+        </div>
+      </div>
+
+      <div class="diff-mock">
+        <div class="diff-col bad">
+          <div class="diff-label">ก่อนแก้ — เขียนทับทั้งก้อน</div>
+          <div class="line">update runners</div>
+          <div class="line">set cps = item.cps</div>
+          <div class="line">-- ทั้ง object จากแคชเครื่องสแกน</div>
+          <div class="line">-- ไม่มี .select('id')</div>
+          <div class="line">-- → 0 แถวก็ถือว่าสำเร็จเงียบๆ</div>
+        </div>
+        <div class="diff-col good">
+          <div class="diff-label">หลังแก้ — RPC merge ทีละจุด</div>
+          <div class="line">call record_scan(...)</div>
+          <div class="line">set cps = cps ||</div>
+          <div class="line">  jsonb_build_object(station, t)</div>
+          <div class="line">-- เฉพาะ key ที่ยังไม่มี (กันสแกนซ้ำ)</div>
+          <div class="line">-- 0 แถวถูกอัพเดท → raise exception</div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:14px;">
+        <div class="box">
+          <h4>Migration ใหม่ (applied live)</h4>
+          <ul>
+            <li><code>record_scan()</code> RPC — รวม CHECKIN/CP/FINISH ไว้ transaction เดียว, merge ทีละ key, log <code>scan_logs</code> พร้อมกัน, สิทธิ์เฉพาะ staff ที่ login แล้ว</li>
+            <li><code>backfill_cps_from_scan_logs</code> — กู้คืนย้อนหลังจาก log จริง</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h4>Queue ฝั่ง client</h4>
+          <ul>
+            <li>retry แบบ exponential backoff (2.5s → สูงสุด 30s) แทนวนซ้ำทุก 2.5s ตลอดไป (เคยบล็อกคิวทั้งหมด)</li>
+            <li>self-heal แคปในเครื่องจากผลลัพธ์จริงที่ RPC ส่งกลับ</li>
+            <li>verifier เจอ: ลบงานออกจากคิวก่อนเช็คว่าบันทึก dead-letter สำเร็จจริง → แก้แล้ว</li>
+          </ul>
+        </div>
+      </div>
+
+      <table class="simple">
+        <tr><th>BIB</th><th>จุดที่กู้คืนได้</th></tr>
+        <tr><td>1860</td><td>Start, A1, A2 (ครบทั้ง 3 จุด)</td></tr>
+        <tr><td>5114</td><td>A1</td></tr>
+        <tr><td>5115</td><td>A1</td></tr>
+        <tr><td>5134</td><td>A1</td></tr>
+      </table>
+      <div class="filelist">ทดสอบจริงบน DB (BIB 1012, ลบทิ้งหลังทดสอบ): สแกน A1→A2 ครบทั้งคู่, สแกนซ้ำจุดเดิมไม่ทับเวลาเก่า, runner id มั่ว → error แทนที่จะเงียบ</div>
+    </div>
+
+    <h3 class="sub-title">1.4 ปรับเพิ่มเติม</h3>
+    <div class="card">
+      <div class="meta">09-07 · <code>RunnersList.jsx</code> · แก้ตรง ไม่ผ่าน subagent</div>
+      <span class="tag fix">แก้ไข</span>
+      <ul style="margin:12px 0 0;font-size:14.5px;padding-left:20px;">
+        <li>Status column ไม่เคยอ่าน <code>cps</code> เลย (อ่านแต่ finish/checkin เก่า) → เพิ่ม realtime subscription + อ่าน cps จริง</li>
+        <li>เรียงหน้า RunnersList ตาม BIB น้อย→มาก</li>
+        <li>Badge "Start" โชว์เฉพาะเมื่อ check-in แล้วเท่านั้น (โชว์ผลอย่างเดียว ไม่บล็อกการสแกนจริง)</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ SESSION f9414715 ============ -->
+  <section>
+    <h2 class="section-title"><span class="num">2</span>เซสชัน f9414715 — Leaderboard timezone/5KM/sort + Dashboard DNS/DNF</h2>
+
+    <h3 class="sub-title">2.1 Leaderboard: เวลาไม่ตรงไทย, การ์ด "Overall 5KM" ไม่ควรมี, เรียงรุ่นอายุผิด</h3>
+    <div class="card">
+      <div class="meta">09-07 14:42–17:19 · <code>Mae_khanin_Admin</code> ก่อน แล้ว port ไป <code>ROHN-RUNNER</code> · build ผ่านทุกครั้ง</div>
+      <span class="tag fix">แก้ไข</span>
+      <div class="diff-mock">
+        <div class="diff-col bad">
+          <div class="diff-label">ก่อนแก้</div>
+          <div class="line">d.toTimeString()</div>
+          <div class="line">// ใช้ timezone เครื่อง</div>
+          <div class="line">// ผิดถ้าเครื่องไม่ใช่ ไทย</div>
+          <div class="line">ageGrp.localeCompare(b)</div>
+          <div class="line">// "ไม่เกิน 29" ไปอยู่ท้ายสุด</div>
+        </div>
+        <div class="diff-col good">
+          <div class="diff-label">หลังแก้</div>
+          <div class="line">d.toLocaleTimeString('th-TH',</div>
+          <div class="line">  {timeZone:'Asia/Bangkok'})</div>
+          <div class="line">parseAgeGroupMin(a) -</div>
+          <div class="line">  parseAgeGroupMin(b)</div>
+          <div class="line">// "ไม่เกิน 29" = 0 มาก่อนเสมอ</div>
+        </div>
+      </div>
+      <div class="filelist">แก้ที่ <code>LiveLeaderboard.jsx</code> (Admin) แล้ว port ไป <code>ROHN-RUNNER/src/lib/results.js</code> ตัวเดียว กระทบ Leaderboard/Dashboard/ESlip ของ ROHN-RUNNER พร้อมกันหมด</div>
+      <div class="callout" style="margin-top:14px;">
+        <h4>ยังไม่แก้ (นอกขอบเขตครั้งนี้)</h4>
+        <p style="margin:0;font-size:14px;">เจอ <code>toTimeString()</code> แบบเดียวกันอีก ~10 จุดในแอป Admin — Gong ขอแค่หน้า Leaderboard ก่อน จุดอื่นเก็บไว้ทำทีหลัง</p>
+      </div>
+    </div>
+
+    <h3 class="sub-title">2.2 ROHN-RUNNER Dashboard: เพิ่มสถานะ DNS/DNF + Filter</h3>
+    <div class="card">
+      <div class="meta">09-07 16:20–17:16 · <code>ROHN-RUNNER</code> · migration applied live · ยังไม่ commit/push</div>
+      <span class="tag add">ฟีเจอร์ใหม่</span>
+      <p style="margin:12px 0 0;font-size:14.5px;">เปลี่ยนป้าย "Not Yet Finish" → "In Race" (ตัดคนที่ยังไม่สตาร์ทออก) และเพิ่มสถานะ DNS (ยังไม่สตาร์ท) / DNF (เกิน cutoff เส้นชัย) แยกตามระยะ</p>
+
+      <div class="dash-cards">
+        <div class="dash-card finished"><div class="n">642</div><div class="l">FINISHED</div></div>
+        <div class="dash-card inrace"><div class="n">318</div><div class="l">IN RACE</div></div>
+        <div class="dash-card dns"><div class="n">104</div><div class="l">DNS</div></div>
+        <div class="dash-card dnf"><div class="n">4</div><div class="l">DNF</div></div>
+      </div>
+      <p style="margin:14px 0 6px;font-size:13.5px;">ตัวอย่างแถวในตาราง:</p>
+      <table class="simple">
+        <tr><th>BIB</th><th>ชื่อ</th><th>ระยะ</th><th>Race Status</th></tr>
+        <tr><td>1860</td><td>Whale TEST add in web</td><td>10KM</td><td><span class="badge inrace">IN RACE</span></td></tr>
+        <tr><td>5114</td><td>—</td><td>5KM</td><td><span class="badge finished">FINISHED</span></td></tr>
+        <tr><td>1102</td><td>—</td><td>10KM</td><td><span class="badge dns">DNS</span></td></tr>
+      </table>
+
+      <div class="callout" style="margin-top:14px;">
+        <h4>คาดไว้แล้ว ไม่ใช่บั๊ก</h4>
+        <p style="margin:0;font-size:14px;">DNF จะขึ้น 0 ทุกคนไปก่อน จนกว่า Gong จะตั้งเวลา cutoff เส้นชัยของแต่ละรุ่นในหน้า Events → "ผูกจุดตรวจและเวลา" (ตอนนี้ยังไม่มีใครตั้งไว้เลย)</p>
+      </div>
+    </div>
+
+    <h3 class="sub-title">2.3 ย้ายตาราง AdvancedTable มา ROHN-RUNNER + เปลี่ยนช่องค้นหาเป็น BIB</h3>
+    <div class="card">
+      <div class="meta">09-07 16:44–17:16 · <code>ROHN-RUNNER</code> (ไฟล์ใหม่ port จาก Admin)</div>
+      <span class="tag add">Port จาก Admin</span>
+      <p style="margin:12px 0 0;font-size:14.5px;">ย้ายตารางแบบ filter คอลัมน์/เรียง/ลาก/pin จาก Mae_khanin_Admin มาใช้ที่ Dashboard ของ ROHN-RUNNER (ตัด export Excel ออก) — พบบั๊กระหว่างย้าย (ช่องค้นหาไม่รี filter ทันทีเพราะ dependency array ขาด) แก้ในไฟล์ที่ย้ายมา แต่ยังไม่ได้แก้ไฟล์ต้นฉบับที่ Admin</p>
+      <div class="toolbar-mock">
+        <div class="search-box">🔍 ค้นหาชื่อ Column...</div>
+        <div class="pill">เดิม</div>
+      </div>
+      <div style="text-align:center;margin:6px 0;color:var(--ink-soft);font-size:13px;">↓</div>
+      <div class="toolbar-mock">
+        <div class="search-box active">🔍 ค้นหา BIB... 1860</div>
+        <div class="pill">100 แถว/หน้า</div>
+      </div>
+      <div class="filelist">ช่องใหม่ผูกกับ filter ของคอลัมน์ BIB โดยตรง (<code>likeFilters.bib</code>) — ไม่ได้เขียน logic ใหม่ ใช้ตัวกรองเดิมที่มีอยู่แล้ว</div>
+    </div>
+  </section>
+
+  <!-- ============ SESSION 1fd83c45 ============ -->
+  <section>
+    <h2 class="section-title"><span class="num">3</span>เซสชัน 1fd83c45 — sync branch dev-gong ให้ตรง main</h2>
+    <div class="card">
+      <div class="meta">09-07 13:52–13:59 · ไม่แตะโค้ด/DB — git fast-forward เท่านั้น</div>
+      <span class="tag add">Git</span>
+      <p style="margin:12px 0 0;font-size:14.5px;">เช็คก่อนว่า <code>dev-gong</code> ไม่มี commit ของตัวเองที่ main ไม่มี (ปลอดภัย ไม่มี conflict) แล้ว fast-forward ทั้ง 2 repo</p>
+      <div class="git-mock">
+        <div class="git-row"><div class="branch">Mae_khanin_Admin</div><span class="hash">3e729cb</span><span class="arrow">→</span><span class="hash new">fadfe65</span><span style="color:var(--ink-soft);">(30 ไฟล์, +3143/−637)</span></div>
+        <div class="git-row"><div class="branch">ROHN-RUNNER</div><span class="hash">f262fda</span><span class="arrow">→</span><span class="hash new">888e729</span><span style="color:var(--ink-soft);">(16 ไฟล์, +2389/−152)</span></div>
+      </div>
+      <div class="filelist">push ขึ้น origin ทั้งคู่เรียบร้อย — เป็นแค่ fast-forward ไม่มี commit ใหม่ของตัวเอง</div>
+    </div>
+  </section>
+
+  <!-- ============ STATUS + PENDING ============ -->
+  <section>
+    <h2 class="section-title"><span class="num">4</span>สถานะปัจจุบัน + สิ่งที่ค้างอยู่</h2>
+    <div class="card">
+      <div class="grid-2">
+        <div class="box">
+          <h4>Mae_khanin_Admin</h4>
+          <ul>
+            <li>dev-gong/main = <code>fadfe65</code> (sync แล้ว) — แต่ยังไม่รวมงานข้อ 1.3/1.4/2.1 ด้านบน</li>
+            <li>ใน working tree ยังไม่ commit: fix ข้อมูลหาย CP, fix leaderboard</li>
+            <li>migration applied live 3 ไฟล์ ยังไม่ commit เข้า git</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h4>ROHN-RUNNER</h4>
+          <ul>
+            <li>dev-gong = <code>888e729</code> (sync แล้ว) — ไม่รวมงานข้อ 2.2/2.3</li>
+            <li>ใน working tree ยังไม่ commit: Dashboard DNS/DNF, AdvancedTable ที่ port มา</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <h4>ค้างสำหรับรอบหน้า</h4>
+      <ul>
+        <li><b>ยังไม่ commit/push งานข้อ 1.3, 1.4, 2.1, 2.2, 2.3 เลย</b> — ต้องเช็ค git status ทั้ง 2 repo ก่อนทำอะไรต่อ</li>
+        <li><code>GenerateBibModal.jsx</code> บั๊กแคป 1000 แถว — เลื่อนมาครั้งที่ 3 แล้ว ต้องแก้ก่อนวันแข่ง 12-13 ก.ย.</li>
+        <li>DNF จะโชว์ 0 จนกว่า Gong ตั้งเวลา cutoff เส้นชัยแต่ละรุ่น</li>
+        <li>Migration filename กับเวอร์ชันจริงบน remote ไม่ตรงกัน (ค้างจากรอบก่อน) — ยังไม่แก้</li>
+        <li>AdvancedTable.jsx ต้นฉบับที่ Admin มีบั๊กเดียวกับที่แก้ในฝั่ง ROHN-RUNNER — ยังไม่ backport</li>
+        <li>BIB 1024 (Ally Taylor) เพศขัดแย้งกันในไฟล์ต้นฉบับ, ปัญหา Vercel project ของ ROHN-RUNNER — ค้างจากรอบก่อนหน้านี้ ยังไม่แก้</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>Mae Khanin Admin · เอกสารนี้สร้างจากการอ่าน session transcript จริง (682f2926, f9414715, 1fd83c45) ไม่ใช่การเดา · 2026-09-08</footer>
+</div>
+
+</body>
+</html>

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
 import { isAuthError, writeFailureReason, writeErrorMessage } from '../lib/supabaseResult';
+import { pushScanViaRpc } from '../lib/scanSync';
 import { fetchAllRows } from '../lib/supabaseFetch';
 import { normalizeScannedBib, smartFindRunner } from '../lib/bibUtils';
 
@@ -622,58 +623,22 @@ export function RaceProvider({ children }) {
       let uploadSuccess = false;
 
       try {
-        if (item.type === 'CHECKIN') {
-          if (!item.isRescan) {
-            const { error } = await supabase.from('runners').update({
-              registration_status: 'CHECKED_IN',
-              checked_in_at: new Date(item.time).toISOString(),
-              checked_in_by: item.operator
-            }).eq('id', item.runnerId);
-
-            if (!error) uploadSuccess = true;
-            else console.warn('Background sync checkin error:', error);
-          } else {
-            // Re-scan: do not overwrite checked_in_at in runners table
-            uploadSuccess = true;
-          }
-        } else if (item.type === 'CP') {
-          if (!item.isRescan) {
-            const { error } = await supabase.from('runners').update({
-              cps: item.cps
-            }).eq('id', item.runnerId);
-
-            if (!error) uploadSuccess = true;
-            else console.warn('Background sync CP error:', error);
-          } else {
-            // Re-scan: do not overwrite cps in runners table
-            uploadSuccess = true;
-          }
-        } else if (item.type === 'FINISH') {
-          if (!item.isRescan) {
-            const { error } = await supabase.from('runners').update({
-              finish: item.time
-            }).eq('id', item.runnerId);
-
-            if (!error) uploadSuccess = true;
-            else console.warn('Background sync finish error:', error);
-          } else {
-            // Re-scan: do not overwrite finish in runners table
-            uploadSuccess = true;
-          }
-        }
-
-        // Always record every scan into scan_logs table for audit trail & analytics
-        if (uploadSuccess) {
-          try {
-            await supabase.from('scan_logs').insert([{
-              runner_id: item.runnerId,
-              station_id: item.stationId || null,
-              scan_time: new Date(item.time).toISOString(),
-              is_valid: true,
-              scanned_by: item.operator || null,
-              note: item.note || (item.isRescan ? `${item.type}_RESCAN` : item.type)
-            }]);
-          } catch (_) {}
+        const { reason, data: authoritative } = await pushScanViaRpc(item);
+        uploadSuccess = !reason;
+        if (reason) {
+          console.warn('Background sync error:', reason);
+        } else if (authoritative && item.runnerId) {
+          // Self-heal this device's cache with the server's authoritative
+          // state — this is what corrects a stale local cps/finish/
+          // checked_in_at snapshot after every successful sync, instead of
+          // adding a realtime subscription to the scan pages.
+          setRunners(prev => {
+            const next = prev.map(r =>
+              r.id === item.runnerId ? { ...r, ...authoritative } : r
+            );
+            runnersRef.current = next;
+            return next;
+          });
         }
       } catch (err) {
         console.warn('Network error during background sync item:', err);
@@ -687,8 +652,65 @@ export function RaceProvider({ children }) {
           return nextQ;
         });
       } else {
-        // Delay before retrying failed item
-        await new Promise(r => setTimeout(r, 2500));
+        const attempts = (item.attempts || 0) + 1;
+        const MAX_ATTEMPTS_BEFORE_REQUEUE = 5;
+        const MAX_ATTEMPTS_BEFORE_DEAD_LETTER = 20;
+
+        if (attempts >= MAX_ATTEMPTS_BEFORE_DEAD_LETTER) {
+          // Give up retrying this item forever — park it somewhere visible
+          // instead of blocking the queue indefinitely. Write the dead-letter
+          // record FIRST, and only remove the item from the pending queue if
+          // that write actually succeeded: a localStorage failure here
+          // (corrupted JSON, quota exceeded after days of racing) must not
+          // make the item vanish from both places at once — that would be
+          // exactly the silent data loss this whole fix exists to close.
+          let deadLetterWriteOk = true;
+          try {
+            const dead = JSON.parse(localStorage.getItem('trail_dead_letter_queue') || '[]');
+            localStorage.setItem('trail_dead_letter_queue', JSON.stringify([...dead, { ...item, attempts }]));
+          } catch (err) {
+            deadLetterWriteOk = false;
+            console.warn('Dead-letter write failed, keeping item in pending queue:', err);
+          }
+
+          if (deadLetterWriteOk) {
+            setPendingSyncQueue(prev => {
+              const nextQ = prev.filter(q => q.id !== item.id);
+              localStorage.setItem('trail_pending_sync_queue', JSON.stringify(nextQ));
+              return nextQ;
+            });
+            addToast(`⚠️ ส่งข้อมูล BIB ${item.bib} ไม่สำเร็จหลังลองซ้ำหลายครั้ง — ต้องแก้ไขด้วยตนเอง`, true);
+          } else {
+            // Dead-letter storage itself is broken — do not drop the item.
+            // Requeue it at the back with its attempt count intact so it
+            // keeps retrying (and keeps trying to dead-letter) instead of
+            // disappearing.
+            const updatedItem = { ...item, attempts };
+            setPendingSyncQueue(prev => {
+              const rest = prev.filter(q => q.id !== item.id);
+              const nextQ = [...rest, updatedItem];
+              localStorage.setItem('trail_pending_sync_queue', JSON.stringify(nextQ));
+              return nextQ;
+            });
+            addToast(`⚠️ บันทึกรายการที่ส่งไม่สำเร็จไม่ได้ (พื้นที่จัดเก็บเต็ม?) — ยังคงพยายามส่งต่อ`, true);
+          }
+        } else {
+          const updatedItem = { ...item, attempts };
+          setPendingSyncQueue(prev => {
+            const rest = prev.filter(q => q.id !== item.id);
+            // After enough failed attempts, stop blocking the head of the
+            // queue — move this item to the back so scans behind it keep
+            // syncing instead of waiting on a poison item forever.
+            const nextQ = attempts >= MAX_ATTEMPTS_BEFORE_REQUEUE
+              ? [...rest, updatedItem]
+              : [updatedItem, ...rest];
+            localStorage.setItem('trail_pending_sync_queue', JSON.stringify(nextQ));
+            return nextQ;
+          });
+          // Exponential backoff, capped at 30s, instead of a flat 2.5s hammer.
+          const backoffMs = Math.min(2500 * 2 ** (attempts - 1), 30000);
+          await new Promise(r => setTimeout(r, backoffMs));
+        }
       }
     } finally {
       setCurrentlySyncingId(null);
@@ -1157,7 +1179,6 @@ export function RaceProvider({ children }) {
             isRescan: false,
             runnerId: r.id,
             bib: r.bib,
-            cps: updated.cps,
             stationId,
             time: firstTime,
             operator

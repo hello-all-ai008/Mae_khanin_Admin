@@ -135,7 +135,7 @@ export default function CheckIn() {
     <div className="page active">
       <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <span className="station-tag tag-start"><span className="dot"></span>Station · Start</span>
+          <span className="station-tag tag-start"><span className="dot"></span>Station · Check in</span>
           <h1>Check-in จุดปล่อยตัว</h1>
           <p>ยิงบาร์โค้ดบน BIB หรือพิมพ์หมายเลขแล้วกด Enter — ระบบบันทึกเวลาเช็คอินอัตโนมัติ</p>
         </div>

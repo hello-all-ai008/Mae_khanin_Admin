@@ -1,57 +1,77 @@
-import { describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-// scanSync imports the live Supabase client at module load, and that module
-// throws when the env vars are absent. Only the pure patch builder is under
-// test here, so the client is stubbed out rather than configured.
-vi.mock('./supabaseClient', () => ({ supabase: {} }));
+// pushScanViaRpc talks to the live Supabase client's .rpc(); stub it so the
+// module can load without real credentials and so each test controls what
+// .rpc() resolves with.
+const rpcMock = vi.fn();
+vi.mock('./supabaseClient', () => ({ supabase: { rpc: (...args) => rpcMock(...args) } }));
 
-const { createQueueItem, patchForQueuedScan } = await import('./scanSync');
+const { createQueueItem, pushScanViaRpc } = await import('./scanSync');
 
-// pushScanUpdate / pushQueuedScan are not tested here: they exist only to talk
-// to Supabase, and a version of them with the client mocked would assert
-// nothing but the shape of the mock.
+beforeEach(() => {
+  rpcMock.mockReset();
+});
 
-describe('patchForQueuedScan', () => {
-  test('turns a CHECKIN into the check-in columns', () => {
+describe('pushScanViaRpc', () => {
+  test('calls record_scan with a CP scan mapped to RPC args', async () => {
     // Arrange
-    const time = Date.parse('2026-08-30T01:23:45.000Z');
-    const item = { type: 'CHECKIN', time, operator: 'สมชาย' };
+    rpcMock.mockResolvedValueOnce({ data: { cps: { a1: 123 } }, error: null });
+    const item = { type: 'CP', runnerId: 'runner-1', stationId: 'a1', time: 123, operator: 'สมชาย', isRescan: false };
 
     // Act
-    const patch = patchForQueuedScan(item);
+    const result = await pushScanViaRpc(item);
 
     // Assert
-    expect(patch).toEqual({
-      registration_status: 'CHECKED_IN',
-      checked_in_at: '2026-08-30T01:23:45.000Z',
-      checked_in_by: 'สมชาย',
+    expect(rpcMock).toHaveBeenCalledWith('record_scan', {
+      p_runner_id: 'runner-1',
+      p_scan_type: 'CP',
+      p_station_id: 'a1',
+      p_scan_time: 123,
+      p_operator: 'สมชาย',
+      p_is_rescan: false,
     });
+    expect(result).toEqual({ reason: null, data: { cps: { a1: 123 } } });
   });
 
-  test('turns a CP into the checkpoint map, unchanged', () => {
-    const cps = { 'station-a1': 1756500000000 };
+  test('passes a rescan through with p_is_rescan true', async () => {
+    rpcMock.mockResolvedValueOnce({ data: { finish: 999 }, error: null });
+    const item = { type: 'FINISH', runnerId: 'runner-1', time: 999, operator: 'สมชาย', isRescan: true };
 
-    const patch = patchForQueuedScan({ type: 'CP', cps, stationId: 'station-a1' });
+    const result = await pushScanViaRpc(item);
 
-    expect(patch).toEqual({ cps });
-    // The map must be passed straight through: a copy that drops earlier
-    // checkpoints would erase a runner's history on sync.
-    expect(patch.cps).toBe(cps);
+    expect(rpcMock).toHaveBeenCalledWith('record_scan', expect.objectContaining({ p_is_rescan: true, p_scan_type: 'FINISH' }));
+    expect(result.reason).toBeNull();
   });
 
-  test('turns a FINISH into the finish timestamp', () => {
-    const time = 1756500000000;
+  test('maps a CHECKIN item to the matching RPC args, p_station_id null', async () => {
+    rpcMock.mockResolvedValueOnce({ data: { registration_status: 'CHECKED_IN' }, error: null });
+    const item = { type: 'CHECKIN', runnerId: 'runner-1', time: 456, operator: 'สมชาย', isRescan: false };
 
-    expect(patchForQueuedScan({ type: 'FINISH', time })).toEqual({ finish: time });
+    await pushScanViaRpc(item);
+
+    expect(rpcMock).toHaveBeenCalledWith('record_scan', expect.objectContaining({ p_scan_type: 'CHECKIN', p_station_id: null }));
+  });
+
+  test('returns a Thai reason and null data when the RPC errors', async () => {
+    rpcMock.mockResolvedValueOnce({ data: null, error: { message: 'boom' } });
+    const item = { type: 'CP', runnerId: 'runner-1', stationId: 'a1', time: 1, operator: 'x' };
+
+    const result = await pushScanViaRpc(item);
+
+    expect(result.data).toBeNull();
+    expect(result.reason).toBeTruthy();
   });
 
   test.each([
-    ['an unknown type', { type: 'SOMETHING_ELSE' }],
-    ['a missing type', { runnerId: 'r1' }],
+    ['an unknown type', { type: 'SOMETHING_ELSE', runnerId: 'r1', time: 1 }],
+    ['a missing runnerId', { type: 'CP', time: 1 }],
     ['null', null],
     ['undefined', undefined],
-  ])('returns null for %s, so the item is never silently dropped', (_label, item) => {
-    expect(patchForQueuedScan(item)).toBeNull();
+  ])('returns a reason for %s without calling the RPC, so the item is never silently dropped', async (_label, item) => {
+    const result = await pushScanViaRpc(item);
+    expect(result.data).toBeNull();
+    expect(result.reason).toBeTruthy();
+    expect(rpcMock).not.toHaveBeenCalled();
   });
 });
 
@@ -60,7 +80,7 @@ describe('createQueueItem', () => {
     const item = createQueueItem(
       'CP',
       { runnerId: 'runner-1', bib: '1001', operator: 'สมชาย' },
-      { cps: { a1: 1 }, stationId: 'a1' }
+      { stationId: 'a1', time: 1 }
     );
 
     expect(item).toMatchObject({
@@ -68,17 +88,9 @@ describe('createQueueItem', () => {
       runnerId: 'runner-1',
       bib: '1001',
       operator: 'สมชาย',
-      cps: { a1: 1 },
       stationId: 'a1',
+      time: 1,
     });
     expect(item.id).toMatch(/^queue_\d+$/);
-  });
-
-  test('builds an item every scan type can be patched from', () => {
-    const scan = { runnerId: 'runner-1', bib: '1001', operator: 'สมชาย' };
-
-    expect(patchForQueuedScan(createQueueItem('CHECKIN', scan, { time: 1756500000000 }))).not.toBeNull();
-    expect(patchForQueuedScan(createQueueItem('CP', scan, { cps: {} }))).not.toBeNull();
-    expect(patchForQueuedScan(createQueueItem('FINISH', scan, { time: 1756500000000 }))).not.toBeNull();
   });
 });
