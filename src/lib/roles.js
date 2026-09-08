@@ -56,6 +56,7 @@ export const ROUTE_ACCESS = {
   '/bib-canvas': ADMIN_ONLY,
   '/database-flow': ADMIN_ONLY,
   '/admin/users': ADMIN_ONLY,
+  '/runner-progress': ADMIN_ONLY,
   '/checkin': [ROLES.ADMIN, ROLES.CHECKIN_CREW],
   '/checkpoint': [ROLES.ADMIN, ROLES.MARSHAL],
   '/finish': [ROLES.ADMIN, ROLES.FINISH_JUDGE],
