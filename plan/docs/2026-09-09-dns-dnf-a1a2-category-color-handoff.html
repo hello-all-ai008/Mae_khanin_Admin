@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุปงาน DNS/DNF, A1/A2, สีตามรุ่น — ส่งต่อทีม</title>
+<style>
+  :root{
+    --bg:#efe9e0; --bg-alt:#e6ded1; --surface:#f7f2e9; --surface-2:#fbf8f2;
+    --ink:#3a342b; --ink-soft:#6b6153; --line:#d8cfbe;
+    --accent:#8a6d4b; --accent-2:#5f7a6a; --amber:#b8853a;
+    --danger:#a85c4a; --danger-bg:#f3e3dd; --ok-bg:#e7ede4; --ok:#4f7a5a;
+    --shadow: 0 2px 10px rgba(58,52,43,0.08), 0 8px 24px rgba(58,52,43,0.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Sarabun","Noto Sans Thai","Segoe UI",system-ui,sans-serif;line-height:1.65;padding:0 0 64px;}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 20px;}
+  header.hero{background:linear-gradient(135deg,#4a4436,#5f5847 55%,#6b6350);color:#f3ede1;padding:44px 0 36px;margin-bottom:36px;}
+  header.hero .eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:#d8cba9;margin-bottom:10px;}
+  header.hero h1{margin:0 0 10px;font-size:clamp(22px,3.4vw,32px);font-weight:700;}
+  header.hero p{margin:4px 0;color:#e6ddc9;font-size:14.5px;}
+  header.hero .sessions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+  header.hero .sessions span{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:999px;padding:5px 12px;font-size:12.5px;font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+
+  section{margin-bottom:34px;}
+  h2.section-title{font-size:20px;margin:0 0 16px;padding-bottom:10px;border-bottom:2px solid var(--line);display:flex;align-items:center;gap:10px;}
+  h2.section-title .num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;flex:none;}
+  h3.sub-title{font-size:15.5px;margin:22px 0 10px;color:var(--ink);}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;box-shadow:var(--shadow);margin-bottom:18px;}
+  .card h3{margin:0 0 4px;font-size:17px;}
+  .card .meta{color:var(--ink-soft);font-size:13px;margin-bottom:16px;}
+  .card .meta code{background:var(--bg-alt);padding:1px 6px;border-radius:5px;font-size:12px;}
+
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;margin-right:6px;margin-bottom:6px;}
+  .tag.add{background:var(--ok-bg);color:var(--ok);}
+  .tag.fix{background:#eee3cf;color:var(--amber);}
+  .tag.investigate{background:#e6e2d6;color:var(--ink-soft);}
+  .tag.open{background:var(--danger-bg);color:var(--danger);}
+  .tag.critical{background:#f3e3dd;color:var(--danger);border:1px solid #d6a793;}
+  .tag.partial{background:#f6e9d3;color:#7a5322;border:1px solid #e0b98a;}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:680px){.grid-2{grid-template-columns:1fr;}}
+
+  .box{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .box h4{margin:0 0 8px;font-size:13.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
+  .box ul{margin:0;padding-left:20px;font-size:14px;}
+  .box ul li{margin-bottom:6px;}
+  .box code{background:var(--bg-alt);padding:1px 6px;border-radius:5px;font-size:12.5px;font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+  .filelist{font-size:13px;color:var(--ink-soft);margin-top:12px;}
+
+  .callout{border-radius:12px;padding:18px 20px;border:1px solid #e0b98a;background:#f6e9d3;}
+  .callout.danger{border-color:#d6a793;background:var(--danger-bg);}
+  .callout.ok{border-color:#a9c2ab;background:var(--ok-bg);}
+  .callout h4{margin:0 0 10px;font-size:15px;color:#7a5322;}
+  .callout.danger h4{color:#7a4032;}
+  .callout.ok h4{color:#3f5f47;}
+  .callout ul{margin:0;padding-left:20px;font-size:14px;}
+  .callout li{margin-bottom:6px;}
+
+  table.simple{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px;}
+  table.simple th, table.simple td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;}
+  table.simple th{color:var(--ink-soft);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;}
+
+  .diff-mock{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
+  @media (max-width:680px){.diff-mock{grid-template-columns:1fr;}}
+  .diff-col{border-radius:10px;padding:14px 16px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px;}
+  .diff-col.bad{background:var(--danger-bg);border:1px solid #d6a793;}
+  .diff-col.good{background:var(--ok-bg);border:1px solid #a9c2ab;}
+  .diff-col .diff-label{font-family:"Sarabun","Noto Sans Thai",sans-serif;font-weight:700;font-size:12.5px;margin-bottom:8px;}
+  .diff-col.bad .diff-label{color:var(--danger);}
+  .diff-col.good .diff-label{color:var(--ok);}
+  .diff-col div.line{padding:2px 0;}
+
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;}
+  .badge.finished{background:var(--ok-bg);color:var(--ok);}
+  .badge.inrace{background:#e3e9f0;color:#3d5a8a;}
+  .badge.dns{background:#e6e2d6;color:var(--ink-soft);}
+  .badge.dnf{background:var(--danger-bg);color:var(--danger);}
+  .badge.locked{background:#e6e2d6;color:var(--ink-soft);}
+
+  /* mockup: nav */
+  .nav-mock{display:flex;gap:8px;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:14px;}
+  .nav-pill{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;background:#fff;border:1px solid var(--line);color:var(--ink);}
+  .nav-pill.locked{color:var(--ink-soft);background:var(--bg-alt);text-decoration:line-through;cursor:not-allowed;opacity:.7;}
+
+  /* mockup: dashboard filter buttons */
+  .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .filter-pill{padding:7px 16px;border-radius:999px;font-size:13px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--ink-soft);}
+  .filter-pill.active{background:var(--accent-2);color:#fff;border-color:var(--accent-2);}
+
+  /* mockup: color pill */
+  .cat-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#fff;padding:3px 11px;border-radius:999px;}
+
+  /* mockup: git timeline */
+  .git-timeline{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:20px;margin-top:14px;}
+  .gt-item{display:flex;align-items:flex-start;gap:14px;padding-bottom:16px;position:relative;}
+  .gt-item:not(:last-child)::before{content:"";position:absolute;left:9px;top:22px;bottom:-4px;width:2px;background:var(--line);}
+  .gt-dot{width:20px;height:20px;border-radius:50%;background:var(--accent-2);flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;}
+  .gt-dot::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff;}
+  .gt-item.bad .gt-dot{background:var(--danger);}
+  .gt-item.ok .gt-dot{background:var(--ok);}
+  .gt-item.now .gt-dot{background:var(--amber);}
+  .gt-body .gt-title{font-weight:700;font-size:14.5px;}
+  .gt-body .gt-title .hash{font-weight:500;color:var(--ink-soft);font-size:12px;font-family:ui-monospace,monospace;}
+  .gt-body .gt-note{font-size:13px;color:var(--ink-soft);margin-top:2px;}
+  .gt-body .gt-note.warn{color:var(--danger);}
+
+  footer{text-align:center;color:var(--ink-soft);font-size:12.5px;margin-top:40px;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Mae Khanin Admin · ส่งต่อทีม 2026-09-09</div>
+    <h1>DNS/DNF Status, ป้าย A1/A2, สีตามรุ่น + บั๊ก Leaderboard ที่ยังไม่แก้</h1>
+    <p>ช่วงเวลาทำงาน 2026-09-08 15:04–17:32 น. (2 เซสชันคู่ขนาน) · ระบบที่แตะ: Mae_khanin_Admin, ROHN-RUNNER, Supabase (kjtbfzsgnsvkfjgayuys)</p>
+    <div class="sessions">
+      <span>9a54502e…03a3d</span>
+      <span>e33afa28…6e7003</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="callout danger" style="margin-bottom:28px;">
+    <h4>⚠ ยังไม่ commit/push อะไรเลยทั้งคู่ — วันแข่ง 12-13 ก.ย. ใกล้แล้ว</h4>
+    <p style="margin:0 0 10px;font-size:14.5px;">Mae_khanin_Admin มี 12 ไฟล์แก้ค้าง + migration 4 ไฟล์ที่ apply บน Supabase จริงแล้วแต่ยังไม่ commit เข้า git, ROHN-RUNNER มี 1 ไฟล์ค้าง (<code>results.js</code>) — งานแรกที่ต้องทำคือรีวิว diff แล้ว commit/push ให้ทัน</p>
+    <p style="margin:0;font-size:13.5px;color:var(--ink-soft);">หมายเหตุ: เพื่อนร่วมทีม (Tiw) ก็ทำงานคู่ขนานบน branch <code>main</code>/<code>Tiw-dev</code> แยกต่างหาก — ตอนนี้ merge เข้า <code>dev-gong</code> แล้ว แต่ควรเช็คอีกทีว่าครบ</p>
+  </div>
+
+  <!-- ============ DNS/DNF ============ -->
+  <section>
+    <h2 class="section-title"><span class="num">1</span>DNS/DNF Status — ฟีเจอร์ใหม่ ทำเสร็จ + verify ผ่านแล้ว</h2>
+    <div class="card">
+      <div class="meta">09-08 · <code>Mae_khanin_Admin</code> + <code>ROHN-RUNNER</code> · migration applied live · verifier ผ่าน 2 รอบ · <b>ยังไม่ commit</b></div>
+      <span class="tag critical">พบ CRITICAL bug ระหว่างทาง — แก้แล้ว</span>
+      <p style="margin:12px 0 0;font-size:14.5px;">ก่อนหน้านี้ DNS ไม่มีที่เก็บถาวรเลย — ปุ่ม DNS เขียนข้อมูลเหมือนปุ่ม "reset นักวิ่ง" ทุกอย่าง แยกไม่ออกว่าเป็นคน DNS จริงหรือแค่ถูก reset ทดสอบ ส่วน DNF เดิมเป็น flag ชั่วคราวใน <code>cps.DNF</code> ที่ระบบ ROHN-RUNNER อีกฝั่งไม่รู้จัก คำนวณ DNF เองจากเวลา cutoff แยกกันคนละชุดข้อมูล</p>
+
+      <div class="grid-2" style="margin-top:14px;">
+        <div class="box">
+          <h4>DB: column ใหม่ + migration 4 ไฟล์</h4>
+          <ul>
+            <li><code>runners.race_status</code> enum(<code>DNS</code>,<code>DNF</code>) + <code>race_status_at</code> + <code>race_status_by</code> — แยก column ใหม่ ไม่ยุ่งกับ <code>registration_status</code> เดิม</li>
+            <li>backfill จาก <code>cps.DNF</code> เก่า → พบ 0 จาก 1070 แถว (ไม่มีอะไรต้องย้าย)</li>
+            <li>เปิดให้ anon อ่านผ่าน <code>public_results</code> view + realtime broadcast trigger (รอบแรกลืม grant column ทำให้ query พังทั้งระบบ — แก้ในไฟล์ที่ 4 แล้ว)</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h4>Verifier รอบแรก: FAIL</h4>
+          <ul>
+            <li><b>CRITICAL:</b> <code>RunnerTimingModal.jsx</code> ปุ่ม DNS ไม่เขียน <code>race_status</code> จริง — เซฟเหตุผลอื่นทับ DNS หายเงียบๆ</li>
+            <li><b>HIGH:</b> realtime trigger ไม่อัพเดท → DNS/DNF ไม่ขึ้นฝั่ง public แบบสด</li>
+            <li><b>MEDIUM:</b> DNF ล้าง finish time โดยไม่เตือน</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin:14px 0 6px;font-size:13.5px;">ตัวอย่างป้ายสถานะที่ได้ (RunnersList / Dashboard):</p>
+      <table class="simple">
+        <tr><th>BIB</th><th>สถานะ</th></tr>
+        <tr><td>1024</td><td><span class="badge finished">FINISHED</span></td></tr>
+        <tr><td>1055</td><td><span class="badge dnf">DNF</span></td></tr>
+        <tr><td>5090</td><td><span class="badge dns">DNS</span></td></tr>
+        <tr><td>1860</td><td><span class="badge inrace">IN RACE</span></td></tr>
+      </table>
+      <div class="filelist">verify รอบ 2 (แค่ 3 จุดที่แก้): PASS ทั้งหมด — ทดสอบจริงว่า DNS ไม่หายเวลาเซฟเหตุผลอื่น, anon อ่าน race_status ได้จริง</div>
+    </div>
+  </section>
+
+  <!-- ============ NAVBAR / CHECKPOINT ============ -->
+  <section>
+    <h2 class="section-title"><span class="num">2</span>Navbar + Checkpoint dropdown — ล็อกตามข้อมูล station จริง</h2>
+    <div class="card">
+      <div class="meta">09-08 · <code>Mae_khanin_Admin</code> · build ผ่าน · ยังไม่ commit</div>
+      <span class="tag fix">แก้ไข</span>
+      <p style="margin:12px 0 0;font-size:14.5px;">ถ้าอีเวนต์ตั้งแค่ Start/Finish (ไม่มี CP) เมนู Checkpoint ในหน้า Navbar จะล็อกอัตโนมัติ และ dropdown เลือกจุดใน <code>/checkpoint</code> จะกรองเหลือแค่ station type CP เท่านั้น (เดิมโชว์ทุก type ปนกัน)</p>
+      <div class="nav-mock">
+        <div class="nav-pill">Check-in</div>
+        <div class="nav-pill locked" title="ไม่มี station ประเภทนี้">Checkpoint 🔒</div>
+        <div class="nav-pill">Finish</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section>
+    <h2 class="section-title"><span class="num">3</span>Dashboard — ปุ่มกรองตามรุ่น, เรียง BIB, ค้นหา BIB, คอลัมน์สถานะ</h2>
+    <div class="card">
+      <div class="meta">09-08 · <code>OverallDashboard.jsx</code>, <code>AdvancedTable.jsx</code> · build ผ่าน · ยังไม่ commit</div>
+      <span class="tag add">ฟีเจอร์ใหม่</span>
+      <div class="filter-row">
+        <div class="filter-pill active">ทั้งหมด</div>
+        <div class="filter-pill">10KM Hard Rock</div>
+        <div class="filter-pill">5KM Soft Rock</div>
+      </div>
+      <p style="margin:14px 0 0;font-size:14.5px;">ตารางเรียงตาม BIB น้อย→มากเป็นค่าเริ่มต้น, ช่องค้นหาบน toolbar เปลี่ยนจากค้นชื่อคอลัมน์ → ค้นหา BIB จริง (opt-in prop ใหม่ ไม่กระทบอีก ~8 หน้าที่ใช้ตารางเดียวกัน), คอลัมน์ Grp Rank/Overall ต่อกับตัวคำนวณจริงแล้ว (เดิม hardcode "-")</p>
+    </div>
+  </section>
+
+  <!-- ============ LEADERBOARD BUG ============ -->
+  <section>
+    <h2 class="section-title"><span class="num">4</span>⚠ บั๊ก Leaderboard เวลาไม่ขึ้น — หาสาเหตุครบแล้ว แต่ยังไม่แก้โค้ดสักบรรทัด</h2>
+    <div class="card">
+      <div class="meta">09-08 · <code>Mae_khanin_Admin/LiveLeaderboard.jsx</code> · Explore + Plan subagent สืบจนสุด · <b>0 บรรทัดถูกแก้</b></div>
+      <span class="tag open">ค้าง — เป็นบั๊กที่เห็นจริงบนหน้าเว็บ</span>
+      <p style="margin:12px 0 0;font-size:14.5px;">Gong ถามว่าทำไมเวลาเข้าเส้นชัยไม่ขึ้นในหน้า Leaderboard — สืบด้วย git bisect เจอสาเหตุชัดเจนแล้ว รอแค่คำตัดสินใจ 1 ข้อจาก Gong แล้วแก้ได้เลย (~3 บรรทัด)</p>
+
+      <div class="git-timeline">
+        <div class="gt-item ok">
+          <div class="gt-dot"></div>
+          <div class="gt-body"><div class="gt-title">d40bc05 <span class="hash">fix: accurate Net Time calculation</span></div><div class="gt-note">โค้ดถูกต้อง — ส่ง finishFallback ครบ 3 จุดเรียกใช้</div></div>
+        </div>
+        <div class="gt-item bad">
+          <div class="gt-dot"></div>
+          <div class="gt-body">
+            <div class="gt-title">cbc21cf <span class="hash">feat: backup local changes before pulling origin/main</span></div>
+            <div class="gt-note warn">เผลอลบ argument <code>finishFallback</code> ออกจากทั้ง 3 จุดเรียก + ลบ fallback ของ getRunnerStartEpoch (checkin/CP scan) — เวลาเข้าเส้นชัยเลยกลายเป็น '--:--:--' เงียบๆ</div>
+          </div>
+        </div>
+        <div class="gt-item">
+          <div class="gt-dot"></div>
+          <div class="gt-body"><div class="gt-title">976ed76 <span class="hash">merge: origin/main into Tiw-dev</span></div><div class="gt-note">merge เอา formatMs's fallback branch กลับมา แต่ "ลืม" ใส่ argument กลับที่ 3 จุดเรียก — โค้ด dead code อยู่จนถึงตอนนี้</div></div>
+        </div>
+        <div class="gt-item now">
+          <div class="gt-dot"></div>
+          <div class="gt-body"><div class="gt-title">ตอนนี้ — รอ Gong ตัดสินใจ</div><div class="gt-note">คืน argument 3 จุด = แก้แน่นอน. แต่จะคืน fallback checkin/CP-scan ของ getRunnerStartEpoch ด้วยไหม? (Plan agent แนะนำว่าไม่ต้องคืน — checkin ไม่ใช่เวลาสตาร์ทจริง อาจทำให้ net time ผิดซ้ำ) — ถามแล้ว Gong ยังไม่ตอบ</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ A1/A2 ============ -->
+  <section>
+    <h2 class="section-title"><span class="num">5</span>ป้าย A1/A2/A3 — ทำแล้ว 1 จุดจาก 10 จุด</h2>
+    <div class="card">
+      <div class="meta">09-08 · ทำเฉพาะ <code>CheckPoint.jsx</code> dropdown · อีก 9 จุดยังเป็นชื่อ station จริง</div>
+      <span class="tag partial">ทำบางส่วน</span>
+      <div class="diff-mock">
+        <div class="diff-col bad">
+          <div class="diff-label">ก่อนแก้ (ยังเหลืออีก 9 จุด)</div>
+          <div class="line">&lt;option&gt;สถานีตรวจ A - หน้าวัด&lt;/option&gt;</div>
+          <div class="line">&lt;option&gt;สถานีตรวจ B - สะพาน&lt;/option&gt;</div>
+        </div>
+        <div class="diff-col good">
+          <div class="diff-label">หลังแก้ (แค่ CheckPoint.jsx)</div>
+          <div class="line">&lt;option&gt;A1&lt;/option&gt;</div>
+          <div class="line">&lt;option&gt;A2&lt;/option&gt;</div>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:14px;">
+        <h4>คำถามที่ยังไม่มีคำตอบ</h4>
+        <p style="margin:0;font-size:14px;">หน้า setup (StationsSetup, CheckpointsSetup, StaffSetup, AdminUserManagement, StaffLogin) จะให้เก็บชื่อ station จริงเหมือนเดิม หรือเปลี่ยนเป็น A1/A2 ด้วย? Gong ยังไม่ตอบ — ต้องถามก่อนทำต่อ</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CATEGORY COLOR ============ -->
+  <section>
+    <h2 class="section-title"><span class="num">6</span>สีตามรุ่น/ระยะทาง — Admin เสร็จ 8/10 หน้า, ROHN-RUNNER ยังไม่เริ่ม</h2>
+    <div class="card">
+      <div class="meta">09-08 · <code>categories.color</code> มีในระบบอยู่แล้ว แค่ไม่ได้ใช้ครบทุกหน้า</div>
+      <span class="tag add">Rollout ตามแผน 3 phase</span>
+      <p style="margin:12px 0 0;font-size:14.5px;">ตัวอย่างป้ายสีที่ได้ (สีจริงมาจาก Events → รุ่น/ระยะทาง):</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <span class="cat-pill" style="background:#e0342f;">10KM Hard Rock</span>
+        <span class="cat-pill" style="background:#2f8fe0;">5KM Soft Rock</span>
+      </div>
+      <table class="simple">
+        <tr><th>หน้า</th><th>สถานะ</th></tr>
+        <tr><td>RunnersList, ESlip, Dashboard, RunnerProgressControl, LedBoard, ScannerInput, RunnerTimingModal</td><td><span class="badge finished">เสร็จ</span></td></tr>
+        <tr><td>ImportRunners, EditRunnerModal</td><td><span class="badge dns">ข้ามตั้งใจ — เหตุผลทางเทคนิค</span></td></tr>
+        <tr><td>ROHN-RUNNER (ทุกหน้า)</td><td><span class="badge dnf">ยังไม่เริ่ม — ต้องเปิด RLS ให้ anon อ่าน categories ก่อน</span></td></tr>
+      </table>
+      <div class="filelist">ROHN-RUNNER ตอนนี้ public site ไม่ query categories เลย และ RLS block anon ทั้งหมด — ต้องมี migration ใหม่ก่อนถึงจะต่อ UI ได้ (Gong ยังไม่ตอบว่าจะทำ migration เลยไหม หรือรอทำ plan doc ก่อน)</div>
+    </div>
+  </section>
+
+  <!-- ============ PENDING ============ -->
+  <section>
+    <h2 class="section-title"><span class="num">7</span>ลำดับความสำคัญสิ่งที่ค้าง</h2>
+    <div class="callout danger">
+      <ul>
+        <li><b>1. Commit/push งานทั้งหมด</b> — migration 4 ไฟล์ apply บน Supabase จริงแล้ว ต้องให้ git ตามทัน</li>
+        <li><b>2. แก้บั๊ก Leaderboard เวลาไม่ขึ้น</b> — รู้สาเหตุครบ รอ Gong ตัดสินใจ 1 ข้อ แล้วแก้ได้เลย (เห็นผลจริงบนหน้าเว็บ)</li>
+        <li><b>3. GenerateBibModal.jsx บั๊กแคป 1000 แถว</b> — ค้างมา 3+ รอบ ตอนนี้มีนักวิ่ง 1070+ คน จะพิมพ์ BIB ไม่ครบ ต้องแก้ก่อนวันแข่ง 12-13 ก.ย.</li>
+        <li>4. A1/A2 rollout ที่เหลือ 9 จุด — รอคำตอบเรื่องหน้า setup</li>
+        <li>5. ROHN-RUNNER สีตามรุ่น — รอ Gong ตัดสินใจเรื่อง migration</li>
+        <li>6. ROHN-RUNNER ESlip.jsx timezone bug (บรรทัด 260) — บั๊กคล้ายที่เจอใน Admin, เล็ก พร้อมแก้</li>
+        <li>7. DNS/DNF follow-up เล็กๆ 2 จุด (ไม่บล็อก) + ยังไม่มี unit test ให้ getRunnerRaceStatus</li>
+        <li>8. LiveLeaderboard.jsx ยังไม่เช็คว่าควรตัดคน DNF/DNS ออกจากอันดับหรือไม่</li>
+        <li>9. งานที่ Tiw รายงานไว้เอง (RUNNER_CONFIG anti-pattern, reset ไม่มี PIN/audit log, ไม่เช็ค route CP ก่อนให้อันดับ) — มี SQL แก้พร้อมแล้วใน <code>handoff/2026-09-08-2-update-ui.md</code> §6.3</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>Mae Khanin Admin · เอกสารนี้สร้างจากการอ่าน session transcript จริง (9a54502e, e33afa28) + เช็ค git status สดตอนเขียน ไม่ใช่การเดา · 2026-09-09</footer>
+</div>
+
+</body>
+</html>

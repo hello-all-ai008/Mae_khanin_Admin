@@ -20,6 +20,8 @@ export default function OverallDashboard() {
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
   const [stations, setStations] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [runners, setRunners] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedSlip, setSelectedSlip] = useState(null);
@@ -53,8 +55,10 @@ export default function OverallDashboard() {
       const { data: catData, error: catError } = await supabase
         .from('categories')
         .select('*')
-        .eq('event_id', selectedEventId);
+        .eq('event_id', selectedEventId)
+        .order('distance_km', { ascending: true });
       if (catError) console.warn('Categories fetch error', catError);
+      setCategories(catData || []);
 
       const catStartMap = await fetchCategoryStartMap(supabase, catData || []);
 
@@ -121,10 +125,31 @@ export default function OverallDashboard() {
     };
   }, [selectedEventId, fetchData]);
 
+  // Runners scoped to the selected ระยะ (categoryFilter), so the stat tiles
+  // and table below follow whichever distance button is active. Same
+  // matching convention as RunnerProgressControl.jsx's statsRunners. Sorted
+  // by BIB ascending (numeric, not string) so the table has a sensible
+  // default order instead of raw fetch/insertion order — AdvancedTable's own
+  // click-to-sort still works from here as usual.
+  const scopedRunners = useMemo(() => {
+    const list = categoryFilter === 'ALL'
+      ? runners
+      : runners.filter(r => {
+          const rCat = (r.cat || r.category_id || '').toLowerCase();
+          return rCat.includes(categoryFilter.toLowerCase());
+        });
+    return [...list].sort((a, b) => {
+      const bibA = Number(a.bib);
+      const bibB = Number(b.bib);
+      if (!isNaN(bibA) && !isNaN(bibB)) return bibA - bibB;
+      return String(a.bib || '').localeCompare(String(b.bib || ''), undefined, { numeric: true });
+    });
+  }, [runners, categoryFilter]);
+
   // Compute stats
   const stats = useMemo(() => {
-    const total = runners.length;
-    if (total === 0) return { checkedIn: 0, started: 0, finished: 0, dns: 0, total: 0 };
+    const total = scopedRunners.length;
+    if (total === 0) return { checkedIn: 0, started: 0, finished: 0, dns: 0, dnf: 0, total: 0 };
 
     let checkedIn = 0;
     let started = 0;
@@ -132,7 +157,7 @@ export default function OverallDashboard() {
 
     const startStation = stations.find(s => s.type === 'START');
 
-    runners.forEach(r => {
+    scopedRunners.forEach(r => {
       // Check-in
       if (r.registration_status === 'CHECKED_IN' || r.checked_in_at) {
         checkedIn++;
@@ -153,10 +178,22 @@ export default function OverallDashboard() {
       if (r.finish) finished++;
     });
 
-    const dns = total - started;
+    const dns = scopedRunners.filter(r => r.race_status === 'DNS').length;
+    const dnf = scopedRunners.filter(r => r.race_status === 'DNF').length;
 
-    return { checkedIn, started, finished, dns, total };
-  }, [runners, stations]);
+    return { checkedIn, started, finished, dns, dnf, total };
+  }, [scopedRunners, stations]);
+
+  // Same priority convention as RunnerProgressControl.jsx's getRunnerStatus /
+  // RunnersList.jsx's statusOf: explicit race_status wins, then finish, then
+  // started (checked-in or has any CP scan), else '-'.
+  const getRunnerStatusLabel = (r) => {
+    if (r.race_status === 'DNF') return 'DNF';
+    if (r.race_status === 'DNS') return 'DNS';
+    if (r.finish) return 'Finished';
+    const hasStarted = Object.keys(r.cps || {}).length > 0 || r.checked_in_at || r.registration_status === 'CHECKED_IN';
+    return hasStarted ? 'In Race' : '-';
+  };
 
   // Columns for the table
   const columns = useMemo(() => {
@@ -186,6 +223,24 @@ export default function OverallDashboard() {
           return (r.registration_status === 'CHECKED_IN' || r.checked_in_at)
             ? <span style={{ color: 'var(--ok)', fontWeight: 'bold' }}>✓</span>
             : <span style={{ color: 'var(--line)' }}>-</span>;
+        }
+      },
+      {
+        key: 'race_status_display',
+        label: 'สถานะ',
+        defaultWidth: 150,
+        align: 'center',
+        valueGetter: (r) => getRunnerStatusLabel(r),
+        render: (_, r) => {
+          const label = getRunnerStatusLabel(r);
+          const colorMap = {
+            DNF: '#ea580c',
+            DNS: '#dc2626',
+            Finished: '#1a9e5c',
+            'In Race': '#f5b60a'
+          };
+          if (label === '-') return <span style={{ color: 'var(--line)' }}>-</span>;
+          return <span style={{ color: colorMap[label] || 'var(--ink)', fontWeight: 700 }}>{label}</span>;
         }
       }
     ];
@@ -254,18 +309,26 @@ export default function OverallDashboard() {
       label: 'Grp Rank',
       defaultWidth: 170,
       align: 'center',
-      render: () => <span style={{ color: 'var(--line)' }}>-</span>
+      valueGetter: (r) => computeRunnerRanks(r, runners).catRank,
+      render: (_, r) => {
+        const val = computeRunnerRanks(r, runners).catRank;
+        return val === '—' ? <span style={{ color: 'var(--line)' }}>-</span> : <span style={{ fontWeight: 600 }}>{val}</span>;
+      }
     });
     cols.push({
       key: 'overall',
       label: 'Overall',
       defaultWidth: 170,
       align: 'center',
-      render: () => <span style={{ color: 'var(--line)' }}>-</span>
+      valueGetter: (r) => computeRunnerRanks(r, runners).overallRank,
+      render: (_, r) => {
+        const val = computeRunnerRanks(r, runners).overallRank;
+        return val === '—' ? <span style={{ color: 'var(--line)' }}>-</span> : <span style={{ fontWeight: 600 }}>{val}</span>;
+      }
     });
 
     return cols;
-  }, [stations]);
+  }, [stations, runners]);
 
   const cardStyle = {
     background: '#fff',
@@ -315,6 +378,50 @@ export default function OverallDashboard() {
         </div>
       </div>
 
+      {categories.length > 0 && (
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', overflowX: 'auto', paddingBottom: '2px' }}>
+          <button
+            type="button"
+            onClick={() => setCategoryFilter('ALL')}
+            style={{
+              border: '1px solid',
+              borderColor: categoryFilter === 'ALL' ? 'var(--ink)' : 'var(--line)',
+              background: categoryFilter === 'ALL' ? 'var(--ink)' : 'var(--bg-soft)',
+              color: categoryFilter === 'ALL' ? '#fff' : 'var(--ink-2)',
+              borderRadius: '8px',
+              padding: '6px 14px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            ทั้งหมด
+          </button>
+          {categories.map(c => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setCategoryFilter(c.name)}
+              style={{
+                border: '1px solid',
+                borderColor: categoryFilter === c.name ? 'var(--ink)' : 'var(--line)',
+                background: categoryFilter === c.name ? 'var(--ink)' : 'var(--bg-soft)',
+                color: categoryFilter === c.name ? '#fff' : 'var(--ink-2)',
+                borderRadius: '8px',
+                padding: '6px 14px',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {c.name} ({c.distance_km} {c.unit || 'km'})
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <div style={{ padding: '60px', textAlign: 'center', color: 'var(--ink-2)' }}>กำลังโหลดข้อมูล...</div>
       ) : (
@@ -347,17 +454,26 @@ export default function OverallDashboard() {
               </div>
               <div style={labelStyle}>DNS (Did Not Start)</div>
             </div>
+
+            <div style={cardStyle}>
+              <div style={{ ...numStyle, color: '#ea580c' }}>
+                {stats.dnf} <span style={{ ...percentStyle, color: '#ea580c' }}>{getPercent(stats.dnf)}</span>
+              </div>
+              <div style={labelStyle}>DNF (Did Not Finish)</div>
+            </div>
           </div>
 
           <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid var(--line)', padding: '4px', overflowX: 'auto' }}>
-            {runners.length === 0 ? (
+            {scopedRunners.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px', color: 'var(--ink-2)' }}>ไม่มีข้อมูลนักวิ่ง</div>
             ) : (
               <AdvancedTable
                 columns={columns}
-                data={runners}
+                data={scopedRunners}
                 pageSize={50}
                 maxHeight="600px"
+                rowSearchKey="bib"
+                rowSearchLabel="BIB"
               />
             )}
           </div>
@@ -373,7 +489,8 @@ export default function OverallDashboard() {
             catRank={ranks.catRank} 
             stations={selectedSlip?.categoryStations?.length ? selectedSlip.categoryStations : stations}
             runners={runners}
-            onClose={() => setSelectedSlip(null)} 
+            categories={categories}
+            onClose={() => setSelectedSlip(null)}
           />
         );
       })()}

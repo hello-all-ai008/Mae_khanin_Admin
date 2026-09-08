@@ -862,7 +862,8 @@ function parseAgeGroupMin(label) {
             catRank={selectedSlip.catRank || ranks.catRank} 
             stations={targetRunner?.categoryStations?.length ? targetRunner.categoryStations : stations}
             runners={runners}
-            onClose={() => setSelectedSlip(null)} 
+            categories={categories}
+            onClose={() => setSelectedSlip(null)}
           />
         );
       })()}

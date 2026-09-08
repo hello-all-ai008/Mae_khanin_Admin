@@ -118,7 +118,12 @@ const calculateAutoColumnWidths = (cols, tableData) => {
     }, {});
 };
 
-const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSize: initialPageSize = 50, externalCurrentPage = null, onPageChange = null, className = "", maxHeight = 'calc(100vh - 280px)' }) => {
+const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSize: initialPageSize = 50, externalCurrentPage = null, onPageChange = null, className = "", maxHeight = 'calc(100vh - 280px)', rowSearchKey = null, rowSearchLabel = null }) => {
+    // rowSearchKey (optional): when set, the toolbar's search box searches
+    // row DATA on that column key (substring match) instead of its default
+    // behavior of scrolling to a matching COLUMN NAME. Off by default so
+    // every existing caller keeps today's column-name-search behavior
+    // unchanged; a page opts in by passing e.g. rowSearchKey="bib".
     // Normalize columns
     const initialColumns = useMemo(() => (rawColumns || []).map((col, idx) => ({
         ...col,
@@ -144,6 +149,7 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
 
     // --- Column Search State ---
     const [columnSearchKeyword, setColumnSearchKeyword] = useState('');
+    const [rowSearchKeyword, setRowSearchKeyword] = useState('');
     const [highlightedColumn, setHighlightedColumn] = useState(null);
     const [searchMatchIndex, setSearchMatchIndex] = useState(0);
     const scrollContainerRef = useRef(null);
@@ -406,6 +412,16 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
         let filtered = [...data];
         const colMap = new Map(columns.map(c => [c.key, c]));
 
+        // 0. Row search (opt-in via rowSearchKey — substring match on that column's data)
+        if (rowSearchKey && rowSearchKeyword) {
+            const col = colMap.get(rowSearchKey) || { key: rowSearchKey };
+            const target = rowSearchKeyword.toLowerCase();
+            filtered = filtered.filter(item => {
+                const cellVal = getResolvedCellValue(item, col);
+                return String(cellVal ?? '').toLowerCase().includes(target);
+            });
+        }
+
         // 1. Filtering (Exact Match Checkboxes)
         Object.keys(filters).forEach(key => {
             const selected = filters[key];
@@ -457,7 +473,7 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
         }
 
         return filtered;
-    }, [data, filters, likeFilters, likeFilterTypes, sortConfig, columns]);
+    }, [data, filters, likeFilters, likeFilterTypes, sortConfig, columns, rowSearchKey, rowSearchKeyword]);
 
     // --- Pagination Logic ---
     const totalPages = Math.ceil(processedData.length / pageSize);
@@ -505,17 +521,21 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
                         <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
                             <Search size={14} className="text-slate-400" />
                         </div>
-                        <input 
-                            type="text" 
-                            placeholder="ค้นหาชื่อ Column..." 
-                            value={columnSearchKeyword}
+                        <input
+                            type="text"
+                            placeholder={rowSearchKey ? `ค้นหาข้อมูล ${rowSearchLabel || rowSearchKey}...` : "ค้นหาชื่อ Column..."}
+                            value={rowSearchKey ? rowSearchKeyword : columnSearchKeyword}
                             onChange={e => {
+                                if (rowSearchKey) {
+                                    setRowSearchKeyword(e.target.value);
+                                    return;
+                                }
                                 setColumnSearchKeyword(e.target.value);
                                 setSearchMatchIndex(0);
                                 if (!e.target.value) setHighlightedColumn(null);
                             }}
                             onKeyDown={e => {
-                                if (e.key === 'Enter') executeColumnSearch();
+                                if (!rowSearchKey && e.key === 'Enter') executeColumnSearch();
                             }}
                             className="search"
                             style={{ paddingLeft: '32px', width: '200px', margin: 0, fontSize: '13px' }}
