@@ -13,15 +13,12 @@ import {
   Clock,
   Flag,
   AlertTriangle,
-  Ban,
   SlidersHorizontal,
-  ChevronRight,
-  ShieldAlert,
-  Users
+  ShieldAlert
 } from 'lucide-react';
 
 export default function RunnerProgressControl() {
-  const { addToast } = useRace();
+  const { addToast, currentOperator } = useRace();
   const addToastRef = useRef(addToast);
   useEffect(() => {
     addToastRef.current = addToast;
@@ -52,7 +49,7 @@ export default function RunnerProgressControl() {
   // 1. Fetch Events
   useEffect(() => {
     async function fetchEvents() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('events')
         .select('id, name, start_date')
         .order('start_date', { ascending: false });
@@ -153,7 +150,8 @@ export default function RunnerProgressControl() {
 
   // Helper to determine runner's status
   const getRunnerStatus = useCallback((r) => {
-    if (r.cps && r.cps.DNF) return 'DNF';
+    if (r.race_status === 'DNF') return 'DNF';
+    if (r.race_status === 'DNS') return 'DNS';
     if (r.finish) return 'FINISHED';
     const hasStarted = Boolean(r.checked_in_at || r.registration_status === 'CHECKED_IN' || (r.cps && Object.keys(r.cps).length > 0));
     if (!hasStarted) return 'DNS';
@@ -203,14 +201,26 @@ export default function RunnerProgressControl() {
     });
   }, [runners, search, categoryFilter, statusFilter, getRunnerStatus]);
 
-  // Statistics
+  // Statistics — scoped to the selected ระยะ (categoryFilter) so the summary
+  // cards reflect that distance's numbers instead of always the whole event.
+  // Deliberately ignores the search box / status filter — those would make a
+  // "summary" nonsensical (e.g. filtering to DNF would zero out every other
+  // stat).
+  const statsRunners = useMemo(() => {
+    if (categoryFilter === 'ALL') return runners;
+    return runners.filter(r => {
+      const rCat = (r.cat || r.category_id || '').toLowerCase();
+      return rCat.includes(categoryFilter.toLowerCase());
+    });
+  }, [runners, categoryFilter]);
+
   const stats = useMemo(() => {
     let finished = 0;
     let inRace = 0;
     let dnf = 0;
     let dns = 0;
 
-    runners.forEach(r => {
+    statsRunners.forEach(r => {
       const st = getRunnerStatus(r);
       if (st === 'FINISHED') finished++;
       else if (st === 'IN_RACE') inRace++;
@@ -218,8 +228,8 @@ export default function RunnerProgressControl() {
       else if (st === 'DNS') dns++;
     });
 
-    return { total: runners.length, finished, inRace, dnf, dns };
-  }, [runners, getRunnerStatus]);
+    return { total: statsRunners.length, finished, inRace, dnf, dns };
+  }, [statsRunners, getRunnerStatus]);
 
   // Select all visible runners
   const handleToggleSelectAll = () => {
@@ -256,6 +266,9 @@ export default function RunnerProgressControl() {
         checked_in_by: null,
         cps: {},
         finish: null,
+        race_status: null,
+        race_status_at: null,
+        race_status_by: null,
         updated_at: new Date().toISOString()
       };
 
@@ -277,17 +290,26 @@ export default function RunnerProgressControl() {
 
   // Quick Action: Mark DNS
   const handleQuickDns = async (runner) => {
-    if (!window.confirm(`ตั้งค่า BIB ${runner.bib} เป็น DNS (ไม่ได้เริ่มแข่งขัน)?`)) return;
+    const isCurrentlyDns = runner.race_status === 'DNS';
+    const confirmMsg = isCurrentlyDns
+      ? `ยกเลิกสถานะ DNS ของ BIB ${runner.bib}?`
+      : `ตั้งค่า BIB ${runner.bib} เป็น DNS (ไม่ได้เริ่มแข่งขัน)?`;
+    if (!window.confirm(confirmMsg)) return;
 
     try {
-      const payload = {
-        registration_status: 'PRE_REGISTERED',
-        checked_in_at: null,
-        checked_in_by: null,
-        cps: {},
-        finish: null,
-        updated_at: new Date().toISOString()
-      };
+      const payload = isCurrentlyDns
+        ? {
+            race_status: null,
+            race_status_at: null,
+            race_status_by: null,
+            updated_at: new Date().toISOString()
+          }
+        : {
+            race_status: 'DNS',
+            race_status_at: new Date().toISOString(),
+            race_status_by: currentOperator || 'Staff',
+            updated_at: new Date().toISOString()
+          };
 
       assertWriteOk(
         await supabase
@@ -298,7 +320,7 @@ export default function RunnerProgressControl() {
       );
 
       setRunners(prev => prev.map(r => r.id === runner.id ? { ...r, ...payload } : r));
-      addToastRef.current?.(`ตั้งค่า BIB ${runner.bib} เป็น DNS แล้ว`);
+      addToastRef.current?.(isCurrentlyDns ? `ยกเลิก DNS ของ BIB ${runner.bib} แล้ว` : `ตั้งค่า BIB ${runner.bib} เป็น DNS แล้ว`);
     } catch (err) {
       console.error(err);
       addToastRef.current?.(`ตั้งค่า DNS ไม่สำเร็จ: ${err.message}`, true);
@@ -307,24 +329,20 @@ export default function RunnerProgressControl() {
 
   // Quick Action: Mark DNF
   const handleQuickDnf = async (runner) => {
-    const isCurrentlyDnf = runner.cps && runner.cps.DNF;
+    const isCurrentlyDnf = runner.race_status === 'DNF';
+    const willClearFinish = !isCurrentlyDnf && runner.finish;
     const confirmMsg = isCurrentlyDnf
       ? `ยกเลิกสถานะ DNF ของ BIB ${runner.bib}?`
-      : `ตั้งค่า BIB ${runner.bib} เป็น DNF (ไม่จบการแข่งขัน)?`;
+      : willClearFinish
+        ? `BIB ${runner.bib} มีเวลาเข้าเส้นชัยอยู่แล้ว การตั้งเป็น DNF จะล้างเวลาเข้าเส้นชัยทิ้งอย่างถาวร ยืนยันหรือไม่?`
+        : `ตั้งค่า BIB ${runner.bib} เป็น DNF (ไม่จบการแข่งขัน)?`;
     if (!window.confirm(confirmMsg)) return;
 
     try {
-      const nextCps = { ...(runner.cps || {}) };
-      if (isCurrentlyDnf) {
-        delete nextCps.DNF;
-        delete nextCps.dnf_time;
-      } else {
-        nextCps.DNF = true;
-        nextCps.dnf_time = Date.now();
-      }
-
       const payload = {
-        cps: nextCps,
+        race_status: isCurrentlyDnf ? null : 'DNF',
+        race_status_at: isCurrentlyDnf ? null : new Date().toISOString(),
+        race_status_by: isCurrentlyDnf ? null : (currentOperator || 'Staff'),
         finish: isCurrentlyDnf ? runner.finish : null,
         updated_at: new Date().toISOString()
       };
@@ -357,6 +375,9 @@ export default function RunnerProgressControl() {
         checked_in_by: null,
         cps: {},
         finish: null,
+        race_status: null,
+        race_status_at: null,
+        race_status_by: null,
         updated_at: new Date().toISOString()
       };
 
@@ -633,7 +654,7 @@ export default function RunnerProgressControl() {
               onChange={(e) => setStatusFilter(e.target.value)}
               style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
             >
-              <option value="ALL">ทั้งหมด ({runners.length})</option>
+              <option value="ALL">ทั้งหมด ({stats.total})</option>
               <option value="IN_RACE">กำลังแข่งขัน ({stats.inRace})</option>
               <option value="FINISHED">เข้าเส้นชัยแล้ว ({stats.finished})</option>
               <option value="DNF">DNF ไม่จบการแข่งขัน ({stats.dnf})</option>
@@ -690,6 +711,8 @@ export default function RunnerProgressControl() {
                   // Determine this runner's route stations
                   const catKey = (runner.cat || '').trim().toLowerCase();
                   const runnerRoute = categoryRoutesMap.get(catKey) || categoryRoutesMap.get(runner.category_id) || [];
+                  const catObj = categories.find(c => c.id === runner.category_id || c.name === runner.cat);
+                  const catColor = catObj?.color || '#3b82f6';
 
                   return (
                     <tr
@@ -727,7 +750,8 @@ export default function RunnerProgressControl() {
                           display: 'inline-block',
                           padding: '2px 8px',
                           borderRadius: '6px',
-                          background: '#f1f5f9',
+                          background: catColor,
+                          color: '#fff',
                           fontWeight: 700,
                           fontSize: '12px'
                         }}>
@@ -758,7 +782,7 @@ export default function RunnerProgressControl() {
                         {runnerRoute.length === 0 ? (
                           <span style={{ color: '#94a3b8', fontSize: '11px' }}>
                             {runner.cps && Object.keys(runner.cps).length > 0
-                              ? `สแกนแล้ว ${Object.keys(runner.cps).filter(k => k !== 'DNF').length} จุด`
+                              ? `สแกนแล้ว ${Object.keys(runner.cps).length} จุด`
                               : 'ไม่มีจุดตรวจผูกไว้'}
                           </span>
                         ) : (

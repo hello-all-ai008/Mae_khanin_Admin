@@ -22,6 +22,10 @@ export default function RunnersList() {
   const [categories, setCategories] = useState([]);
   const [runners, setRunners] = useState([]);
   const [stations, setStations] = useState([]);
+  // Cat name -> color hex, from the `categories` table (distinct from the
+  // `categories` state above, which is just the unique `cat` strings seen
+  // in runner rows, used for the filter dropdown).
+  const [catColorMap, setCatColorMap] = useState({});
 
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
@@ -53,6 +57,15 @@ export default function RunnersList() {
         .order('sequence_order', { ascending: true });
       if (stError) throw stError;
       setStations(stData || []);
+
+      const { data: catData, error: catError } = await supabase
+        .from('categories')
+        .select('name, color')
+        .eq('event_id', selectedEventId);
+      if (catError) console.warn('Categories fetch error', catError);
+      setCatColorMap(
+        Object.fromEntries((catData || []).filter(c => c.name).map(c => [c.name, c.color]))
+      );
 
       // PostgREST caps a single response at 1000 rows by default — page
       // through the full table instead of silently truncating past that.
@@ -181,6 +194,8 @@ export default function RunnersList() {
   };
 
   const statusOf = (r, stList = stations) => {
+    if (r.race_status === 'DNF') return { cls: 'b-dnf', txt: 'DNF' };
+    if (r.race_status === 'DNS') return { cls: 'b-dns', txt: 'DNS' };
     if (r.finish) return { cls: 'b-fin', txt: 'Finished' };
 
     // Furthest checkpoint reached: highest sequence_order station whose id
@@ -245,7 +260,16 @@ export default function RunnersList() {
     },
     { key: 'bib', label: 'BIB', defaultWidth: 200 },
     { key: 'name', label: 'Name', defaultWidth: 330 },
-    { key: 'cat', label: 'Cat.', defaultWidth: 200 },
+    {
+      key: 'cat',
+      label: 'Cat.',
+      defaultWidth: 200,
+      render: (val) => val ? (
+        <span style={{ background: catColorMap[val] || '#3b82f6', color: '#fff', padding: '2px 10px', borderRadius: '99px', fontSize: '12px', fontWeight: 700 }}>
+          {val}
+        </span>
+      ) : null
+    },
     { key: 'gender', label: 'Gen.', defaultWidth: 180 },
     { key: 'age', label: 'Age', defaultWidth: 180 },
     { key: 'nat', label: 'Nat.', defaultWidth: 180 },

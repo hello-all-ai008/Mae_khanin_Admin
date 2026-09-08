@@ -43,9 +43,15 @@ export default function CheckPoint() {
     }
   };
 
-  // Keep selectedCp in sync with available checkpoints from database
+  // Keep selectedCp in sync with available checkpoints from database.
+  // Only offer type === 'CP' stations here — START/FINISH belong to their own pages.
+  // `checkpoints` defaults to the hardcoded CHECKPOINTS list (no `type` field) before
+  // real station data loads, so only filter once real type data has actually arrived.
   const activeCpList = useMemo(() => {
-    return checkpoints && checkpoints.length > 0 ? checkpoints : CHECKPOINTS;
+    if (!checkpoints || checkpoints.length === 0) return CHECKPOINTS;
+    const hasTypeData = checkpoints.some(cp => cp.type);
+    if (!hasTypeData) return checkpoints;
+    return checkpoints.filter(cp => cp.type === 'CP');
   }, [checkpoints]);
 
   // Staff assigned to one station (station_id set) must stay locked to it —
@@ -152,7 +158,7 @@ export default function CheckPoint() {
               </span>
             ) : (
               <select className="search" value={currentCpId} onChange={(e) => handleSelectCp(e.target.value)}>
-                {activeCpList.map(cp => <option key={cp.id} value={cp.id}>{cp.name}</option>)}
+                {activeCpList.map((cp, idx) => <option key={cp.id} value={cp.id}>{`A${idx + 1}`}</option>)}
               </select>
             )}
           </div>

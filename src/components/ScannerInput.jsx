@@ -24,7 +24,7 @@ import { useRace } from '../context/RaceContext';
 import { normalizeScannedBib, smartFindRunner } from '../lib/bibUtils';
 
 export default function ScannerInput({ onScan }) {
-  const { currentOperator, currentStaff, runners, lastSyncedTime } = useRace();
+  const { currentOperator, currentStaff, runners, lastSyncedTime, categories } = useRace();
   const [bibInput, setBibInput] = useState('');
   const [lastDetected, setLastDetected] = useState(null);
   
@@ -847,8 +847,20 @@ export default function ScannerInput({ onScan }) {
                   </span>
                 </span>
                 {lastDetected.runner && (
-                  <span style={{ fontSize: '12.5px', color: '#f8fafc', fontWeight: 600 }}>
-                    {lastDetected.runner.name} {lastDetected.runner.cat ? `(${lastDetected.runner.cat})` : ''}
+                  <span style={{ fontSize: '12.5px', color: '#f8fafc', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    {lastDetected.runner.name}
+                    {lastDetected.runner.cat && (
+                      <span style={{
+                        background: (Array.isArray(categories) ? categories.find(c => c.id === lastDetected.runner.category_id || c.name === lastDetected.runner.cat)?.color : null) || '#3b82f6',
+                        color: '#fff',
+                        padding: '0px 7px',
+                        borderRadius: '99px',
+                        fontSize: '0.85em',
+                        fontWeight: 700
+                      }}>
+                        {lastDetected.runner.cat}
+                      </span>
+                    )}
                   </span>
                 )}
               </div>

@@ -126,8 +126,20 @@ export default function LedBoard({ runner, message, warn = false, runners: props
           <>
             <div className="bib">{String(runner.bib ?? '—')}</div>
             <div className="name">{runner.name != null ? String(runner.name).toUpperCase() : ''}</div>
-            <div className="meta">
-              {[runner.nat, runner.age, runner.cat].filter(Boolean).map(String).join(' · ')}
+            <div className="meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              {[runner.nat, runner.age].filter(Boolean).map(String).join(' · ')}
+              {runner.cat && (
+                <span style={{
+                  background: (Array.isArray(allCategories) ? allCategories.find(c => c.id === runner.category_id || c.name === runner.cat)?.color : null) || '#3b82f6',
+                  color: '#fff',
+                  padding: '1px 8px',
+                  borderRadius: '99px',
+                  fontSize: '0.85em',
+                  fontWeight: 700
+                }}>
+                  {runner.cat}
+                </span>
+              )}
             </div>
             {message && <div className={`time ${warn ? 'meta-warn' : ''}`}>{String(message)}</div>}
           </>

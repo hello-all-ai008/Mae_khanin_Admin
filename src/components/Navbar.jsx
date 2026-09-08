@@ -19,8 +19,16 @@ import {
   MonitorPlay
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useRace } from '../context/RaceContext';
 import { canAccessRoute, roleLabel } from '../lib/roles';
 import SignOutButton from './SignOutButton';
+
+// Thai labels shown in the disabled-link tooltip, keyed by the `stations.type` enum.
+const STATION_TYPE_LABEL = {
+  START: 'เช็คอิน (START)',
+  CP: 'เช็คพอยต์ (CP)',
+  FINISH: 'เข้าเส้นชัย (FINISH)',
+};
 
 // Nav structure lives in data so the desktop bar, the mobile menu, and the role
 // filter cannot drift apart. Access itself is defined once in lib/roles.js.
@@ -59,9 +67,9 @@ const NAV_GROUPS = [
     id: 'stations',
     title: 'SCAN STATIONS',
     items: [
-      { to: '/checkin', label: 'Check-in', mobileLabel: 'Check-in', dotColor: 'var(--start)' },
-      { to: '/checkpoint', label: 'CP', mobileLabel: 'Check Point', dotColor: 'var(--cp)' },
-      { to: '/finish', label: 'Finish', mobileLabel: 'Finish Line', dotColor: 'var(--finish)' },
+      { to: '/checkin', label: 'Check-in', mobileLabel: 'Check-in', dotColor: 'var(--start)', requiredStationType: 'START' },
+      { to: '/checkpoint', label: 'CP', mobileLabel: 'Check Point', dotColor: 'var(--cp)', requiredStationType: 'CP' },
+      { to: '/finish', label: 'Finish', mobileLabel: 'Finish Line', dotColor: 'var(--finish)', requiredStationType: 'FINISH' },
     ],
   },
 ];
@@ -84,6 +92,7 @@ function visibleGroups(role) {
 
 export default function Navbar() {
   const { staff, role } = useAuth();
+  const { checkpoints } = useRace();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false);
   const [isOverviewDropdownOpen, setIsOverviewDropdownOpen] = useState(false);
@@ -110,6 +119,15 @@ export default function Navbar() {
   };
 
   const groups = visibleGroups(role);
+
+  // Disable a scan-station nav link when its station type doesn't exist for the
+  // selected event. `checkpoints` (from RaceContext) defaults to a hardcoded list
+  // with no `type` field before real data loads — only apply the check once real
+  // station data (with `type`) has arrived, so we never falsely disable on first paint.
+  const hasStationTypeData = checkpoints.some(s => s.type);
+  const availableStationTypes = new Set(checkpoints.map(s => s.type).filter(Boolean));
+  const isNavItemDisabled = (item) =>
+    hasStationTypeData && item.requiredStationType && !availableStationTypes.has(item.requiredStationType);
 
   return (
     <>
@@ -230,12 +248,28 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div className="nav-group-horizontal">
-                  {group.items.map(({ to, label, Icon, dotColor }) => (
-                    <NavLink key={to} to={to} className={({ isActive }) => `nav-item-h ${isActive ? 'active' : ''}`}>
-                      {Icon ? <Icon size={16} /> : <span className="dot" style={{ background: dotColor }}></span>}
-                      <span className="label">{label}</span>
-                    </NavLink>
-                  ))}
+                  {group.items.map((item) => {
+                    const { to, label, Icon, dotColor, requiredStationType } = item;
+                    if (isNavItemDisabled(item)) {
+                      return (
+                        <span
+                          key={to}
+                          className="nav-item-h"
+                          title={`ยังไม่มีสถานี ${STATION_TYPE_LABEL[requiredStationType] || requiredStationType} สำหรับ Event นี้`}
+                          style={{ cursor: 'not-allowed', opacity: 0.45 }}
+                        >
+                          {Icon ? <Icon size={16} /> : <span className="dot" style={{ background: dotColor }}></span>}
+                          <span className="label">{label}</span>
+                        </span>
+                      );
+                    }
+                    return (
+                      <NavLink key={to} to={to} className={({ isActive }) => `nav-item-h ${isActive ? 'active' : ''}`}>
+                        {Icon ? <Icon size={16} /> : <span className="dot" style={{ background: dotColor }}></span>}
+                        <span className="label">{label}</span>
+                      </NavLink>
+                    );
+                  })}
                 </div>
               )}
             </Fragment>
@@ -270,17 +304,33 @@ export default function Navbar() {
               <div className="mobile-menu-header">
                 <span style={SECTION_HEADER_STYLE}>{group.title}</span>
               </div>
-              {group.items.map(({ to, mobileLabel, Icon, dotColor }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}
-                  onClick={closeMenu}
-                >
-                  {Icon ? <Icon size={18} /> : <span className="dot" style={{ background: dotColor, ...DOT_STYLE }}></span>}
-                  {' '}{mobileLabel}
-                </NavLink>
-              ))}
+              {group.items.map((item) => {
+                const { to, mobileLabel, Icon, dotColor, requiredStationType } = item;
+                if (isNavItemDisabled(item)) {
+                  return (
+                    <span
+                      key={to}
+                      className="mobile-nav-item"
+                      title={`ยังไม่มีสถานี ${STATION_TYPE_LABEL[requiredStationType] || requiredStationType} สำหรับ Event นี้`}
+                      style={{ cursor: 'not-allowed', opacity: 0.45 }}
+                    >
+                      {Icon ? <Icon size={18} /> : <span className="dot" style={{ background: dotColor, ...DOT_STYLE }}></span>}
+                      {' '}{mobileLabel}
+                    </span>
+                  );
+                }
+                return (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}
+                    onClick={closeMenu}
+                  >
+                    {Icon ? <Icon size={18} /> : <span className="dot" style={{ background: dotColor, ...DOT_STYLE }}></span>}
+                    {' '}{mobileLabel}
+                  </NavLink>
+                );
+              })}
             </div>
           ))}
 

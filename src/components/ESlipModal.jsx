@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import ESlip from './ESlip';
 import { X, Printer } from 'lucide-react';
 
-export default function ESlipModal({ runner, overallRank, catRank, stations = [], runners = [], onClose }) {
+export default function ESlipModal({ runner, overallRank, catRank, stations = [], runners = [], categories = [], onClose }) {
   // Handle escape key and attach print class to body
   useEffect(() => {
     if (!runner) return;
@@ -54,7 +54,7 @@ export default function ESlipModal({ runner, overallRank, catRank, stations = []
       }}>
         
         {/* Render the ESlip component */}
-        <ESlip runner={runner} overallRank={overallRank} catRank={catRank} stations={stations} runners={runners} />
+        <ESlip runner={runner} overallRank={overallRank} catRank={catRank} stations={stations} runners={runners} categories={categories} />
         
         {/* Actions - hidden when printing */}
         <div style={{ display: 'flex', gap: '10px', width: '100%' }} className="no-print">

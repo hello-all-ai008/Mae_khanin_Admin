@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { assertWriteOk } from '../lib/supabaseResult';
+import { useRace } from '../context/RaceContext';
 import { X, CheckCircle2, AlertTriangle, Ban, RotateCcw, Clock, Flag, Save } from 'lucide-react';
 
 export default function RunnerTimingModal({
@@ -11,11 +12,18 @@ export default function RunnerTimingModal({
   allStations = [],
   onSaved
 }) {
+  const { currentOperator, categories } = useRace();
+  const catColor = runner
+    ? (Array.isArray(categories) ? categories.find(c => c.id === runner.category_id || c.name === runner.cat)?.color : null) || '#3b82f6'
+    : '#3b82f6';
   const [checkedIn, setCheckedIn] = useState(false);
   const [checkedInAtStr, setCheckedInAtStr] = useState('');
   const [cps, setCps] = useState({});
   const [finishStr, setFinishStr] = useState('');
   const [isDnf, setIsDnf] = useState(false);
+  const [dnfAt, setDnfAt] = useState(null);
+  const [isDns, setIsDns] = useState(false);
+  const [dnsAt, setDnsAt] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Helper to convert Date/epoch/ISO to datetime-local input string (YYYY-MM-DDTHH:mm:ss)
@@ -55,7 +63,12 @@ export default function RunnerTimingModal({
       
       const currentCps = runner.cps && typeof runner.cps === 'object' ? { ...runner.cps } : {};
       setCps(currentCps);
-      setIsDnf(Boolean(currentCps.DNF || runner.is_dnf));
+      const hasDnf = runner.race_status === 'DNF';
+      setIsDnf(hasDnf);
+      setDnfAt(hasDnf ? runner.race_status_at : null);
+      const hasDns = runner.race_status === 'DNS';
+      setIsDns(hasDns);
+      setDnsAt(hasDns ? runner.race_status_at : null);
 
       setFinishStr(runner.finish ? toInputDateTime(runner.finish) : '');
     }
@@ -116,35 +129,33 @@ export default function RunnerTimingModal({
     });
   };
 
-  // Quick action: Mark as DNS (Did Not Start)
-  const handleSetDns = () => {
-    if (!window.confirm(`ยืนยันตั้งสถานะ BIB ${runner.bib} เป็น DNS (Did Not Start)? \nระบบจะล้างเวลาเช็คอิน, จุดตรวจ และเส้นชัยทั้งหมด`)) return;
-    setCheckedIn(false);
-    setCheckedInAtStr('');
-    setCps({});
-    setFinishStr('');
-    setIsDnf(false);
+  // Quick action: toggle DNS (Did Not Start). Non-destructive — only touches
+  // race_status; check-in/checkpoint/finish data is left exactly as-is, so
+  // DNS stays distinguishable from a reset. Mutually exclusive with DNF.
+  const handleToggleDns = () => {
+    if (!isDns) {
+      setIsDns(true);
+      setDnsAt(new Date().toISOString());
+      setIsDnf(false);
+      setDnfAt(null);
+    } else {
+      setIsDns(false);
+      setDnsAt(null);
+    }
   };
 
-  // Quick action: Mark as DNF (Did Not Finish)
+  // Quick action: toggle DNF (Did Not Finish). Mutually exclusive with DNS.
   const handleToggleDnf = () => {
     if (!isDnf) {
+      if (finishStr && !window.confirm(`BIB ${runner.bib} มีเวลาเข้าเส้นชัยอยู่แล้ว การตั้งเป็น DNF จะล้างเวลาเข้าเส้นชัยทิ้ง ยืนยันหรือไม่?`)) return;
       setIsDnf(true);
+      setDnfAt(new Date().toISOString());
       setFinishStr(''); // Remove finish line if marked DNF
-      setCps(prev => ({
-        ...prev,
-        DNF: true,
-        dnf_time: Date.now()
-      }));
+      setIsDns(false);
+      setDnsAt(null);
     } else {
       setIsDnf(false);
-      setCps(prev => {
-        const next = { ...prev };
-        delete next.DNF;
-        delete next.dnf_time;
-        delete next.dnf_station;
-        return next;
-      });
+      setDnfAt(null);
     }
   };
 
@@ -156,6 +167,9 @@ export default function RunnerTimingModal({
     setCps({});
     setFinishStr('');
     setIsDnf(false);
+    setDnfAt(null);
+    setIsDns(false);
+    setDnsAt(null);
   };
 
   // Save changes to Supabase
@@ -165,22 +179,21 @@ export default function RunnerTimingModal({
       const finalRegistrationStatus = checkedIn ? 'CHECKED_IN' : 'PRE_REGISTERED';
       const finalCheckedInAt = checkedIn && checkedInAtStr ? new Date(checkedInAtStr).toISOString() : (checkedIn ? new Date().toISOString() : null);
 
-      const finalCps = { ...cps };
-      if (isDnf) {
-        finalCps.DNF = true;
-      } else {
-        delete finalCps.DNF;
-      }
-
       // Finish time: store epoch or timestamp
       const finishEpoch = inputToEpoch(finishStr);
       const finalFinish = finishEpoch ? finishEpoch : null;
 
+      const finalRaceStatus = isDnf ? 'DNF' : (isDns ? 'DNS' : null);
+      const finalRaceStatusAt = isDnf ? (dnfAt || new Date().toISOString()) : (isDns ? (dnsAt || new Date().toISOString()) : null);
+
       const payload = {
         registration_status: finalRegistrationStatus,
         checked_in_at: finalCheckedInAt,
-        cps: finalCps,
+        cps,
         finish: finalFinish,
+        race_status: finalRaceStatus,
+        race_status_at: finalRaceStatusAt,
+        race_status_by: finalRaceStatus ? (currentOperator || 'Staff') : null,
         updated_at: new Date().toISOString()
       };
 
@@ -256,8 +269,12 @@ export default function RunnerTimingModal({
                 {runner.name || 'ไม่ระบุชื่อ'}
               </h2>
             </div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
-              ระยะ: <strong>{runner.cat || runner.distance || 'ไม่ระบุ'}</strong> | เพศ: {runner.gender || '—'} | รุ่นอายุ: {runner.age || runner.age_group || '—'}
+            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+              ระยะ:
+              <span style={{ background: catColor, color: '#fff', padding: '1px 8px', borderRadius: '99px', fontSize: '0.9em', fontWeight: 700 }}>
+                {runner.cat || runner.distance || 'ไม่ระบุ'}
+              </span>
+              | เพศ: {runner.gender || '—'} | รุ่นอายุ: {runner.age || runner.age_group || '—'}
             </p>
           </div>
           <button
@@ -293,22 +310,23 @@ export default function RunnerTimingModal({
               <span style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>ตั้งค่าสถานะด่วน:</span>
               <button
                 type="button"
-                onClick={handleSetDns}
+                onClick={handleToggleDns}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
                   padding: '6px 12px',
                   borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  background: '#ffffff',
-                  color: '#64748b',
+                  border: isDns ? '1px solid #dc2626' : '1px solid #cbd5e1',
+                  background: isDns ? '#fee2e2' : '#ffffff',
+                  color: isDns ? '#b91c1c' : '#64748b',
                   fontSize: '12px',
                   fontWeight: 600,
                   cursor: 'pointer'
                 }}
               >
-                <Ban size={14} color="#dc2626" /> ตั้งเป็น DNS
+                <Ban size={14} color={isDns ? '#b91c1c' : '#dc2626'} />
+                {isDns ? 'สถานะ: DNS (คลิกเพื่อยกเลิก)' : 'ตั้งเป็น DNS'}
               </button>
 
               <button
@@ -595,7 +613,7 @@ export default function RunnerTimingModal({
                 value={finishStr}
                 onChange={(e) => {
                   setFinishStr(e.target.value);
-                  if (e.target.value) setIsDnf(false);
+                  if (e.target.value) { setIsDnf(false); setIsDns(false); }
                 }}
                 style={{
                   padding: '8px 12px',
@@ -610,6 +628,7 @@ export default function RunnerTimingModal({
                 onClick={() => {
                   setFinishStr(getNowInputString());
                   setIsDnf(false);
+                  setIsDns(false);
                 }}
                 style={{
                   padding: '8px 12px',

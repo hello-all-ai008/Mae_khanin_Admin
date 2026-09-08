@@ -100,7 +100,7 @@ export function formatCategoryDisplay(runner) {
   // Name part
   let name = catName;
   if (!name && rawCat) {
-    const match = rawCat.match(/^[\d.]+\s*[a-zA-Z]+\s*[:\-]?\s*(.*)$/);
+    const match = rawCat.match(/^[\d.]+\s*[a-zA-Z]+\s*[:-]?\s*(.*)$/);
     if (match && match[1]) {
       name = match[1].trim();
     } else {
@@ -260,8 +260,17 @@ export function computeRunnerRanks(targetRunner, allRunners = []) {
   };
 }
 
-export default function ESlip({ runner, overallRank, catRank, stations = [], runners: propRunners }) {
+export default function ESlip({ runner, overallRank, catRank, stations = [], runners: propRunners, categories = [] }) {
+  // Hook must run unconditionally on every render (rules-of-hooks), before
+  // the early return below.
+  const race = useRace();
+
   if (!runner) return null;
+
+  const catObj = categories.find(c =>
+    c.id === runner.category_id || c.name === runner.cat || c.name === runner.cat_name
+  );
+  const catColor = catObj?.color || '#3b82f6';
 
   const fmtTime = (ts) => ts ? new Date(ts).toTimeString().slice(0, 8) : '—';
 
@@ -353,24 +362,20 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
 
   // Calculate sorted checkpoints excluding checkin and finish
   const cpEntries = Object.entries(runner.cps || {})
-    .filter(([k]) => !['checkin', 'finish'].includes(String(k).toLowerCase()) && !/start|ปล่อยตัว|finish|เส้นชัย/i.test(String(k)))
+    .filter(([k]) => !['checkin', 'finish', 'dnf', 'dnf_time', 'dnf_station'].includes(String(k).toLowerCase()) && !/start|ปล่อยตัว|finish|เส้นชัย/i.test(String(k)))
     .sort((a, b) => Number(a[1]) - Number(b[1]));
 
   // Extra scanned CPs not in distanceStations
   const renderedStationIds = new Set(distanceStations.map(s => String(s.id)));
   const extraCpEntries = Object.entries(runner.cps || {}).filter(([k]) => {
     if (renderedStationIds.has(String(k))) return false;
-    if (['checkin', 'finish'].includes(String(k).toLowerCase())) return false;
+    if (['checkin', 'finish', 'dnf', 'dnf_time', 'dnf_station'].includes(String(k).toLowerCase())) return false;
     if (/start|ปล่อยตัว|finish|เส้นชัย/i.test(String(k))) return false;
     return true;
   }).sort((a, b) => Number(a[1]) - Number(b[1]));
 
   // Get all runners from context or prop for rank resolution
-  let raceContextRunners = [];
-  try {
-    const race = useRace();
-    raceContextRunners = race?.runners || [];
-  } catch (e) {}
+  const raceContextRunners = race?.runners || [];
   const allRunners = propRunners && propRunners.length > 0 ? propRunners : raceContextRunners;
 
   let cleanOverall = (overallRank != null && overallRank !== '' && overallRank !== '-' && overallRank !== '—')
@@ -406,6 +411,22 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
           style={{ height: '75px', maxWidth: '180px', width: 'auto', objectFit: 'contain', marginBottom: '8px' }}
         />
         <span style={{ fontSize: '13px', fontWeight: 600 }}>Official e-Slip</span>
+        {runner.race_status === 'DNF' && (
+          <span style={{
+            marginTop: '6px',
+            display: 'inline-block',
+            fontSize: '11px',
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+            color: '#b91c1c',
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '999px',
+            padding: '2px 10px'
+          }}>
+            DNF · DID NOT FINISH
+          </span>
+        )}
       </div>
 
       <div className="row">
@@ -418,7 +439,10 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
       </div>
       <div className="row">
         <span>Category</span>
-        <b>{formatCategoryDisplay(runner)}</b>
+        <b style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: catColor, display: 'inline-block', flexShrink: 0 }}></span>
+          {formatCategoryDisplay(runner)}
+        </b>
       </div>
       <div className="row">
         <span>Gender</span>
