@@ -57,6 +57,7 @@ export const ROUTE_ACCESS = {
   '/database-flow': ADMIN_ONLY,
   '/admin/users': ADMIN_ONLY,
   '/runner-progress': ADMIN_ONLY,
+  '/runner-page-config': ADMIN_ONLY,
   '/checkin': [ROLES.ADMIN, ROLES.CHECKIN_CREW],
   '/checkpoint': [ROLES.ADMIN, ROLES.MARSHAL],
   '/finish': [ROLES.ADMIN, ROLES.FINISH_JUDGE],
