@@ -1,91 +1,492 @@
 /* src/components/ESlip.css */
 .eslip {
-  background: #fff;
+  position: relative;
+  background: #ffffff;
   border-radius: 14px;
   width: 100%;
   max-width: 360px;
-  padding: 26px 26px 20px;
+  padding: 24px 22px 18px;
   font-family: var(--mono, monospace);
   font-size: 13px;
   margin: 0 auto;
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-  color: var(--ink);
+  color: var(--ink, #1e293b);
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.eslip-print-time {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 8.5px;
+  color: var(--ink-2, #64748b);
+  line-height: 1.2;
+  font-weight: 500;
 }
 
 .eslip .head {
   text-align: center;
-  border-bottom: 1.5px dashed var(--line);
-  padding-bottom: 14px;
-  margin-bottom: 14px;
+  border-bottom: 1.5px dashed var(--line, #e2e8f0);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
 }
-.eslip .head .logo-mark {
-  margin: 0 auto 8px;
+.eslip-head-logo {
+  height: 68px;
+  max-width: 170px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 6px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
+
 .eslip .row {
   display: flex;
   justify-content: space-between;
-  padding: 4px 0;
-  gap: 12px;
+  align-items: baseline;
+  padding: 3.5px 0;
+  gap: 10px;
+  font-size: 12.5px;
+  min-width: 0;
 }
-.eslip .row span:first-child {
-  color: var(--ink-2);
+.eslip .row > span:first-child {
+  color: var(--ink-2, #64748b);
   white-space: nowrap;
+  flex-shrink: 0;
 }
+.eslip .row > *:last-child {
+  text-align: right;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
 .eslip .hr {
-  border-top: 1.5px dashed var(--line);
-  margin: 14px 0;
+  border: none;
+  border-top: 1.5px dashed var(--line, #e2e8f0);
+  margin: 12px 0;
 }
+
 .eslip .rank {
   text-align: center;
   font-size: 15px;
   font-weight: 600;
   padding: 6px 0;
 }
-.eslip .foot {
+
+/* Stat grids */
+.eslip-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0;
+}
+.eslip-stat-box {
+  background: var(--bg-soft, #f8fafc);
+  padding: 9px 8px;
+  border-radius: 10px;
   text-align: center;
-  color: var(--ink-2);
-  font-size: 11px;
-  margin-top: 16px;
+  border: 1px solid var(--line, #e2e8f0);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.eslip-stat-label {
+  color: var(--ink-2, #64748b);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+  line-height: 1.25;
+  word-break: break-word;
+}
+.eslip-stat-val {
+  font-size: 14.5px;
+  font-weight: 700;
+  font-family: var(--mono, monospace);
+  line-height: 1.2;
+  word-break: break-word;
+}
+.eslip-net-val {
+  color: var(--start, #3b82f6);
+}
+.eslip-rank-val {
+  font-size: 17px;
+  font-weight: 700;
 }
 
-/* Responsive styling for smaller devices */
-@media (max-width: 480px) {
-  .eslip {
-    padding: 20px 16px 16px;
-    border-radius: 12px;
-    font-size: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  }
-  .eslip .row {
-    padding: 3px 0;
-  }
+/* Footer */
+.eslip .foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  margin-top: 12px;
+}
+.eslip-foot-logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+}
+.eslip-foot-logo-mk {
+  height: 44px;
+  max-width: 100px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 4px;
+}
+.eslip-foot-logo-rohn {
+  height: 58px;
+  max-width: 160px;
+  width: auto;
+  object-fit: contain;
+}
+.eslip-foot-timing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--ink-2, #64748b);
+  font-weight: 600;
+}
+.eslip-foot-logo-label {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+}
+.eslip-foot-note {
+  font-size: 9.5px;
+  color: var(--ink-2, #64748b);
+  font-style: italic;
+  line-height: 1.2;
 }
 
-/* Print styles - to only print the slip itself */
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  .eslip, .eslip * {
-    visibility: visible;
-  }
+/* Responsive styling specifically optimized for mobile phones (width <= 480px) */
+@media screen and (max-width: 480px) {
   .eslip {
-    position: absolute;
-    left: 0;
-    top: 0;
     width: 100%;
     max-width: 100%;
-    margin: 0;
-    padding: 20px;
-    box-shadow: none;
-    border-radius: 0;
-    overflow: visible;
-    max-height: none;
+    padding: 16px 12px 14px;
+    border-radius: 12px;
+    font-size: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   }
-  .modal-bg {
-    background: transparent !important;
+
+  .eslip-print-time {
+    top: 8px;
+    right: 10px;
+    font-size: 8px;
   }
+
+  .eslip .head {
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  .eslip-head-logo {
+    height: 52px;
+    max-width: 140px;
+    margin-bottom: 4px;
+  }
+
+  .eslip .row {
+    padding: 2.5px 0;
+    gap: 6px;
+    font-size: 11.5px;
+  }
+
+  .eslip .hr {
+    margin: 8px 0;
+  }
+
+  .eslip-stat-grid {
+    gap: 6px !important;
+    margin: 8px 0 !important;
+  }
+
+  .eslip-stat-box {
+    padding: 6px 4px !important;
+    border-radius: 8px !important;
+  }
+
+  .eslip-stat-label {
+    font-size: 9.5px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .eslip-stat-val {
+    font-size: 13px !important;
+  }
+
+  .eslip-rank-val {
+    font-size: 15px !important;
+  }
+
   .eslip .foot {
-    margin-top: 30px;
+    margin-top: 8px;
+    gap: 6px;
+  }
+
+  .eslip-foot-logos {
+    gap: 10px;
+  }
+
+  .eslip-foot-logo-mk {
+    height: 34px;
+    max-width: 80px;
+  }
+
+  .eslip-foot-logo-rohn {
+    height: 44px;
+    max-width: 120px;
+  }
+
+  .eslip-foot-timing {
+    font-size: 10.5px;
+    gap: 4px;
+  }
+
+  .eslip-foot-logo-label {
+    height: 22px;
+  }
+
+  .eslip-foot-note {
+    font-size: 8.5px;
   }
 }
+
+/* Extra small mobile phones (width <= 360px) */
+@media screen and (max-width: 360px) {
+  .eslip {
+    padding: 12px 8px 10px;
+  }
+  .eslip .row {
+    font-size: 10.5px;
+    gap: 4px;
+  }
+  .eslip-stat-label {
+    font-size: 8.5px !important;
+  }
+  .eslip-stat-val {
+    font-size: 12px !important;
+  }
+  .eslip-rank-val {
+    font-size: 14px !important;
+  }
+}
+
+/* Modal Portal Screen Styling - overrides any global modal-bg styles */
+.modal-bg.eslip-modal-portal {
+  display: flex !important;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+  z-index: 99999 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  box-sizing: border-box !important;
+}
+
+.modal-bg.eslip-modal-portal > div {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  align-items: center !important;
+  width: 100% !important;
+  max-width: 380px !important;
+  margin: auto !important;
+  min-height: min-content !important;
+  box-sizing: border-box !important;
+}
+
+@media screen and (max-width: 480px) {
+  .modal-bg.eslip-modal-portal {
+    padding: 12px 10px !important;
+  }
+  .modal-bg.eslip-modal-portal > div {
+    max-width: 100% !important;
+  }
+}
+
+/* Print styles - optimized for Thermal Slip Printers (80mm/POS) & Standard Paper */
+@media print {
+  @page {
+    size: auto;
+    margin: 0mm; /* 0 margin prevents blank header/footer and extra feed on slip rolls */
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: hidden !important; /* CRITICAL: prevents accidental 2nd sheet from printer drivers */
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Completely hide the background page tree to eliminate extra pages */
+  body.has-eslip-modal #root,
+  body:has(.eslip-modal-portal) #root,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Modal backdrop becomes transparent and static at top */
+  .modal-bg.eslip-modal-portal {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    overflow: hidden !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .modal-bg.eslip-modal-portal > div {
+    display: block !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 76mm !important; /* Fits 80mm thermal slip paper printable area */
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* The slip itself: compact, strictly single page, fits 80mm thermal rolls and A4 cleanly */
+  .eslip {
+    display: block !important;
+    position: relative !important; /* CRITICAL: locks Printed date inside this frame */
+    width: 100% !important;
+    max-width: 76mm !important;
+    margin: 0 auto !important;
+    padding: 6px 10px 6px !important;
+    box-shadow: none !important;
+    border: 1px solid #1e293b !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Print date firmly locked in top right inside slip border */
+  .eslip-print-time {
+    position: absolute !important;
+    top: 5px !important;
+    right: 8px !important;
+    font-size: 8px !important;
+    color: #334155 !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    z-index: 5 !important;
+  }
+
+  .eslip .head {
+    padding-bottom: 4px !important;
+    margin-bottom: 5px !important;
+    border-bottom: 1px dashed #334155 !important;
+  }
+
+  .eslip .head img {
+    height: 40px !important;
+    max-height: 40px !important;
+    margin-bottom: 2px !important;
+    filter: contrast(115%) !important;
+  }
+
+  .eslip .head span {
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+  }
+
+  .eslip .hr {
+    margin: 4px 0 !important;
+    border-top: 1px dashed #334155 !important;
+  }
+
+  .eslip .row {
+    padding: 1px 0 !important;
+    font-size: 10.5px !important;
+    color: #000000 !important;
+  }
+
+  .eslip .row span:first-child {
+    color: #334155 !important;
+    font-weight: 500 !important;
+  }
+
+  .eslip .row b,
+  .eslip .row span:last-child {
+    color: #000000 !important;
+    font-weight: 700 !important;
+  }
+
+  /* Stat cards (Start Date, Net Time, Overall Rank, Category Rank) - high contrast for thermal print */
+  .eslip [style*="gridTemplateColumns"],
+  .eslip [style*="grid-template-columns"] {
+    margin: 4px 0 !important;
+    gap: 4px !important;
+  }
+
+  .eslip [style*="background"] {
+    background: #ffffff !important;
+    border: 1px solid #334155 !important;
+    padding: 4px 2px !important;
+    border-radius: 4px !important;
+  }
+
+  .eslip [style*="color: #3b82f6"],
+  .eslip [style*="color: rgb(59, 130, 246)"],
+  .eslip [style*="var(--start"] {
+    color: #000000 !important;
+    font-weight: 800 !important;
+  }
+
+  .eslip .foot {
+    margin-top: 4px !important;
+    gap: 3px !important;
+  }
+
+  .eslip .foot img {
+    max-height: 28px !important;
+    height: auto !important;
+    filter: contrast(115%) !important;
+  }
+
+  .eslip .foot span {
+    color: #334155 !important;
+    font-size: 8px !important;
+  }
+}
+
+

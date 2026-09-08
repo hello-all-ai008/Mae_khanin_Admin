@@ -149,6 +149,8 @@ export default function RunnersList() {
       label: 'จัดการ',
       align: 'center',
       defaultWidth: 200,
+      filterable: false,
+      sortable: false,
       render: (_, r) => (
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
           <button className="btn btn-sm" onClick={() => handleEdit(r)} style={{ padding: '2px 8px', fontSize: '12px' }}>✏️</button>
@@ -166,6 +168,7 @@ export default function RunnersList() {
       key: 'status',
       label: 'Status',
       defaultWidth: 230,
+      valueGetter: (r) => statusOf(r).txt,
       render: (_, r) => {
         const s = statusOf(r);
         return (
