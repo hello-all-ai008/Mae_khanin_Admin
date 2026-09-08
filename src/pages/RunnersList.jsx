@@ -180,15 +180,16 @@ export default function RunnersList() {
     }
   };
 
-  const statusOf = (r, stations) => {
+  const statusOf = (r, stList = stations) => {
     if (r.finish) return { cls: 'b-fin', txt: 'Finished' };
 
     // Furthest checkpoint reached: highest sequence_order station whose id
     // is a key in r.cps (same lookup pattern as OverallDashboard.jsx's
     // per-station columns and LiveLeaderboard.jsx's getRunnerStartEpoch).
-    if (r.cps && typeof r.cps === 'object') {
-      const reached = stations
-        .filter(st => r.cps[st.id] != null)
+    const stArr = Array.isArray(stList) ? stList : (Array.isArray(stations) ? stations : []);
+    if (r.cps && typeof r.cps === 'object' && stArr.length > 0) {
+      const reached = stArr
+        .filter(st => st && st.id && r.cps[st.id] != null)
         .sort((a, b) => (b.sequence_order ?? 0) - (a.sequence_order ?? 0))[0];
       const hasCheckedIn = !!(r.checked_in_at || r.registration_status === 'CHECKED_IN');
       // The Start badge specifically requires check-in first — a runner
@@ -252,7 +253,7 @@ export default function RunnersList() {
       key: 'status',
       label: 'Status',
       defaultWidth: 230,
-      valueGetter: (r) => statusOf(r).txt,
+      valueGetter: (r) => statusOf(r, stations).txt,
       render: (_, r) => {
         const s = statusOf(r, stations);
         return (
