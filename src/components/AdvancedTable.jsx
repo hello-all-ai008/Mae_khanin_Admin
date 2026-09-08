@@ -4,6 +4,59 @@ import * as XLSX from 'xlsx';
 import { cn } from '../lib/utils';
 import './AdvancedTable.css';
 
+// Extract plain text recursively from React nodes or primitive values
+export const extractTextFromNode = (node) => {
+    if (node === null || node === undefined || typeof node === 'boolean') return '';
+    if (typeof node === 'string' || typeof node === 'number') return String(node);
+    if (Array.isArray(node)) return node.map(extractTextFromNode).join('');
+    if (React.isValidElement(node)) {
+        return extractTextFromNode(node.props.children);
+    }
+    return '';
+};
+
+// Universal helper to get the display/data value for any cell
+export const getResolvedCellValue = (row, col) => {
+    if (!row || !col) return '';
+    if (typeof col.valueGetter === 'function') {
+        return col.valueGetter(row);
+    }
+    if (typeof col.getValue === 'function') {
+        return col.getValue(row);
+    }
+    const key = col.key;
+    if (key && row[key] !== undefined && row[key] !== null) {
+        return row[key];
+    }
+    // Handle nested dot notation like "category.name"
+    if (key && key.includes('.')) {
+        const val = key.split('.').reduce((acc, part) => (acc ? acc[part] : undefined), row);
+        if (val !== undefined && val !== null) return val;
+    }
+    // Handle station columns key pattern "st_<id>" if cps or finish exists
+    if (key && key.startsWith('st_')) {
+        const stId = key.replace('st_', '');
+        if (row.cps && row.cps[stId]) {
+            const scanTime = row.cps[stId];
+            return new Date(scanTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        if (stId === 'finish' && row.finish) {
+            return new Date(row.finish).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+    }
+    // If col has custom render function, evaluate and extract text
+    if (typeof col.render === 'function') {
+        try {
+            const rendered = col.render(key ? row[key] : undefined, row);
+            const text = extractTextFromNode(rendered).trim();
+            if (text) return text;
+        } catch {
+            // ignore render errors during extraction
+        }
+    }
+    return '';
+};
+
 // Accurate text measurement helper
 const measureTextPx = (text) => {
     if (text === null || text === undefined || text === '') return 0;
@@ -39,7 +92,7 @@ const calculateAutoColumnWidths = (cols, tableData) => {
             const sample = tableData.length > 500 ? tableData.slice(0, 500) : tableData;
             for (let i = 0; i < sample.length; i++) {
                 const row = sample[i];
-                const rawVal = row[col.key];
+                const rawVal = getResolvedCellValue(row, col);
                 let contentStr = '';
                 if (typeof rawVal === 'object' && rawVal !== null) {
                     contentStr = JSON.stringify(rawVal);
@@ -173,7 +226,7 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
         const exportData = processedData.map(row => {
             const rowData = {};
             columns.forEach(c => {
-                let val = row[c.key];
+                let val = getResolvedCellValue(row, c);
                 if (val === null || val === undefined) val = '';
                 else if (typeof val === 'object') val = JSON.stringify(val);
                 rowData[c.label || c.key] = val;
@@ -264,10 +317,23 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
     // --- Filter Logic ---
 
     // Get unique values for each column to build filter options
-    const getUniqueValues = (key) => {
-        const unique = new Set(data.map(item => item[key]));
-        return Array.from(unique).sort();
-    };
+    const getUniqueValues = useCallback((key) => {
+        const col = columns.find(c => c.key === key) || { key };
+        const unique = new Set();
+        data.forEach(item => {
+            let val = getResolvedCellValue(item, col);
+            if (val === null || val === undefined || val === '') {
+                unique.add('(ว่าง / ไม่มีข้อมูล)');
+            } else {
+                unique.add(val);
+            }
+        });
+        return Array.from(unique).sort((a, b) => {
+            if (a === '(ว่าง / ไม่มีข้อมูล)') return 1;
+            if (b === '(ว่าง / ไม่มีข้อมูล)') return -1;
+            return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+        });
+    }, [data, columns]);
 
     // Toggle filter selection
     const toggleFilter = (key, value) => {
@@ -338,11 +404,20 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
     // --- Memoized Data Processor ---
     const processedData = useMemo(() => {
         let filtered = [...data];
+        const colMap = new Map(columns.map(c => [c.key, c]));
 
         // 1. Filtering (Exact Match Checkboxes)
         Object.keys(filters).forEach(key => {
-            if (filters[key].length > 0) {
-                filtered = filtered.filter(item => filters[key].includes(item[key]));
+            const selected = filters[key];
+            if (selected && selected.length > 0) {
+                const col = colMap.get(key) || { key };
+                filtered = filtered.filter(item => {
+                    let cellVal = getResolvedCellValue(item, col);
+                    if (cellVal === null || cellVal === undefined || cellVal === '') {
+                        cellVal = '(ว่าง / ไม่มีข้อมูล)';
+                    }
+                    return selected.includes(cellVal);
+                });
             }
         });
 
@@ -351,9 +426,12 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
             const searchVal = likeFilters[key];
             const searchType = likeFilterTypes[key] || 'contains';
             if (searchVal) {
+                const col = colMap.get(key) || { key };
+                const target = searchVal.toLowerCase();
                 filtered = filtered.filter(item => {
-                    const itemVal = String(item[key] || '').toLowerCase();
-                    const target = searchVal.toLowerCase();
+                    let cellVal = getResolvedCellValue(item, col);
+                    if (cellVal === null || cellVal === undefined) cellVal = '';
+                    const itemVal = String(cellVal).toLowerCase();
                     if (searchType === 'startsWith') return itemVal.startsWith(target);
                     if (searchType === 'endsWith') return itemVal.endsWith(target);
                     return itemVal.includes(target);
@@ -362,20 +440,24 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
         });
 
         // 2. Sorting
-        if (sortConfig) {
+        if (sortConfig && sortConfig.key) {
+            const col = colMap.get(sortConfig.key) || { key: sortConfig.key };
+            const dir = sortConfig.direction === 'ascending' ? 1 : -1;
             filtered.sort((a, b) => {
-                if (a[sortConfig.key] < b[sortConfig.key]) {
-                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                const valA = getResolvedCellValue(a, col);
+                const valB = getResolvedCellValue(b, col);
+                if (valA === valB) return 0;
+                if (valA === null || valA === undefined || valA === '' || valA === '-') return 1;
+                if (valB === null || valB === undefined || valB === '' || valB === '-') return -1;
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    return (valA - valB) * dir;
                 }
-                if (a[sortConfig.key] > b[sortConfig.key]) {
-                    return sortConfig.direction === 'ascending' ? 1 : -1;
-                }
-                return 0;
+                return String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' }) * dir;
             });
         }
 
         return filtered;
-    }, [data, filters, sortConfig]);
+    }, [data, filters, likeFilters, likeFilterTypes, sortConfig, columns]);
 
     // --- Pagination Logic ---
     const totalPages = Math.ceil(processedData.length / pageSize);
@@ -387,7 +469,7 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
     // --- Summation Logic ---
     const totals = columns.reduce((acc, col) => {
         if (col.isNumeric) {
-            acc[col.key] = processedData.reduce((sum, item) => sum + (Number(item[col.key]) || 0), 0);
+            acc[col.key] = processedData.reduce((sum, item) => sum + (Number(getResolvedCellValue(item, col)) || 0), 0);
         }
         return acc;
     }, {});
@@ -504,8 +586,11 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
 
                                         {/* Sort trigger */}
                                         <span
-                                            onClick={() => requestSort(col.key)}
-                                            className="cursor-pointer hover:text-slate-800 transition-colors flex items-center gap-1 min-w-0 flex-1 overflow-hidden"
+                                            onClick={() => col.sortable !== false && requestSort(col.key)}
+                                            className={cn(
+                                                "transition-colors flex items-center gap-1 min-w-0 flex-1 overflow-hidden",
+                                                col.sortable !== false ? "cursor-pointer hover:text-slate-800" : "cursor-default"
+                                            )}
                                         >
                                             <span 
                                                 className="truncate select-text"
@@ -520,12 +605,14 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
                                             >
                                                 {col.label}
                                             </span>
-                                            {sortConfig && col.key && sortConfig.key === col.key ? (
-                                                sortConfig?.direction === 'ascending'
-                                                    ? <ArrowUp size={14} className="text-slate-600 flex-shrink-0" />
-                                                    : <ArrowDown size={14} className="text-slate-600 flex-shrink-0" />
-                                            ) : (
-                                                <ArrowUpDown size={14} className="opacity-0 group-hover:opacity-50 flex-shrink-0" />
+                                            {col.sortable !== false && (
+                                                sortConfig && col.key && sortConfig.key === col.key ? (
+                                                    sortConfig?.direction === 'ascending'
+                                                        ? <ArrowUp size={14} className="text-slate-600 flex-shrink-0" />
+                                                        : <ArrowDown size={14} className="text-slate-600 flex-shrink-0" />
+                                                ) : (
+                                                    <ArrowUpDown size={14} className="opacity-0 group-hover:opacity-50 flex-shrink-0" />
+                                                )
                                             )}
                                         </span>
 
@@ -550,6 +637,7 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
                                         </button>
 
                                         {/* Filter Trigger */}
+                                        {col.filterable !== false && !['actions', 'action', 'print'].includes(col.key) && (
                                         <div className="relative flex-shrink-0">
                                             <button
                                                 onClick={() => {
@@ -564,6 +652,7 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
                                                     width: '24px', height: '24px', border: 'none', padding: 0,
                                                     color: (filters[col.key] || likeFilters[col.key]) ? 'var(--ink)' : 'var(--ink-2)'
                                                 }}
+                                                title={`Filter ${col.label}`}
                                             >
                                                 <Filter size={13} fill={(filters[col.key] || likeFilters[col.key]) ? "currentColor" : "none"} />
                                             </button>
@@ -624,45 +713,43 @@ const AdvancedTable = ({ columns: rawColumns = [], data, groupBy = null, pageSiz
                                                         </div>
 
                                                         <div className="custom-scrollbar" style={{ maxHeight: '200px', overflowY: 'auto', paddingTop: '8px', marginTop: '8px', borderTop: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                            {getUniqueValues(col.key)
-                                                                .filter(val => {
-                                                                    const searchVal = likeFilters[col.key];
+                                                            {(() => {
+                                                                const uniqueVals = getUniqueValues(col.key);
+                                                                const searchVal = likeFilters[col.key];
+                                                                const searchType = likeFilterTypes[col.key] || 'contains';
+                                                                const filteredVals = uniqueVals.filter(val => {
                                                                     if (!searchVal) return true;
                                                                     const itemVal = String(val || '').toLowerCase();
                                                                     const target = searchVal.toLowerCase();
-                                                                    const searchType = likeFilterTypes[col.key] || 'contains';
                                                                     if (searchType === 'startsWith') return itemVal.startsWith(target);
                                                                     if (searchType === 'endsWith') return itemVal.endsWith(target);
                                                                     return itemVal.includes(target);
-                                                                })
-                                                                .map(val => (
-                                                                    <label key={val} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--ink)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-soft)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                                                });
+
+                                                                if (filteredVals.length === 0) {
+                                                                    return <div style={{ fontSize: '12px', color: 'var(--ink-2)', textAlign: 'center', padding: '16px 0' }}>No matches found</div>;
+                                                                }
+
+                                                                return filteredVals.map(val => (
+                                                                    <label key={String(val)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--ink)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-soft)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                                                         <input
                                                                             type="checkbox"
                                                                             checked={filters[col.key]?.includes(val) || false}
                                                                             onChange={() => toggleFilter(col.key, val)}
                                                                             style={{ width: '16px', height: '16px', accentColor: 'var(--ink)' }}
                                                                         />
-                                                                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{val == null ? <em style={{ color: 'var(--ink-2)' }}>(Empty)</em> : val}</span>
+                                                                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                            {val === '(ว่าง / ไม่มีข้อมูล)' ? <em style={{ color: 'var(--ink-2)' }}>(ว่าง / ไม่มีข้อมูล)</em> : String(val)}
+                                                                        </span>
                                                                     </label>
-                                                                ))}
-                                                            {getUniqueValues(col.key).filter(val => {
-                                                                const searchVal = likeFilters[col.key];
-                                                                if (!searchVal) return true;
-                                                                const itemVal = String(val || '').toLowerCase();
-                                                                const target = searchVal.toLowerCase();
-                                                                const searchType = likeFilterTypes[col.key] || 'contains';
-                                                                if (searchType === 'startsWith') return itemVal.startsWith(target);
-                                                                if (searchType === 'endsWith') return itemVal.endsWith(target);
-                                                                return itemVal.includes(target);
-                                                            }).length === 0 && (
-                                                                    <div style={{ fontSize: '12px', color: 'var(--ink-2)', textAlign: 'center', padding: '16px 0' }}>No matches found</div>
-                                                                )}
+                                                                ));
+                                                            })()}
                                                         </div>
                                                     </div>
                                                 </>
                                             )}
                                         </div>
+                                        )}
                                     </div>
 
                                     {/* ── Resize Handle ── */}

@@ -5,6 +5,7 @@ import { useRace } from '../context/RaceContext';
 import { RefreshCw, Trophy, ArrowLeft, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ESlipModal from '../components/ESlipModal';
+import { computeRunnerRanks, formatEnglishLabel } from '../components/ESlip';
 import { fetchCategoryStartMap, attachGunStartTime } from '../lib/categoryStartTimes';
 
 export default function LiveLeaderboard() {
@@ -76,8 +77,11 @@ export default function LiveLeaderboard() {
       );
       if (runError) throw runError;
       
-      let actualRunners = runData || [];
-      actualRunners = actualRunners.map(r => attachGunStartTime(r, catStartMap));
+      let actualRunners = (runData || []).map(r => {
+        const cat = r.cat || r.cat_name || (r.distance != null && r.unit ? `${r.distance}${r.unit}` : (r.distance != null ? String(r.distance) : ''));
+        const runnerWithCat = { ...r, cat };
+        return attachGunStartTime(runnerWithCat, catStartMap);
+      });
       setRunners(actualRunners);
 
       // Extract unique distances
@@ -218,9 +222,11 @@ function getRunnerStartEpoch(r, finishEpoch, stations = [], categories = []) {
   }
 
   // 3. Category start_time
-  if (categories && categories.length > 0 && r.cat) {
+  if (categories && categories.length > 0) {
+    const catKey = r.cat || r.cat_name || r.distance || (r.distance && r.unit ? `${r.distance}${r.unit}` : null);
     const matchedCat = categories.find(c => 
-      (c.name || c.code || c.id) === r.cat || c.id === r.category_id
+      (catKey && (c.name === catKey || c.code === catKey || String(c.distance) === catKey || `${c.distance}${c.unit}` === catKey)) ||
+      (r.category_id && c.id === r.category_id)
     );
     if (matchedCat?.start_time) {
       const ep = parseTimeToEpoch(matchedCat.start_time, finishEpoch);
@@ -228,23 +234,7 @@ function getRunnerStartEpoch(r, finishEpoch, stations = [], categories = []) {
     }
   }
 
-  // 4. Check-in time
-  const checkinVal = r.checkin || r.checked_in_at;
-  if (checkinVal != null && checkinVal !== '') {
-    const ep = parseTimeToEpoch(checkinVal, finishEpoch);
-    if (ep != null) return ep;
-  }
-
-  // 5. Earliest checkpoint in cps before finish
-  if (r.cps && typeof r.cps === 'object') {
-    const cpTimes = Object.values(r.cps)
-      .map(v => parseTimeToEpoch(v, finishEpoch))
-      .filter(t => t != null && (!finishEpoch || t < finishEpoch));
-    if (cpTimes.length > 0) {
-      return Math.min(...cpTimes);
-    }
-  }
-
+  // NOTE: Check-in is pre-race registration, NEVER race start!
   return null;
 }
 
@@ -335,8 +325,9 @@ function parseAgeGroupMin(label) {
     eligibleRunners.forEach(r => {
       const cat = r.cat || 'Unknown';
       const gender = isMale(r.gender) ? 'Male' : (isFemale(r.gender) ? 'Female' : 'Unknown');
-      const genderLabel = gender === 'Male' ? 'ชาย' : (gender === 'Female' ? 'หญิง' : gender);
+      const cleanGender = formatEnglishLabel(r.gender) !== '—' ? formatEnglishLabel(r.gender) : gender;
       const ageGrp = r.age_group || 'Overall';
+      const cleanAge = formatEnglishLabel(ageGrp);
       
       const groupKey = `${cat}_${gender}_${ageGrp}`;
       if (!groups[groupKey]) {
@@ -344,7 +335,9 @@ function parseAgeGroupMin(label) {
           cat,
           gender,
           ageGrp,
-          label: `${ageGrp} (${genderLabel})`,
+          cleanAge,
+          cleanGender,
+          label: `${cleanAge} (${cleanGender})`,
           runners: []
         };
       }
@@ -368,7 +361,7 @@ function parseAgeGroupMin(label) {
     return { overallLeaders: filteredOverall, leaderboards: result };
   }, [runners, stations, selectedDistance, categories]);
 
-  const formatMs = (ms, finishFallback) => {
+  const formatMs = (ms, finishFallback = null) => {
     if (ms != null && ms > 0) {
       const totalSeconds = Math.floor(ms / 1000);
       const hours = Math.floor(totalSeconds / 3600);
@@ -395,6 +388,174 @@ function parseAgeGroupMin(label) {
 
   return (
     <div className="page active" style={{ maxWidth: '1400px', margin: '0 auto', overflowX: 'hidden' }}>
+      <style>{`
+        .admin-leaderboard-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 12px;
+        }
+        .admin-leaderboard-card {
+          background: #fff;
+          border-radius: 12px;
+          padding: 14px 12px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+          border: 1px solid var(--line);
+        }
+        .admin-leaderboard-header {
+          padding-left: 10px;
+          margin-bottom: 12px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .admin-leaderboard-header h3 {
+          margin: 0;
+          font-size: 15px;
+          font-weight: 800;
+        }
+        .admin-leaderboard-cat {
+          font-size: 11px;
+          color: var(--ink-2);
+          font-weight: 600;
+          margin-top: 2px;
+        }
+        .admin-leaderboard-rows {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .admin-leaderboard-row {
+          display: flex;
+          align-items: center;
+          padding-bottom: 8px;
+          gap: 6px;
+        }
+        .admin-leaderboard-rank {
+          width: 22px;
+          font-size: 15px;
+          font-weight: 800;
+          text-align: left;
+          flex-shrink: 0;
+        }
+        .admin-leaderboard-name-col {
+          flex: 1;
+          min-width: 0;
+          padding-left: 4px;
+        }
+        .admin-leaderboard-name {
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--ink);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: flex;
+          align-items: baseline;
+          gap: 4px;
+        }
+        .admin-leaderboard-name-text {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .admin-leaderboard-bib {
+          color: var(--ink-2);
+          font-weight: 600;
+          font-size: 11px;
+          flex-shrink: 0;
+        }
+        .admin-leaderboard-time-col {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+        .admin-leaderboard-time {
+          font-size: 13px;
+          font-weight: 600;
+          font-family: var(--mono);
+          white-space: nowrap;
+        }
+        .admin-leaderboard-net-label {
+          font-size: 9px;
+          color: var(--ink-2);
+        }
+        .admin-leaderboard-print-btn {
+          background: transparent;
+          border: none;
+          color: var(--ink-2);
+          cursor: pointer;
+          padding: 3px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        @media (max-width: 768px) {
+          .admin-leaderboard-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+          .admin-leaderboard-card {
+            padding: 7px 6px !important;
+            border-radius: 8px !important;
+          }
+          .admin-leaderboard-header {
+            margin-bottom: 6px !important;
+            padding-left: 5px !important;
+            border-left-width: 3px !important;
+          }
+          .admin-leaderboard-header h3 {
+            font-size: 0.74rem !important;
+            line-height: 1.15 !important;
+          }
+          .admin-leaderboard-cat {
+            font-size: 0.6rem !important;
+          }
+          .admin-leaderboard-rows {
+            gap: 2px !important;
+          }
+          .admin-leaderboard-row {
+            padding-bottom: 2px !important;
+            gap: 3px !important;
+          }
+          .admin-leaderboard-rank {
+            width: 14px !important;
+            font-size: 0.72rem !important;
+          }
+          .admin-leaderboard-name-col {
+            padding-left: 2px !important;
+          }
+          .admin-leaderboard-name {
+            font-size: 0.68rem !important;
+            line-height: 1.15 !important;
+            gap: 2px !important;
+          }
+          .admin-leaderboard-name-text {
+            max-width: 58px !important;
+          }
+          .admin-leaderboard-bib {
+            font-size: 0.52rem !important;
+            margin-right: 2px !important;
+          }
+          .admin-leaderboard-time-col {
+            gap: 2px !important;
+          }
+          .admin-leaderboard-time {
+            font-size: 0.68rem !important;
+          }
+          .admin-leaderboard-net-label {
+            font-size: 0.46rem !important;
+          }
+          .admin-leaderboard-print-btn {
+            padding: 1px !important;
+          }
+          .admin-leaderboard-print-btn svg {
+            width: 11px !important;
+            height: 11px !important;
+          }
+        }
+      `}</style>
       
       <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '32px' }}>
         <div>
@@ -470,29 +631,23 @@ function parseAgeGroupMin(label) {
 
       {/* 🏆 ทำเนียบผู้นำ Overall (อันดับ 1 ชาย / หญิง แต่ละระยะ ไม่สนรุ่นอายุ) */}
       <div style={{ marginBottom: '32px' }}>
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '16px',
-          padding: '20px 24px',
-          border: '1px solid rgba(245, 182, 10, 0.4)',
-          boxShadow: '0 4px 20px rgba(245, 182, 10, 0.08)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid var(--line)' }}>
+        <div className="admin-overall-card">
+          <div className="admin-overall-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ background: '#fef3c7', padding: '8px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ background: '#fef3c7', padding: '8px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Trophy size={24} color="#d97706" />
               </div>
-              <div>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#92400e' }}>
+              <div style={{ minWidth: 0 }}>
+                <h2 style={{ margin: 0, fontSize: 'clamp(15px, 3.5vw, 18px)', fontWeight: 800, color: '#92400e' }}>
                   ทำเนียบผู้นำ Overall (อันดับ 1 ชาย / หญิง)
                 </h2>
-                <p style={{ margin: 0, fontSize: '13px', color: '#b45309', fontWeight: 500, marginTop: '2px' }}>
+                <p style={{ margin: 0, fontSize: '12px', color: '#b45309', fontWeight: 500, marginTop: '2px' }}>
                   ไม่จำกัดรุ่นอายุ · สนเฉพาะระยะทางและเพศ
                 </p>
               </div>
             </div>
 
-            <div style={{ fontSize: '12px', background: '#fffbeb', color: '#b45309', padding: '6px 14px', borderRadius: '99px', border: '1px solid #fde68a', fontWeight: 600 }}>
+            <div className="admin-overall-badge">
               ⭐ ผู้ได้รางวัล Overall จะไม่นำไปจัดอันดับในรุ่นอายุ (1 คนรับได้ 1 รางวัล)
             </div>
           </div>
@@ -502,9 +657,9 @@ function parseAgeGroupMin(label) {
               ยังไม่มีข้อมูลผู้เข้าเส้นชัยในขณะนี้
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
+            <div className="admin-overall-grid">
               {overallLeaders.map(item => (
-                <div key={item.cat} style={{ background: '#fafaf9', borderRadius: '12px', border: '1px solid #e7e5e4', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div key={item.cat} className="admin-overall-item-card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ background: item.color || '#0f172a', color: '#ffffff', padding: '3px 12px', borderRadius: '99px', fontSize: '12px', fontWeight: 800 }}>
                       {item.cat}
@@ -515,20 +670,20 @@ function parseAgeGroupMin(label) {
                   </div>
 
                   {/* Male Champion */}
-                  <div style={{ background: '#ffffff', borderRadius: '10px', padding: '10px 12px', border: '1px solid #e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
-                      <div style={{ width: '30px', height: '30px', borderRadius: '6px', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
-                        ชาย
+                  <div className="admin-overall-champ-row male">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                      <div style={{ width: '36px', height: '28px', borderRadius: '6px', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', flexShrink: 0 }}>
+                        Male
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         {item.male ? (
                           <>
-                            <div style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div style={{ fontWeight: 800, fontSize: '13px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               🥇 {item.male.name}
                             </div>
-                            <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap' }}>
                               <span style={{ fontWeight: 700, color: '#0284c7' }}>BIB: {item.male.bib}</span>
-                              {item.male.age_group && <span>· รุ่น {item.male.age_group}</span>}
+                              {item.male.age_group && <span>· {formatEnglishLabel(item.male.age_group)}</span>}
                             </div>
                           </>
                         ) : (
@@ -537,42 +692,42 @@ function parseAgeGroupMin(label) {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, paddingLeft: '6px' }}>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: item.male ? '#16a34a' : '#94a3b8', fontFamily: 'var(--mono)' }}>
-                          {item.male ? formatMs(item.male.netTimeMs, item.male.finishEpoch) : '--:--:--'}
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: item.male ? '#16a34a' : '#94a3b8', fontFamily: 'var(--mono)', whiteSpace: 'nowrap' }}>
+                          {item.male ? formatMs(item.male.netTimeMs) : '--:--:--'}
                         </div>
                         {item.male?.netTimeMs != null && (
-                          <div style={{ fontSize: '10px', color: '#64748b' }}>Net Time</div>
+                          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>Net Time</div>
                         )}
                       </div>
                       {item.male && (
                         <button 
                           onClick={() => setSelectedSlip({ runner: item.male, catRank: 'Overall 1' })} 
-                          style={{ background: 'transparent', border: 'none', color: 'var(--ink-2)', cursor: 'pointer', padding: '4px', display: 'flex' }}
+                          style={{ background: 'rgba(0,0,0,0.04)', border: 'none', color: 'var(--ink-2)', cursor: 'pointer', padding: '5px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                           title="Print E-Slip"
                         >
-                          <Printer size={16} />
+                          <Printer size={14} />
                         </button>
                       )}
                     </div>
                   </div>
 
                   {/* Female Champion */}
-                  <div style={{ background: '#ffffff', borderRadius: '10px', padding: '10px 12px', border: '1px solid #fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
-                      <div style={{ width: '30px', height: '30px', borderRadius: '6px', background: '#fce7f3', color: '#db2777', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
-                        หญิง
+                  <div className="admin-overall-champ-row female">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                      <div style={{ width: '46px', height: '28px', borderRadius: '6px', background: '#fce7f3', color: '#db2777', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', flexShrink: 0 }}>
+                        Female
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         {item.female ? (
                           <>
-                            <div style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div style={{ fontWeight: 800, fontSize: '13px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               🥇 {item.female.name}
                             </div>
-                            <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap' }}>
                               <span style={{ fontWeight: 700, color: '#db2777' }}>BIB: {item.female.bib}</span>
-                              {item.female.age_group && <span>· รุ่น {item.female.age_group}</span>}
+                              {item.female.age_group && <span>· {formatEnglishLabel(item.female.age_group)}</span>}
                             </div>
                           </>
                         ) : (
@@ -581,22 +736,22 @@ function parseAgeGroupMin(label) {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, paddingLeft: '6px' }}>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: item.female ? '#16a34a' : '#94a3b8', fontFamily: 'var(--mono)' }}>
-                          {item.female ? formatMs(item.female.netTimeMs, item.female.finishEpoch) : '--:--:--'}
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: item.female ? '#16a34a' : '#94a3b8', fontFamily: 'var(--mono)', whiteSpace: 'nowrap' }}>
+                          {item.female ? formatMs(item.female.netTimeMs) : '--:--:--'}
                         </div>
                         {item.female?.netTimeMs != null && (
-                          <div style={{ fontSize: '10px', color: '#64748b' }}>Net Time</div>
+                          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>Net Time</div>
                         )}
                       </div>
                       {item.female && (
                         <button 
                           onClick={() => setSelectedSlip({ runner: item.female, catRank: 'Overall 1' })} 
-                          style={{ background: 'transparent', border: 'none', color: 'var(--ink-2)', cursor: 'pointer', padding: '4px', display: 'flex' }}
+                          style={{ background: 'rgba(0,0,0,0.04)', border: 'none', color: 'var(--ink-2)', cursor: 'pointer', padding: '5px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                           title="Print E-Slip"
                         >
-                          <Printer size={16} />
+                          <Printer size={14} />
                         </button>
                       )}
                     </div>
@@ -611,10 +766,10 @@ function parseAgeGroupMin(label) {
 
       {/* 🏃 ตารางจัดอันดับตามรุ่นอายุ */}
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: 'var(--ink)' }}>
+        <h2 style={{ margin: 0, fontSize: 'clamp(17px, 4vw, 20px)', fontWeight: 800, color: 'var(--ink)' }}>
           ตารางจัดอันดับตามรุ่นอายุ (Top 5)
         </h2>
-        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--ink-2)' }}>
+        <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>
           * นักวิ่งที่ได้รับรางวัล Overall อันดับ 1 ชาย/หญิง ได้รับการตัดสิทธิ์ออกจากรุ่นอายุแล้ว เพื่อส่งต่อรางวัลให้ลำดับถัดไป (1 คนรับได้ 1 รางวัล)
         </p>
       </div>
@@ -624,72 +779,65 @@ function parseAgeGroupMin(label) {
       ) : leaderboards.length === 0 ? (
         <div style={{ padding: '60px', textAlign: 'center', color: 'var(--ink-2)', background: '#fff', borderRadius: '16px', border: '1px solid var(--line)' }}>ไม่มีข้อมูลผลการแข่งขันในขณะนี้</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' }}>
+        <div className="admin-leaderboard-grid">
           {leaderboards.map(group => {
             const catObj = categories.find(c => c.name === group.cat);
             const headerColor = catObj?.color || 'var(--ink)';
 
             return (
-              <div key={`${group.cat}_${group.label}`} style={{ background: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)', border: '1px solid var(--line)' }}>
+              <div key={`${group.cat}_${group.label}`} className="admin-leaderboard-card">
                 
                 {/* Card Header */}
-                <div style={{ borderLeft: `4px solid ${headerColor}`, paddingLeft: '12px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="admin-leaderboard-header" style={{ borderLeft: `4px solid ${headerColor}` }}>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: headerColor }}>{group.label}</h3>
-                    {selectedDistance === 'ALL' && <div style={{ fontSize: '13px', color: 'var(--ink-2)', fontWeight: 600, marginTop: '2px' }}>{group.cat}</div>}
+                    <h3 style={{ color: headerColor }}>{group.label}</h3>
+                    {selectedDistance === 'ALL' && <div className="admin-leaderboard-cat">{group.cat}</div>}
                   </div>
                 </div>
 
               {/* Rows */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="admin-leaderboard-rows">
                 {[1, 2, 3, 4, 5].map(rank => {
                   const runner = group.runners[rank - 1];
                   
                   return (
-                    <div key={rank} style={{ 
-                      display: 'flex', 
-                      alignItems: 'center',
-                      paddingBottom: '16px',
+                    <div key={rank} className="admin-leaderboard-row" style={{
                       borderBottom: rank !== 5 ? '1px solid var(--line)' : 'none',
                       opacity: runner ? 1 : 0.4
                     }}>
-                      <div style={{ 
-                        width: '32px', 
-                        fontSize: '20px', 
-                        fontWeight: 800, 
+                      <div className="admin-leaderboard-rank" style={{ 
                         color: rank === 1 ? '#f5b60a' : rank === 2 ? '#94a3b8' : rank === 3 ? '#b45309' : 'var(--line-heavy)',
-                        textAlign: 'left'
                       }}>
                         {rank}
                       </div>
                       
-                      <div style={{ flex: 1, paddingLeft: '12px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)' }}>
+                      <div className="admin-leaderboard-name-col">
+                        <div className="admin-leaderboard-name">
                           {runner ? (
                             <>
-                              {runner.bib && <span style={{ color: 'var(--ink-2)', marginRight: '6px', fontWeight: 600, fontSize: '12px' }}>{runner.bib}</span>}
-                              {runner.name || 'Unknown Runner'}
+                              {runner.bib && <span className="admin-leaderboard-bib">{runner.bib}</span>}
+                              <span className="admin-leaderboard-name-text">{runner.name || 'Unknown Runner'}</span>
                             </>
                           ) : '---'}
                         </div>
                       </div>
                       
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div className="admin-leaderboard-time-col">
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '14px', fontWeight: 600, color: runner ? '#16a34a' : 'var(--line-heavy)', fontFamily: 'var(--mono)' }}>
-                            {runner ? formatMs(runner.netTimeMs, runner.finishEpoch) : '--:--:--'}
+                          <div className="admin-leaderboard-time" style={{ color: runner ? '#16a34a' : 'var(--line-heavy)' }}>
+                            {runner ? formatMs(runner.netTimeMs) : '--:--:--'}
                           </div>
                           {runner?.netTimeMs != null && (
-                            <div style={{ fontSize: '10px', color: 'var(--ink-2)' }}>Net Time</div>
+                            <div className="admin-leaderboard-net-label">Net Time</div>
                           )}
                         </div>
                         {runner && (
                           <button 
+                            className="admin-leaderboard-print-btn"
                             onClick={() => setSelectedSlip({ runner, catRank: rank })} 
-                            style={{ background: 'transparent', border: 'none', color: 'var(--ink-2)', cursor: 'pointer', padding: '4px', display: 'flex' }}
                             title="Print E-Slip"
                           >
-                            <Printer size={16} />
+                            <Printer size={14} />
                           </button>
                         )}
                       </div>
@@ -704,15 +852,20 @@ function parseAgeGroupMin(label) {
         </div>
       )}
 
-      {selectedSlip && (
-        <ESlipModal 
-          runner={selectedSlip.runner} 
-          overallRank="-" 
-          catRank={selectedSlip.catRank} 
-          stations={stations}
-          onClose={() => setSelectedSlip(null)} 
-        />
-      )}
+      {selectedSlip && (() => {
+        const targetRunner = selectedSlip.runner;
+        const ranks = computeRunnerRanks(targetRunner, runners);
+        return (
+          <ESlipModal 
+            runner={targetRunner} 
+            overallRank={ranks.overallRank} 
+            catRank={selectedSlip.catRank || ranks.catRank} 
+            stations={targetRunner?.categoryStations?.length ? targetRunner.categoryStations : stations}
+            runners={runners}
+            onClose={() => setSelectedSlip(null)} 
+          />
+        );
+      })()}
     </div>
   );
 }

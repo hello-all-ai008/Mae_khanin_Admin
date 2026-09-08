@@ -20,6 +20,8 @@ import { canAccessRoute, landingRouteFor } from './lib/roles';
 import AdminUserManagement from './pages/AdminUserManagement';
 import OverallDashboard from './pages/OverallDashboard';
 import LiveLeaderboard from './pages/LiveLeaderboard';
+import RunnerProgressControl from './pages/RunnerProgressControl';
+import RunnerPageConfig from './pages/RunnerPageConfig';
 
 // Every authenticated route, in one place. Access per role is defined in
 // lib/roles.js and enforced again by RLS on the server.
@@ -29,6 +31,8 @@ const APP_ROUTES = [
   { path: '/events', element: <EventManager /> },
   { path: '/staff', element: <StaffManager /> },
   { path: '/runners', element: <RunnersList /> },
+  { path: '/runner-progress', element: <RunnerProgressControl /> },
+  { path: '/runner-page-config', element: <RunnerPageConfig /> },
   { path: '/import', element: <ImportRunners /> },
   { path: '/checkin', element: <CheckIn /> },
   { path: '/checkpoint', element: <CheckPoint /> },

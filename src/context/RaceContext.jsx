@@ -503,11 +503,28 @@ export function RaceProvider({ children }) {
 
       const catMap = {};
       loadedCats.forEach(c => {
+        const catCheckpoints = mappedCheckpoints
+          .filter(cp => cp.category_id === c.id)
+          .sort((a, b) => (a.sequence_order || 0) - (b.sequence_order || 0));
+
+        const catStations = catCheckpoints
+          .map(cp => {
+            const st = Array.isArray(cp.stations) ? cp.stations[0] : cp.stations;
+            return {
+              id: cp.station_id || st?.id,
+              name: st?.name || `Checkpoint ${cp.sequence_order}`,
+              type: st?.type || 'CP',
+              sequence_order: cp.sequence_order,
+              cutoff_time: cp.cutoff_time
+            };
+          })
+          .filter(st => st.type !== 'START' && st.type !== 'FINISH' && !/start|ปล่อยตัว|finish|เส้นชัย/i.test(st.name || ''));
+
         const startCp = mappedCheckpoints.find(cp => 
           cp.category_id === c.id && (cp.stations?.type === 'START' || cp.sequence_order === 1) && cp.cutoff_time
         );
         const effectiveStartTime = startCp?.cutoff_time || c.start_time || null;
-        const catObj = { ...c, start_time: effectiveStartTime };
+        const catObj = { ...c, start_time: effectiveStartTime, stations: catStations, checkpoints: catCheckpoints };
         if (c.name) catMap[c.name] = catObj;
         if (c.id) catMap[c.id] = catObj;
       });
@@ -541,21 +558,24 @@ export function RaceProvider({ children }) {
 
       if (!rError && rData) {
         const formatted = rData.map(r => {
-          const matchedCat = catMap[r.cat] || (r.category_id ? catMap[r.category_id] : null);
+          const cat = r.cat || r.cat_name || (r.distance != null && r.unit ? `${r.distance}${r.unit}` : (r.distance != null ? String(r.distance) : ''));
+          const matchedCat = (cat ? catMap[cat] : null) || (r.category_id ? catMap[r.category_id] : null);
           const checkinTime = r.checkin || (r.checked_in_at ? new Date(r.checked_in_at).getTime() : null);
-          const gunStartTime = matchedCat?.start_time ? parseStartTime(matchedCat.start_time, checkinTime) : null;
+          const gunStartTime = matchedCat?.start_time ? parseStartTime(matchedCat.start_time, null) : null;
 
           return {
             ...r,
             bib: r.bib || '',
             name: r.name || '',
             gender: r.gender || '',
-            cat: r.cat || '',
+            cat: cat,
             age: r.age || '',
             nat: r.nat || '',
             checkin: checkinTime,
-            gunStartTime: gunStartTime,
+            gunStartTime: gunStartTime || r.gun_start_time || r.start_time || null,
             categoryStartTimeStr: matchedCat?.start_time ? (matchedCat.start_time.includes('T') ? new Date(matchedCat.start_time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : matchedCat.start_time) : null,
+            categoryStations: matchedCat?.stations || [],
+            categoryCheckpoints: matchedCat?.checkpoints || [],
             cps: r.cps || {},
             finish: r.finish || null
           };
@@ -862,20 +882,21 @@ export function RaceProvider({ children }) {
         let latestRunners = [];
         if (!rError && rData) {
           const formatted = rData.map(r => {
-            const matchedCat = catMap[r.cat] || (r.category_id ? catMap[r.category_id] : null);
+            const cat = r.cat || r.cat_name || (r.distance != null && r.unit ? `${r.distance}${r.unit}` : (r.distance != null ? String(r.distance) : ''));
+            const matchedCat = (cat ? catMap[cat] : null) || (r.category_id ? catMap[r.category_id] : null);
             const checkinTime = r.checkin || (r.checked_in_at ? new Date(r.checked_in_at).getTime() : null);
-            const gunStartTime = matchedCat?.start_time ? parseStartTime(matchedCat.start_time, checkinTime) : null;
+            const gunStartTime = matchedCat?.start_time ? parseStartTime(matchedCat.start_time, null) : null;
 
             return {
               ...r,
               bib: r.bib || '',
               name: r.name || '',
               gender: r.gender || '',
-              cat: r.cat || '',
+              cat: cat,
               age: r.age || '',
               nat: r.nat || '',
               checkin: checkinTime,
-              gunStartTime: gunStartTime,
+              gunStartTime: gunStartTime || r.gun_start_time || r.start_time || null,
               categoryStartTimeStr: matchedCat?.start_time ? (matchedCat.start_time.includes('T') ? new Date(matchedCat.start_time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : matchedCat.start_time) : null,
               cps: r.cps || {},
               finish: r.finish || null
@@ -1192,17 +1213,37 @@ export function RaceProvider({ children }) {
 
       // ไม่อิงลำดับขั้น: สแกนเส้นชัยได้ทันที
       // คำนวณเวลาวิ่ง Total Time:
-      // 1. ถ้ามี r.checkin ใช้ r.checkin
-      // 2. ถ้าไม่มี r.checkin แต่มี r.gunStartTime ใช้ r.gunStartTime
-      // 3. ถ้าไม่มีเลย ให้หาเวลา CP แรกสุดที่มี หรือ null
-      const checkinTime = r.checkin 
-        ? (typeof r.checkin === 'number' ? r.checkin : new Date(r.checkin).getTime())
-        : (r.gunStartTime || (r.cps && Object.keys(r.cps).length > 0 ? Math.min(...Object.values(r.cps).map(v => typeof v === 'number' ? v : new Date(v).getTime())) : null));
+      // ต้องคำนวณจาก Finish Time - Race Start Time (เวลาปล่อยตัว)
+      // 1. Chip Start ใน r.cps (สถานี START)
+      // 2. Official Gun Start Time / r.gunStartTime
+      // 3. Category Start Time / r.start_time
+      let raceStartTime = null;
+      if (r.cps && typeof r.cps === 'object') {
+        const startStationIds = new Set(
+          checkpoints
+            .filter(s => s.type === 'START' || /start|ปล่อยตัว/i.test(s.name || ''))
+            .map(s => s.id)
+        );
+        for (const [key, val] of Object.entries(r.cps)) {
+          if (startStationIds.has(key) || /start|ปล่อยตัว/i.test(String(key))) {
+            const ep = typeof val === 'number' ? val : new Date(val).getTime();
+            if (!isNaN(ep)) { raceStartTime = ep; break; }
+          }
+        }
+      }
+      if (!raceStartTime && r.gunStartTime) {
+        const ep = typeof r.gunStartTime === 'number' ? r.gunStartTime : new Date(r.gunStartTime).getTime();
+        if (!isNaN(ep)) raceStartTime = ep;
+      }
+      if (!raceStartTime && (r.gun_start_time || r.start_time)) {
+        const ep = new Date(r.gun_start_time || r.start_time).getTime();
+        if (!isNaN(ep)) raceStartTime = ep;
+      }
 
       if (r.finish) {
         // ── สแกนเข้าเส้นชัยซ้ำ: สแกนไม่ได้ครั้งต่อไป แต่เก็บ Log ปกติ และยึดเวลาแรกเสมอ ──
         const firstTime = typeof r.finish === 'number' ? r.finish : new Date(r.finish).getTime();
-        const totalTime = checkinTime ? formatDuration(firstTime - checkinTime) : '—';
+        const totalTime = (raceStartTime && firstTime > raceStartTime) ? formatDuration(firstTime - raceStartTime) : '—';
         const dFirst = new Date(firstTime);
         const firstTimeStr = dFirst.toTimeString().slice(0, 8);
 
@@ -1243,7 +1284,7 @@ export function RaceProvider({ children }) {
       } else {
         // ── สแกนเข้าเส้นชัยครั้งแรก ──
         const firstTime = now;
-        const totalTime = checkinTime ? formatDuration(firstTime - checkinTime) : '—';
+        const totalTime = (raceStartTime && firstTime > raceStartTime) ? formatDuration(firstTime - raceStartTime) : '—';
         const updated = { ...r, finish: firstTime };
         updateRunner(updated);
 

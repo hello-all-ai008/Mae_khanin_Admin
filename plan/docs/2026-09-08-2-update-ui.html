@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุปการปรับปรุงระบบและ UI — 2026-09-08 Session #2</title>
+<style>
+  :root {
+    --bg: #efe9e0;
+    --bg-alt: #e6ded1;
+    --surface: #f7f2e9;
+    --surface-2: #fbf8f2;
+    --ink: #3a342b;
+    --ink-soft: #6b6153;
+    --line: #d8cfbe;
+    --accent: #8a6d4b;
+    --accent-blue: #0284c7;
+    --accent-pink: #db2777;
+    --accent-green: #16a34a;
+    --amber: #b8853a;
+    --amber-bg: #fef3c7;
+    --ok-bg: #e7ede4;
+    --ok: #4f7a5a;
+    --code-bg: #27231d;
+    --code-ink: #f5efe6;
+    --shadow: 0 2px 10px rgba(58,52,43,0.08), 0 8px 24px rgba(58,52,43,0.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Sarabun", "Noto Sans Thai", "Segoe UI", system-ui, sans-serif;
+    line-height: 1.65;
+    padding: 0 0 64px;
+  }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 0 20px; }
+  
+  header.hero {
+    background: linear-gradient(135deg, #2d2822, #443c33 55%, #584f43);
+    color: #f3ede1;
+    padding: 48px 0 40px;
+    margin-bottom: 36px;
+    border-bottom: 3px solid var(--accent);
+  }
+  header.hero .wrap > .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: .15em;
+    font-size: 13px;
+    color: #d8cba9;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+  header.hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(24px, 4vw, 36px);
+    font-weight: 800;
+    line-height: 1.2;
+  }
+  header.hero p {
+    margin: 4px 0;
+    color: #e6ddc9;
+    font-size: 15px;
+  }
+  header.hero .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  header.hero .tags span {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  section {
+    margin-bottom: 36px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: var(--shadow);
+  }
+  h2.section-title {
+    font-size: 21px;
+    margin: 0 0 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--ink);
+  }
+  h2.section-title .num {
+    background: var(--accent);
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: bold;
+    flex-shrink: 0;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    margin-top: 16px;
+  }
+  .card {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card h3 {
+    margin: 0 0 10px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .badge-blue { background: #e0f2fe; color: #0284c7; }
+  .badge-pink { background: #fce7f3; color: #db2777; }
+  .badge-green { background: #dcfce7; color: #16a34a; }
+  .badge-amber { background: #fef3c7; color: #b45309; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+  th {
+    background: var(--bg-alt);
+    font-weight: 700;
+    color: var(--ink);
+  }
+  tr:last-child td { border-bottom: none; }
+
+  pre, code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 16px;
+    border-radius: 10px;
+    overflow-x: auto;
+    margin: 14px 0;
+  }
+  p code {
+    background: rgba(0,0,0,0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #8a4b2b;
+  }
+
+  .status-box {
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-top: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 14.5px;
+  }
+  .status-box.ok {
+    background: var(--ok-bg);
+    border: 1px solid #b8d4c2;
+    color: #274b32;
+  }
+  .status-box.info {
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    color: #0369a1;
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Rohn Trail Running Hub · Engineering Handoff</div>
+    <h1>สรุปผลการปรับปรุงระบบและ UI — Session #2</h1>
+    <p>รายงานสรุปการทำงานครอบคลุมทั้งโปรเจกต์ <strong>Rohn-Admin</strong> และ <strong>Rohn-Runner</strong></p>
+    <p>วันที่ 8 กันยายน 2026 · สถานะ: ทุกฟีเจอร์ผ่านการทดสอบ Build และ Push เข้าสู่ GitHub Branch <code>main</code> และ <code>Tiw-dev</code> ครบถ้วน</p>
+    <div class="tags">
+      <span>📱 Multi-Table Leaderboard UI</span>
+      <span>🔤 English Parentheses Extractor</span>
+      <span>⚙️ Runner Progress & Timing Control</span>
+      <span>🎛️ Runner Page Config</span>
+      <span>📺 Monitor Responsive Controls</span>
+      <span>🚀 GitHub Synced</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- SECTION 1: LEADERBOARD UI & ENGLISH EXTRACTOR -->
+  <section>
+    <h2 class="section-title">
+      <span class="num">1</span>
+      <span>ปรับปรุงตารางผลการแข่งขัน (Live Leaderboard) และการแสดงผลภาษาอังกฤษ</span>
+    </h2>
+    
+    <p>
+      เดิมทีทั้งใน <strong>Rohn-Admin</strong> (<code>LiveLeaderboard.jsx</code>) และ <strong>Rohn-Runner</strong> (<code>Leaderboard.jsx</code>) เมื่อเปิดดูบนโทรศัพท์มือถือ ตารางแต่ละรุ่นจะกินพื้นที่แนวตั้งเต็มความกว้าง (1 คอลัมน์) ขนาดตัวหนังสือและ Padding ใหญ่ ทำให้ต้องเลื่อนจอนานมากเพื่อดูผลรุ่นต่างๆ นอกจากนี้ ชื่อรุ่นและเพศที่ดึงมาจากฐานข้อมูลจะมีข้อความภาษาไทยปนภาษาอังกฤษ เช่น <code>40-49 ปี (40-49 years)</code> หรือ <code>ชาย (Male)</code>
+    </p>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>🔤 แสดงเฉพาะภาษาอังกฤษในวงเล็บ</h3>
+        <p>สร้างและขยายความสามารถฟังก์ชัน <code>formatEnglishLabel(val)</code> ให้รองรับทุกกรณี:</p>
+        <ul>
+          <li>ดึงเฉพาะข้อความภาษาอังกฤษในวงเล็บ <code>(...)</code> มาแสดง เช่น <code>40-49 ปี (40-49 years)</code> ➔ <strong>40-49 years</strong></li>
+          <li>แปลงเพศเป็นภาษาอังกฤษสากล <code>ชาย (Male)</code> ➔ <strong>Male</strong>, <code>หญิง (Female)</code> ➔ <strong>Female</strong></li>
+          <li>ป้ายทำเนียบ Overall เปลี่ยนจาก <code>ชาย/หญิง</code> เป็น <strong>Male/Female</strong> และตัดคำนำหน้าภาษาไทย "รุ่น" ออก</li>
+          <li>หัวข้อตารางแสดงเป็นภาษาอังกฤษล้วน เช่น <code>10KM | 40-49 years (Male)</code></li>
+          <li>มีระบบ Fallback อัจฉริยะรองรับกรณีข้อมูลใน DB มีแค่ภาษาไทยล้วน</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>📱 UI โทรศัพท์แบบหลายตาราง (Multi-Table Grid)</h3>
+        <p>จัดวางเลย์เอาต์ใหม่ให้เห็นหลายตารางพร้อมกันโดยไม่ต้องเลื่อนหน้าจอเยอะ:</p>
+        <ul>
+          <li><strong>มือถือ (&le; 768px):</strong> ปรับ Grid เป็น 2 คอลัมน์คู่ขนาน (<code>repeat(2, minmax(0, 1fr))</code>)</li>
+          <li>ลด Padding ตารางเหลือเพียง 6px-8px และลดความสูงแถวนักวิ่ง</li>
+          <li>ย่อขนาดตัวอักษรลงเป็น <code>0.68rem - 0.72rem</code> พร้อม Truncate ป้องกันชื่อยาวล้น</li>
+          <li>ความสูงของแต่ละตารางเหลือเพียง <strong>~135px - 145px</strong> ทำให้หน้าจอมือถือมาตรฐานสามารถ<strong>มองเห็นได้ทีละ 4-6 ตารางพร้อมกัน</strong></li>
+          <li><strong>Desktop/Tablet:</strong> แสดงผล 4-5 ตารางต่อแถวอย่างสวยงามและสมดุล</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: RUNNER PROGRESS CONTROL (NEW PAGE) -->
+  <section>
+    <h2 class="section-title">
+      <span class="num">2</span>
+      <span>หน้าใหม่ใน Rohn-Admin: จัดการสถานะนักวิ่ง / รีเซ็ตเวลา (RunnerProgressControl)</span>
+    </h2>
+    <p>
+      เพิ่มหน้าใหม่ภายใต้เมนู <strong>"จัดการข้อมูล"</strong> ในโปรเจกต์ <code>Rohn-Admin</code> (ที่ Route <code>/runner-progress-control</code>) เพื่อให้อาจารย์และผู้จัดสามารถควบคุม ตรวจสอบ และทดสอบระบบก่อนการแข่งขันจริง:
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ความสามารถหลัก</th>
+          <th>รายละเอียดการทำงาน</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ตรวจสอบเส้นทางและจุดสแกน</strong></td>
+          <td>แสดงผัง Checkpoint ของนักวิ่งแต่ละคนตามระยะทาง/รุ่นที่ลงทะเบียน (อ้างอิง Flow จาก <code>DatabaseFlow.jsx</code>) ตรวจสอบได้ว่าใครต้องผ่านสถานีไหนบ้าง</td>
+        </tr>
+        <tr>
+          <td><strong>จัดการสถานะ DNS และ DNF</strong></td>
+          <td>มีปุ่มคลิกกำหนดสถานะ <strong>DNS</strong> (ไม่มาแข่งขัน) หรือ <strong>DNF</strong> (วิ่งไม่จบการแข่งขัน) ได้แบบรายบุคคลอย่างรวดเร็ว</td>
+        </tr>
+        <tr>
+          <td><strong>แก้ไขและรีเซ็ตเวลา (Timing Override)</strong></td>
+          <td>มีหน้าต่าง Modal ตรวจสอบ/แก้ไขเวลา Check-in, Start Gun, CP แต่ละจุด และ Finish Time รายบุคคล</td>
+        </tr>
+        <tr>
+          <td><strong>ระบบรีเซ็ตเพื่อการทดสอบ (Test Reset)</strong></td>
+          <td>มีปุ่ม Bulk Reset สถานะและเวลาการสแกนทั้งหมดของงานเพื่อเริ่มทดสอบรอบใหม่ (Dry-Run Test) พร้อมระบบยืนยันความปลอดภัยเพื่อป้องกันการกดพลาด</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECTION 3: RUNNER PAGE CONFIG -->
+  <section>
+    <h2 class="section-title">
+      <span class="num">3</span>
+      <span>หน้าใหม่ใน Rohn-Admin & Rohn-Runner: จัดการการแสดงผลหน้า Runner (RunnerPageConfig)</span>
+    </h2>
+    <p>
+      เพิ่มระบบควบคุมการเปิด/ปิดเมนูในหน้าแรกของฝั่งนักวิ่ง (<code>Rohn-Runner/src/pages/Home.jsx</code>) ผ่านหน้า Admin (<code>/runner-page-config</code>):
+    </p>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>ฝั่ง Rohn-Admin</h3>
+        <ul>
+          <li>หน้าจัดการแสดงผลเมนูนักวิ่ง มี Checkbox ให้ Admin ติ๊กเลือกเปิด/ปิดการเข้าถึงแต่ละเมนู</li>
+          <li>ควบคุมได้ทุกหน้า: ค้นหา BIB, สแกนจุดเช็คพอยท์, Live Leaderboard, E-Slip, จอถ่ายทอดสด Monitor</li>
+          <li>บันทึกการตั้งค่าลงฐานข้อมูลส่วนกลางทันที</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>ฝั่ง Rohn-Runner</h3>
+        <ul>
+          <li><code>RunnerContext.jsx</code> ดึงค่า Config การเปิด/ปิดหน้าอัตโนมัติ</li>
+          <li>หน้า <code>Home.jsx</code> ปรับการแสดงผลการ์ดเมนูตามที่ Admin อนุญาต</li>
+          <li>หากเมนูใดถูกปิด จะซ่อนหรือแสดงสถานะแจ้งเตือนผู้ใช้งานอย่างเป็นมิตร</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: MONITOR PAGE ENHANCEMENTS -->
+  <section>
+    <h2 class="section-title">
+      <span class="num">4</span>
+      <span>ปรับปรุงหน้าจอ Monitor (จอถ่ายทอดสด)</span>
+    </h2>
+    <p>
+      ใน <code>Rohn-Runner/src/pages/Monitor.jsx</code> ได้ปรับปรุงส่วนควบคุมการทำงานให้เหมาะสมกับการขึ้นจอทีวี/โปรเจกเตอร์:
+    </p>
+    <ul>
+      <li>เพิ่มปุ่มพับเก็บเมนูควบคุม <code>⚙️ ตั้งค่า (Settings)</code> / <code>X ซ่อน (Close)</code> เพื่อไม่ให้บดบังข้อมูลนักวิ่ง แผนที่ความสูง และโลโก้งานขณะฉายขึ้นจอ</li>
+      <li>ปรับขนาดแถบลากแบ่งสัดส่วนหน้าจอ (Resizer Bar) ให้รองรับทั้งการสัมผัส (Touch) และการคลิกเมาส์</li>
+      <li>จัดระเบียบขนาดโลโก้ผู้สนับสนุนด้านล่างและแผนที่ 10KM/5KM ให้แสดงผลพอดีในทุกขนาดหน้าจอ</li>
+    </ul>
+  </section>
+
+  <!-- SECTION 5: GIT & DEPLOYMENT SUMMARY -->
+  <section>
+    <h2 class="section-title">
+      <span class="num">5</span>
+      <span>สรุปสถานะ Git, Branch และ GitHub Sync</span>
+    </h2>
+
+    <div class="status-box ok">
+      <div>
+        <strong>สถานะความปลอดภัยของโค้ด:</strong><br>
+        ทั้ง 2 โปรเจกต์ได้ทำการทดสอบ Build (<code>npm run build</code> ผ่าน 100%), สำรองไว้ใน Branch <code>Tiw-dev</code> โดยไม่ลบ Branch และผสาน (Merge) เข้าสู่ Branch <code>main</code> พร้อม Push ขึ้น GitHub ครบถ้วนแล้ว
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>โปรเจกต์</th>
+          <th>GitHub Repository</th>
+          <th>Branch ที่อัปเดต</th>
+          <th>Latest Commit Hash</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Rohn-Runner</strong></td>
+          <td><code>https://github.com/hello-all-ai008/ROHN-RUNNER.git</code></td>
+          <td><span class="badge badge-green">main</span> &nbsp; <span class="badge badge-blue">Tiw-dev</span></td>
+          <td><code>e56c3a4</code></td>
+        </tr>
+        <tr>
+          <td><strong>Rohn-Admin</strong></td>
+          <td><code>https://github.com/hello-all-ai008/Mae_khanin_Admin.git</code></td>
+          <td><span class="badge badge-green">main</span> &nbsp; <span class="badge badge-blue">Tiw-dev</span></td>
+          <td><code>e55256a</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECTION 6: DATABASE GAP ANALYSIS (BASED ON DATABASEFLOW.JSX) -->
+  <section>
+    <h2 class="section-title">
+      <span class="num">6</span>
+      <span>วิเคราะห์จุดเชื่อมต่อ Database ที่เพิ่มมาใหม่ vs ตารางใน DatabaseFlow.jsx (Database Gap Analysis)</span>
+    </h2>
+
+    <p>
+      จากการตรวจสอบเปรียบเทียบโค้ดของฟังก์ชันที่เพิ่มเข้ามาใหม่ กับสถาปัตยกรรมโครงสร้างฐานข้อมูลมาตรฐานที่กำหนดไว้ใน <strong><a href="file:///d:/Tiw/Project_Trail_Running_Hub/Rohn-Admin/src/pages/DatabaseFlow.jsx" style="color: var(--accent); font-weight: bold; text-decoration: underline;">DatabaseFlow.jsx</a></strong> พบว่ามีหลายจุดที่ยังเป็นการใช้เทคนิคชั่วคราว (Workaround) หรือยังไม่ได้เชื่อมต่อไปยังตารางเป้าหมายที่แท้จริง ดังรายละเอียดต่อไปนี้:
+    </p>
+
+    <!-- SUMMARY GAP TABLE -->
+    <table>
+      <thead>
+        <tr>
+          <th>คอมโพเนนต์ / ฟังก์ชัน</th>
+          <th>สถานะปัจจุบันในโค้ด</th>
+          <th>สิ่งที่ยังขาด / ข้อจำกัด</th>
+          <th>ตารางที่ควรเชื่อมต่อตาม DatabaseFlow.jsx</th>
+          <th>ระดับความสำคัญ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>RunnerPageConfig.jsx</strong><br>(ระบบเปิด/ปิดหน้าฝั่ง Runner)</td>
+          <td><span class="badge badge-amber">ใช้ Workaround</span><br>บันทึก config ลงใน <code>runners.cps</code> โดยใช้แถวหลอก <code>bib = 'RUNNER_CONFIG'</code> หรือเซฟใน <code>localStorage</code></td>
+          <td>เป็นการสร้างข้อมูลนักวิ่งปลอมเข้าไปในตาราง <code>runners</code> หากระบบนับจำนวนคน หรือ Generate BIB ไม่ได้เขียนดักไว้อาจทำให้จำนวนนักวิ่งคลาดเคลื่อน</td>
+          <td>
+            <strong><code>events.config</code></strong> (เพิ่มคอลัมน์ JSONB ในตาราง <code>events</code>)<br>
+            หรือสร้างตาราง <strong><code>app_settings</code></strong> แยก
+          </td>
+          <td><span class="badge badge-pink" style="background:#fee2e2;color:#b91c1c;">เร่งด่วนสูง (High)</span></td>
+        </tr>
+        <tr>
+          <td><strong>RunnerProgressControl.jsx</strong><br>(ระบบรีเซ็ตเวลาสำหรับ Dry-Run)</td>
+          <td><span class="badge badge-blue">เชื่อมต่อบางส่วน</span><br>อัปเดตเคลียร์ค่า <code>cps = {}</code>, <code>finish = null</code>, <code>checked_in_at = null</code> ในตาราง <code>runners</code></td>
+          <td><strong>ไม่ได้เชื่อมโยงกับตาราง <code>scan_logs</code></strong>: เมื่อรีเซ็ตนักวิ่ง ข้อมูลใน <code>runners</code> หายไปจริง แต่แถวประวัติการสแกนใน <code>scan_logs</code> ยังคงค้างอยู่ ทำให้เกิด Data Inconsistency</td>
+          <td>
+            <strong><code>scan_logs</code></strong><br>
+            (ควรรันคำสั่ง <code>DELETE</code> หรืออัปเดต <code>is_valid = false</code> ใน <code>scan_logs</code> ของ runner นั้นด้วย)
+          </td>
+          <td><span class="badge badge-pink" style="background:#fee2e2;color:#b91c1c;">เร่งด่วนสูง (High)</span></td>
+        </tr>
+        <tr>
+          <td><strong>RunnerProgressControl.jsx</strong><br>(ความปลอดภัยและการตรวจสอบ)</td>
+          <td><span class="badge badge-amber">ยังไม่ตรวจสอบสิทธิ์</span><br>กดรีเซ็ตหรือแก้เวลาได้ทันทีผ่าน Browser Confirm ทั่วไป</td>
+          <td>ไม่มีการบันทึกประวัติว่าใครเป็นคนรีเซ็ต และไม่มีการบังคับใส่ PIN ของแอดมินก่อนลบข้อมูลก้อนใหญ่</td>
+          <td>
+            <strong><code>admin_users</code></strong> (เช็ค PIN ก่อนทำรายการ)<br>
+            <strong><code>action_logs</code></strong> (บันทึกประวัติการรีเซ็ตว่าใครทำ เมื่อไหร่)
+          </td>
+          <td><span class="badge badge-amber">ปานกลาง (Medium)</span></td>
+        </tr>
+        <tr>
+          <td><strong>LiveLeaderboard.jsx & Leaderboard.jsx</strong><br>(การจัดอันดับผลการแข่งขัน)</td>
+          <td><span class="badge badge-blue">คำนวณจากเวลาดิบ</span><br>ตรวจสอบเฉพาะว่ามี <code>start</code> และ <code>finish</code> แล้วนำมาคำนวณ Net Time</td>
+          <td><strong>ยังไม่ได้ดึงตาราง <code>checkpoint</code> มาตรวจ Route Integrity</strong>: หากนักวิ่งคนใดลัดเส้นทาง (เช่น ไม่ผ่านสถานี A1 หรือ A2 ตามที่กำหนดในระยะนั้น) ปัจจุบันยังมีโอกาสหลุดขึ้นไปรับเหรียญบน Leaderboard ได้</td>
+          <td>
+            <strong><code>checkpoint</code></strong> (ผูกกับ <code>categories</code> และ <code>stations</code> เพื่อเช็คว่าสแกนผ่านสถานีบังคับครบทุกจุดตามลำดับ <code>sequence_order</code>)
+          </td>
+          <td><span class="badge badge-amber">ปานกลาง (Medium)</span></td>
+        </tr>
+        <tr>
+          <td><strong>การระบุตัวตนผู้สแกน / ผู้บันทึก</strong><br>(<code>checked_in_by</code> / <code>scanned_by</code>)</td>
+          <td><span class="badge" style="background:#f1f5f9;color:#475569;">ค่าว่าง (Null)</span><br>เวลา Reset หรือบันทึกใหม่ยังเป็น null หรือพิมพ์เอง</td>
+          <td>ยังไม่ได้เชื่อมต่อระบบรายชื่อเจ้าหน้าที่และ Marshal ประจำงาน</td>
+          <td>
+            <strong><code>staff</code></strong> (ดึงรายชื่อเจ้าหน้าที่จาก <code>staff</code> ที่มีสถานะ <code>ACTIVE</code> ของงานนั้นๆ)
+          </td>
+          <td><span class="badge badge-green">ทั่วไป (Low)</span></td>
+        </tr>
+        <tr>
+          <td><strong>โปรไฟล์นักวิ่งหลัก</strong><br>(ข้ามงานวิ่ง)</td>
+          <td><span class="badge" style="background:#f1f5f9;color:#475569;">Flat Per-Event</span><br>ข้อมูลนักวิ่งเก็บซ้ำใน <code>runners</code> แยกแต่ละงานโดยตรง (<code>user_id = null</code>)</td>
+          <td>ยังไม่สามารถดูประวัติการวิ่งย้อนหลังข้ามหลายๆ งานของนักวิ่งคนเดียวกันได้</td>
+          <td>
+            <strong><code>users</code></strong> (เชื่อม <code>runners.user_id ➔ users.id</code>)
+          </td>
+          <td><span class="badge badge-green">ทั่วไป (Low)</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- IN-DEPTH DETAILS -->
+    <div class="grid-2" style="margin-top: 24px;">
+      <div class="card">
+        <h3>⚠️ 1. จุดที่ต้องปรับปรุงด่วน: RunnerPageConfig</h3>
+        <p>
+          ปัจจุบันหน้า <code>RunnerPageConfig.jsx</code> ฝากการตั้งค่าไว้ในตาราง <code>runners</code> โดยสร้าง BIB หลอกขึ้นมาชื่อ <code>RUNNER_CONFIG</code>:
+        </p>
+        <pre><code>// โค้ดปัจจุบันที่ใช้ชั่วคราว
+const { data } = await supabase
+  .from('runners')
+  .select('id, cps')
+  .eq('bib', 'RUNNER_CONFIG')
+  .maybeSingle();</code></pre>
+        <p>
+          <strong>ผลกระทบ:</strong> หากวันจริงแอดมินทำการ Import นักวิ่ง หรือ Rebuild BIB ระบบอาจเผลอนำ <code>RUNNER_CONFIG</code> ไปนับเป็นนักวิ่งตัวจริง หรือถูกลบทิ้งเมื่อมีการเคลียร์ข้อมูลนักวิ่ง<br>
+          <strong>แนวทางแก้ไขที่ถูกต้อง:</strong> ควรเพิ่มคอลัมน์ <code>config JSONB</code> เข้าไปในตาราง <code>events</code> ตามโครงสร้าง Schema ที่ถูกต้อง
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>🛡️ 2. จุดที่ต้องปรับปรุง: ความสมบูรณ์ของระบบ Reset ข้อมูล</h3>
+        <p>
+          ในหน้า <code>RunnerProgressControl.jsx</code> เมื่อกด <strong>Quick Reset</strong> หรือ <strong>Bulk Reset</strong>:
+        </p>
+        <ul>
+          <li>คำสั่งปัจจุบันรันแค่ <code>UPDATE runners SET cps = '{}', finish = null</code></li>
+          <li>แต่ในตาราง <strong><code>scan_logs</code></strong> ยังมีบันทึกประวัติการสแกนเวลาเก่าค้างอยู่</li>
+          <li>ควรอัปเดตให้คำสั่ง Reset ทำการล้าง <code>scan_logs</code> ของนักวิ่งคนนั้นออกด้วย หรือตั้งค่า <code>is_valid = false</code></li>
+          <li>ควรเพิ่มการบันทึกลงตาราง <strong><code>action_logs</code></strong> ทุกครั้งที่มีการ Reset ข้อมูล เพื่อป้องกันข้อผิดพลาดและใช้ตรวจสอบย้อนหลังได้</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SQL MIGRATION RECOMMENDATION -->
+    <div style="margin-top: 24px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+      <h3 style="margin-top: 0; color: var(--ink);">💻 สคริปต์ SQL แนะนำสำหรับปรับปรุงฐานข้อมูลให้ตรงตาม DatabaseFlow</h3>
+      <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 12px;">
+        สามารถนำคำสั่ง SQL ด้านล่างนี้ไปรันใน <strong>Supabase SQL Editor</strong> เพื่อแก้ปัญหาจุดเชื่อมต่อที่ยังค้างอยู่ได้ทันที:
+      </p>
+      <pre style="margin-bottom: 0;"><code>-- 1. เพิ่มคอลัมน์ config ลงในตาราง events เพื่อใช้เก็บการตั้งค่าหน้า Runner แทนการใช้ BIB หลอก
+ALTER TABLE public.events 
+ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{
+  "scanner": true,
+  "monitor": true,
+  "eslip": true,
+  "dashboard": true,
+  "leaderboard": true,
+  "displayMode": "disabled_badge",
+  "notices": {}
+}'::jsonb;
+
+-- 2. ย้ายข้อมูลการตั้งค่าเดิมจากแถว RUNNER_CONFIG เข้าไปไว้ใน events.config
+UPDATE public.events e
+SET config = r.cps
+FROM public.runners r
+WHERE r.event_id = e.id 
+  AND r.bib = 'RUNNER_CONFIG'
+  AND r.cps IS NOT NULL;
+
+-- 3. ลบแถว BIB หลอก RUNNER_CONFIG ออกจากตาราง runners เพื่อให้ตารางนักวิ่งสะอาด 100%
+DELETE FROM public.runners WHERE bib = 'RUNNER_CONFIG';
+
+-- 4. สร้างตาราง staff และ action_logs หากยังไม่มีในระบบ (อิงตาม DatabaseFlow.jsx)
+CREATE TABLE IF NOT EXISTS public.staff (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id UUID REFERENCES public.events(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'MARSHAL',
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.action_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_id UUID REFERENCES public.admin_users(id) ON DELETE SET NULL,
+    action_type VARCHAR(100) NOT NULL,
+    event_id UUID REFERENCES public.events(id) ON DELETE CASCADE,
+    details JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT now()
+);</code></pre>
+    </div>
+
+  </section>
+
+</div>
+
+</body>
+</html>

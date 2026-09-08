@@ -14,7 +14,9 @@ import {
   X,
   ChevronDown,
   LayoutDashboard,
-  Trophy
+  Trophy,
+  SlidersHorizontal,
+  MonitorPlay
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRace } from '../context/RaceContext';
@@ -39,6 +41,8 @@ const NAV_GROUPS = [
       { to: '/staff', label: 'คนสแกน/จนท.', mobileLabel: 'คนสแกน/เจ้าหน้าที่', Icon: UserCheck },
       { to: '/admin/users', label: 'จัดการ User', mobileLabel: 'จัดการ User', Icon: Users },
       { to: '/runners', label: 'นักวิ่ง', mobileLabel: 'รายชื่อนักวิ่ง', Icon: Users },
+      { to: '/runner-progress', label: 'จัดการเวลา & จุดตรวจ', mobileLabel: 'จัดการเวลา & จุดตรวจ', Icon: SlidersHorizontal },
+      { to: '/runner-page-config', label: 'การแสดงผล Runner', mobileLabel: 'การแสดงผล Runner', Icon: MonitorPlay },
       { to: '/import', label: 'นำเข้านักวิ่ง', mobileLabel: 'นำเข้านักวิ่ง', Icon: UserPlus },
     ],
   },

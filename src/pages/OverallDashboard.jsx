@@ -4,6 +4,7 @@ import { fetchAllRows } from '../lib/supabaseFetch';
 import { useRace } from '../context/RaceContext';
 import AdvancedTable from '../components/AdvancedTable';
 import ESlipModal from '../components/ESlipModal';
+import { computeRunnerRanks } from '../components/ESlip';
 import { RefreshCw, Printer } from 'lucide-react';
 import { fetchCategoryStartMap, attachGunStartTime } from '../lib/categoryStartTimes';
 
@@ -165,6 +166,8 @@ export default function OverallDashboard() {
         label: 'พิมพ์',
         defaultWidth: 150,
         align: 'center',
+        filterable: false,
+        sortable: false,
         render: (_, r) => (
           <button className="btn btn-sm" onClick={() => setSelectedSlip(r)} title="พิมพ์ Slip" style={{ padding: '4px', background: 'transparent', border: 'none', color: 'var(--ink)' }}>
             <Printer size={16} />
@@ -178,6 +181,7 @@ export default function OverallDashboard() {
         label: 'Check-In',
         defaultWidth: 170,
         align: 'center',
+        valueGetter: (r) => (r.registration_status === 'CHECKED_IN' || r.checked_in_at ? '✓ Checked-In' : '-'),
         render: (_, r) => {
           return (r.registration_status === 'CHECKED_IN' || r.checked_in_at)
             ? <span style={{ color: 'var(--ok)', fontWeight: 'bold' }}>✓</span>
@@ -187,42 +191,59 @@ export default function OverallDashboard() {
     ];
 
     stations.forEach(st => {
+      const getStationTime = (r) => {
+        if (st.type === 'FINISH') {
+          return r.finish
+            ? new Date(r.finish).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            : '-';
+        }
+        const scanTime = r.cps?.[st.id];
+        return scanTime
+          ? new Date(scanTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+          : '-';
+      };
+
       cols.push({
         key: `st_${st.id}`,
         label: st.name,
         defaultWidth: 190,
         align: 'center',
+        valueGetter: getStationTime,
         render: (_, r) => {
+          const val = getStationTime(r);
+          if (val === '-') return <span style={{ color: 'var(--line)' }}>-</span>;
           if (st.type === 'FINISH') {
-            return r.finish
-              ? <span style={{ color: 'var(--finish)', fontWeight: 600 }}>{new Date(r.finish).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-              : <span style={{ color: 'var(--line)' }}>-</span>;
+            return <span style={{ color: 'var(--finish)', fontWeight: 600 }}>{val}</span>;
           }
-          const scanTime = r.cps?.[st.id];
-          return scanTime
-            ? <span style={{ color: 'var(--ink)' }}>{new Date(scanTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-            : <span style={{ color: 'var(--line)' }}>-</span>;
+          return <span style={{ color: 'var(--ink)' }}>{val}</span>;
         }
       });
     });
+
+    const getTotalTime = (r) => {
+      const startSt = stations.find(s => s.type === 'START');
+      const startTime = startSt && r.cps?.[startSt.id];
+      const finishTime = r.finish;
+      if (startTime && finishTime) {
+        const diffMs = new Date(finishTime).getTime() - new Date(startTime).getTime();
+        const hrs = Math.floor(diffMs / 3600000).toString().padStart(2, '0');
+        const mins = Math.floor((diffMs % 3600000) / 60000).toString().padStart(2, '0');
+        const secs = Math.floor((diffMs % 60000) / 1000).toString().padStart(2, '0');
+        return `${hrs}:${mins}:${secs}`;
+      }
+      return '-';
+    };
 
     cols.push({
       key: 'total_time',
       label: 'เวลาสุทธิ',
       defaultWidth: 180,
       align: 'center',
+      valueGetter: getTotalTime,
       render: (_, r) => {
-        const startSt = stations.find(s => s.type === 'START');
-        const startTime = startSt && r.cps?.[startSt.id];
-        const finishTime = r.finish;
-        if (startTime && finishTime) {
-          const diffMs = new Date(finishTime).getTime() - new Date(startTime).getTime();
-          const hrs = Math.floor(diffMs / 3600000).toString().padStart(2, '0');
-          const mins = Math.floor((diffMs % 3600000) / 60000).toString().padStart(2, '0');
-          const secs = Math.floor((diffMs % 60000) / 1000).toString().padStart(2, '0');
-          return <span style={{ fontWeight: 600, color: 'var(--finish)' }}>{hrs}:{mins}:{secs}</span>;
-        }
-        return <span style={{ color: 'var(--line)' }}>-</span>;
+        const val = getTotalTime(r);
+        if (val === '-') return <span style={{ color: 'var(--line)' }}>-</span>;
+        return <span style={{ fontWeight: 600, color: 'var(--finish)' }}>{val}</span>;
       }
     });
 
@@ -343,15 +364,19 @@ export default function OverallDashboard() {
         </>
       )}
 
-      {selectedSlip && (
-        <ESlipModal 
-          runner={selectedSlip} 
-          overallRank="-" 
-          catRank="-" 
-          stations={stations}
-          onClose={() => setSelectedSlip(null)} 
-        />
-      )}
+      {selectedSlip && (() => {
+        const ranks = computeRunnerRanks(selectedSlip, runners);
+        return (
+          <ESlipModal 
+            runner={selectedSlip} 
+            overallRank={ranks.overallRank} 
+            catRank={ranks.catRank} 
+            stations={selectedSlip?.categoryStations?.length ? selectedSlip.categoryStations : stations}
+            runners={runners}
+            onClose={() => setSelectedSlip(null)} 
+          />
+        );
+      })()}
     </div>
   );
 }
