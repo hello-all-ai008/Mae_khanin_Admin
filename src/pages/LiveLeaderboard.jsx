@@ -238,6 +238,15 @@ function getRunnerStartEpoch(r, finishEpoch, stations = [], categories = []) {
   return null;
 }
 
+// Extracts the minimum age from a Thai/English age-group label so groups can
+// sort youngest-first (plain string sort misorders labels like "ไม่เกิน 29 ปี").
+function parseAgeGroupMin(label) {
+  if (!label) return Infinity;
+  if (/ไม่เกิน|and under/i.test(label)) return 0;
+  const match = label.match(/\d+/);
+  return match ? parseInt(match[0], 10) : Infinity;
+}
+
   // Group and rank runners
   const { overallLeaders, leaderboards } = useMemo(() => {
     if (!runners.length) return { overallLeaders: [], leaderboards: [] };
@@ -264,7 +273,11 @@ function getRunnerStartEpoch(r, finishEpoch, stations = [], categories = []) {
     });
 
     // 2. Compute 1st Male and 1st Female for each distance (Regardless of age group)
-    const uniqueDistances = [...new Set(allFinishedWithTimes.map(r => r.cat).filter(Boolean))].sort();
+    // Overall ranking only applies to 10KM; 5KM has no Overall Champion card and its
+    // top finishers are ranked normally within their age group instead.
+    const uniqueDistances = [...new Set(allFinishedWithTimes.map(r => r.cat).filter(Boolean))]
+      .filter(catName => !/5\s*KM/i.test(catName))
+      .sort();
     const overallLeadersAll = [];
     const overallWinnerBibSet = new Set();
 
@@ -335,17 +348,17 @@ function getRunnerStartEpoch(r, finishEpoch, stations = [], categories = []) {
       return g;
     });
 
-    // Sort groups themselves by cat, then gender, then age group
+    // Sort groups themselves by cat, then gender, then age group (youngest first)
     result.sort((a, b) => {
       if (a.cat !== b.cat) return a.cat.localeCompare(b.cat);
       if (a.gender !== b.gender) return a.gender.localeCompare(b.gender);
-      return a.ageGrp.localeCompare(b.ageGrp);
+      return parseAgeGroupMin(a.ageGrp) - parseAgeGroupMin(b.ageGrp);
     });
 
     return { overallLeaders: filteredOverall, leaderboards: result };
   }, [runners, stations, selectedDistance, categories]);
 
-  const formatMs = (ms) => {
+  const formatMs = (ms, finishFallback = null) => {
     if (ms != null && ms > 0) {
       const totalSeconds = Math.floor(ms / 1000);
       const hours = Math.floor(totalSeconds / 3600);
@@ -353,6 +366,20 @@ function getRunnerStartEpoch(r, finishEpoch, stations = [], categories = []) {
       const secs = totalSeconds % 60;
       return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
+    
+    if (finishFallback != null) {
+      const d = new Date(finishFallback);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString('th-TH', {
+          timeZone: 'Asia/Bangkok',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        });
+      }
+    }
+
     return '--:--:--';
   };
 

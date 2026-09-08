@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แผนแก้ไข: ข้อมูลสแกน CP หายจากการ Sync ทับกัน — Mae Khanin Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f1ece2;
+    --surface: #fbf8f2;
+    --surface-2: #ede6d8;
+    --text-main: #2c2620;
+    --text-muted: #7a7264;
+    --border: #ded4c0;
+    --primary: #b3742c;
+    --primary-bg: #f3e3c9;
+    --success: #4c7a4f;
+    --success-bg: #e2ecdd;
+    --warning: #a8752c;
+    --warning-bg: #f4e5c8;
+    --danger: #a4442f;
+    --danger-bg: #f3ddd6;
+    --purple: #6b5b95;
+    --purple-bg: #e9e3f2;
+    --mono-bg: #2c2620;
+    --mono-text: #f1ece2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+    line-height: 1.7;
+    padding: 40px 20px;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    background: var(--surface);
+    padding: 48px;
+    border-radius: 20px;
+    box-shadow: 0 10px 34px -12px rgba(44,38,32,0.18);
+    border: 1px solid var(--border);
+  }
+  header { margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 24px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; }
+  h1 { font-size: 27px; font-weight: 800; margin: 0 0 10px 0; }
+  .meta-tags { display: flex; flex-wrap: wrap; gap: 10px; font-size: 13px; margin-top: 14px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-weight: 700; }
+  .badge-green { background: var(--success-bg); color: var(--success); }
+  .badge-blue  { background: var(--primary-bg); color: var(--primary); }
+  .badge-purple{ background: var(--purple-bg); color: var(--purple); }
+  .badge-warn  { background: var(--warning-bg); color: var(--warning); }
+  .badge-danger{ background: var(--danger-bg); color: var(--danger); }
+
+  .section { margin-bottom: 38px; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 16px 0; display: flex; align-items: center; gap: 10px; }
+  h2 .num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:8px; background:var(--primary); color:#fff; font-size:13px; flex-shrink:0; }
+  h3 { font-size: 15px; font-weight: 700; margin: 20px 0 10px 0; color: var(--text-main); }
+  p { color: var(--text-main); }
+  .muted { color: var(--text-muted); }
+
+  .tldr {
+    background: var(--danger-bg);
+    border: 1px solid #dda99a;
+    border-radius: 14px;
+    padding: 20px 22px;
+    font-size: 15px;
+    color: #7a2f1e;
+  }
+  .tldr ul { margin: 8px 0 0 0; padding-left: 20px; }
+  .tldr li { margin-bottom: 4px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 10px 0 4px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--surface-2); font-weight: 700; font-size: 12.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  .status-ok { color: var(--success); font-weight: 700; white-space: nowrap; }
+  .status-warn { color: var(--warning); font-weight: 700; white-space: nowrap; }
+  .status-bad { color: var(--danger); font-weight: 700; white-space: nowrap; }
+
+  code, .mono { font-family: 'SF Mono', Menlo, monospace; background: var(--surface-2); padding: 2px 7px; border-radius: 6px; font-size: 12.5px; }
+
+  .callout { border-radius: 12px; padding: 16px 18px; font-size: 13.5px; margin: 14px 0; border: 1px solid; }
+  .callout-warn { background: var(--warning-bg); border-color: #dcbb85; color: #6b4a17; }
+  .callout-danger { background: var(--danger-bg); border-color: #dda99a; color: #7a2f1e; }
+  .callout-info { background: var(--purple-bg); border-color: #cabfe0; color: #4a3d6b; }
+  .callout-ok { background: var(--success-bg); border-color: #a8c8a5; color: #2f4f31; }
+  .callout b { display:block; margin-bottom:4px; }
+
+  .checklist { list-style:none; padding:0; margin:0; }
+  .checklist li { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .checklist li:last-child { border-bottom:none; }
+  .check-icon { flex-shrink:0; width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:#fff; margin-top:1px; }
+  .check-todo { background: var(--warning); }
+  .check-plan { background: var(--purple); }
+
+  .timeline { position:relative; margin: 16px 0; padding-left: 26px; }
+  .timeline:before { content:''; position:absolute; left:8px; top:4px; bottom:4px; width:2px; background:var(--border); }
+  .tl-item { position:relative; padding-bottom: 18px; }
+  .tl-item:last-child { padding-bottom:0; }
+  .tl-dot { position:absolute; left:-26px; top:2px; width:14px; height:14px; border-radius:50%; background:var(--surface); border:3px solid var(--warning); }
+  .tl-dot.bad { border-color: var(--danger); }
+  .tl-time { font-size:12px; font-weight:700; color:var(--text-muted); font-family:monospace; }
+  .tl-text { font-size:13.5px; margin-top:2px; }
+
+  .diagram { background: var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:20px; font-size:13px; }
+  .flow-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .flow-box { background: var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:12.5px; font-weight:600; }
+  .flow-box.bad { background: var(--danger-bg); border-color:#dda99a; color:#7a2f1e; }
+  .flow-box.good { background: var(--success-bg); border-color:#a8c8a5; color:#2f4f31; }
+  .flow-arrow { color: var(--text-muted); font-weight:700; }
+
+  .two-col { display:flex; gap:20px; flex-wrap:wrap; }
+  .col { flex:1; min-width: 300px; }
+  .card { background: var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+  .card h4 { margin:0 0 8px 0; font-size:13.5px; font-weight:800; }
+
+  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); text-align:center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="eyebrow">Mae Khanin Admin · แผนแก้ไขก่อนเริ่มทำ (ยังไม่ลงมือ)</div>
+    <h1>ข้อมูลสแกน Checkpoint หายเพราะเครื่องสแกนเขียนทับกัน</h1>
+    <p class="muted">เคสตั้งต้น: BIB 1860 — ยิง CP ไปแล้วแต่ข้อมูลหาย เพราะเครื่องสแกนคนละเครื่อง sync ทับกัน ไม่ใช่เพราะลบ Station CP</p>
+    <div class="meta-tags">
+      <span class="badge badge-danger">🔴 CRITICAL — ข้อมูลจริงหายได้ทุกเมื่อ</span>
+      <span class="badge badge-warn">⏱ วันแข่ง 12-13 ก.ย. — เหลือ 5 วัน</span>
+      <span class="badge badge-purple">🗄 ต้องแก้ที่ Database (Supabase Live)</span>
+      <span class="badge badge-blue">📄 สถานะ: รอ Gong อนุมัติก่อนลงมือ</span>
+    </div>
+  </header>
+
+  <div class="section">
+    <div class="tldr">
+      <b>⚠️ สรุปสั้น ๆ</b>
+      เครื่องสแกน CP แต่ละเครื่องเก็บข้อมูลนักวิ่งไว้ในเครื่องตัวเอง (cache) แล้วเวลาส่งข้อมูลขึ้น Supabase มันส่ง <b>ทั้งก้อน cps ที่มีอยู่ในเครื่อง</b> ไปทับของเดิมบน server เลย — ไม่ได้ merge ทีละจุด ถ้าเครื่องไหน cache เก่า (ยังไม่รู้ว่ามีคนสแกนจุดอื่นไปแล้ว) พอมันยิงสแกนของตัวเอง มันจะเขียนทับจุดอื่นที่เคยสแกนไปแล้วให้หายหมด
+      <ul>
+        <li>BIB 1860 โดนทับ 3 รอบติดจนเหลือ <code>cps: {}</code> ว่างเปล่า — ทั้งที่ยิงจริงไปแล้ว 3 จุด (Start, A1, A2)</li>
+        <li>เจอ CP ในบันทึก log แต่ข้อมูลหายไปแล้วอีก 3 คน: BIB 5114, 5115, 5134</li>
+        <li>บั๊กเดียวกันนี้เกิดกับ Check-in และ Finish ได้เหมือนกัน (เขียนทับเวลาแทนที่จะยึดเวลาแรก)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">1</span>สิ่งที่เกิดขึ้นจริงกับ BIB 1860</h2>
+    <p>ดึง log การเขียนขึ้น Supabase ของ BIB นี้มาดู เห็นชัดว่าเครื่องที่สอง (จอที่ 2) ไม่รู้ว่ามีคนสแกน "Start" ไปแล้วเมื่อวันก่อน เลยยิงซ้ำ แล้วพอมันยิง A1/A2 ต่อ มันก็ส่งก้อนข้อมูลที่ตัวเองมีทับของเดิมไปเรื่อย ๆ จนหมด</p>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-time">6 ก.ย. 06:39:00</div>
+        <div class="tl-text">เช็คอิน โดย "ADMIN - Gong" — ปกติ</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-time">6 ก.ย. 06:39:11</div>
+        <div class="tl-text">ยิง CP ที่จุด <b>Start</b> — บันทึกสำเร็จ <span class="status-ok">cps = {Start}</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot bad"></div>
+        <div class="tl-time">7 ก.ย. 14:07:27</div>
+        <div class="tl-text">เครื่องของ "Whale" ยิง CP ที่จุด <b>Start</b> ซ้ำ — เครื่องนี้ไม่รู้ว่ามีคนยิงไปแล้วเมื่อวาน เข้าใจว่าเป็นครั้งแรก <span class="status-warn">ส่งก้อนที่ตัวเองมี ทับของเดิม (ผลลัพธ์เหมือนเดิมเพราะบังเอิญเป็นจุดเดียวกัน)</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot bad"></div>
+        <div class="tl-time">7 ก.ย. 14:27:01</div>
+        <div class="tl-text">ยิง CP ที่จุด <b>A1</b> — เครื่องนี้ยัง cache แค่ Start เก่า พอส่งก้อนขึ้นไป <span class="status-bad">Start หายไปจาก server เพราะถูกส่งก้อนใหม่ที่ไม่มี Start ทับ</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot bad"></div>
+        <div class="tl-time">7 ก.ย. 14:27:18</div>
+        <div class="tl-text">ยิง CP ที่จุด <b>A2</b> — เขียนทับอีกรอบ <span class="status-bad">สุดท้าย cps = {} ว่างเปล่า ทั้งที่ยิงจริงไปแล้ว 3 จุด</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">2</span>สาเหตุที่แท้จริง</h2>
+    <p><b>ไม่เกี่ยวกับการลบ Station CP</b> — ตรวจสอบแล้วว่าการลบ station ในหน้าตั้งค่า ไม่มีโค้ดส่วนไหนไปแตะข้อมูลนักวิ่งเลย และเวลาที่ลบก็ไม่ตรงกับช่วงที่ข้อมูลหาย</p>
+    <div class="diagram">
+      <div class="flow-row">
+        <span class="flow-box">เครื่องสแกน CP</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-box">อ่าน cps จาก <b>cache ในเครื่อง</b> (ไม่ได้เช็คกับ server สด ๆ)</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-box">เพิ่มจุดที่เพิ่งยิงเข้าไปในก้อน</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-box bad">ส่งก้อนทั้งหมดทับ server</span>
+      </div>
+    </div>
+    <div class="callout callout-danger">
+      <b>ทำไมถึงอันตรายวันแข่งจริง</b>
+      วันแข่งมีหลายจุด (Start / A1 / A2 / Finish) แต่ละจุดมีเครื่องสแกนของตัวเอง — นักวิ่งคนเดียวถูกสแกนจากหลายเครื่องเป็นเรื่องปกติ ไม่ใช่เคสพิเศษ ถ้าเครื่องไหนไม่ได้เปิดหน้าเว็บใหม่ (เพื่อดึงข้อมูลล่าสุด) ก่อนยิง มันจะเขียนทับจุดอื่นให้หายทันที — เกิดขึ้นได้กับนักวิ่งทุกคน ทุกจุด ตลอดการแข่ง
+    </div>
+    <p>เจอปัญหาข้างเคียงอีก 2 จุดระหว่างตรวจโค้ด:</p>
+    <table>
+      <tr><th>จุด</th><th>ปัญหา</th><th>ผลกระทบ</th></tr>
+      <tr>
+        <td>เวลาเข้าเส้นชัย (Finish)</td>
+        <td>เขียนทับเวลาตรง ๆ ไม่เช็คว่ามีอยู่แล้วหรือยัง</td>
+        <td>เครื่อง cache เก่ายิง Finish ซ้ำ อาจทับเวลาที่ถูกต้องด้วยเวลาที่ช้ากว่า</td>
+      </tr>
+      <tr>
+        <td>การส่งข้อมูลขึ้น server</td>
+        <td>ไม่เช็คผลลัพธ์ว่าจริง ๆ เขียนเข้า database สำเร็จไหม</td>
+        <td>ถ้าเขียนไม่ผ่าน (ระบบสิทธิ์บล็อก) แอปคิดว่าสำเร็จ ทิ้งคิวทันที ข้อมูลหายเงียบ ๆ ไม่มี error ให้เห็น</td>
+      </tr>
+      <tr>
+        <td>คิวส่งข้อมูล (Sync Queue)</td>
+        <td>ถ้ารายการหัวคิวส่งไม่ผ่าน จะลองใหม่ทุก 2.5 วิ ไม่มีวันหยุด</td>
+        <td>รายการที่ค้างจะบล็อกทุกสแกนที่ต่อคิวข้างหลังทั้งหมด — ทั้งจุดหยุดทำงานได้</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">3</span>แผนการแก้ไข</h2>
+    <div class="two-col">
+      <div class="col">
+        <div class="card">
+          <h4>✅ ก่อนแก้ (ตอนนี้)</h4>
+          <p class="mono" style="font-size:12px; white-space:pre-wrap;">// เครื่องส่งก้อนทั้งหมดทับ
+update runners
+set cps = {ก้อนที่เครื่องมี}
+where id = ...</p>
+          <p class="muted" style="font-size:12.5px;">ไม่มีการเช็คว่า server มีข้อมูลอะไรอยู่ก่อน — ใครส่งทีหลังชนะเสมอ ต่อให้ข้อมูลเก่ากว่า</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card" style="background:var(--success-bg); border-color:#a8c8a5;">
+          <h4>🔧 หลังแก้</h4>
+          <p class="mono" style="font-size:12px; white-space:pre-wrap;">// server รวมทีละจุด ไม่ทับก้อนทั้งหมด
+update runners
+set cps = cps || {จุดที่เพิ่งยิง}
+where id = ... and ยังไม่เคยมีจุดนี้</p>
+          <p class="muted" style="font-size:12.5px;">ทำงานฝั่ง database (Postgres Function) โดยตรง — เครื่องไหนส่งมาก็ตาม จุดเดิมจะไม่มีวันถูกลบทิ้ง</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>3.1 สร้างฟังก์ชันกลางบน Database (RPC เดียวคุมทั้ง 3 แบบสแกน)</h3>
+    <p>ฟังก์ชันเดียวชื่อ <code>record_scan</code> ใช้ทั้ง Check-in / CP / Finish — หลักการ "จุดแรกที่ยิงชนะเสมอ" ตัดสินที่ server ไม่ใช่ที่เครื่อง:</p>
+    <table>
+      <tr><th>ประเภท</th><th>วิธีเขียนข้อมูลใหม่</th></tr>
+      <tr><td><b>CP</b></td><td>เติมเฉพาะจุดที่ยังไม่เคยมี — จุดที่เคยยิงแล้วจะไม่ถูกแตะเลย</td></tr>
+      <tr><td><b>Finish</b></td><td>เขียนเฉพาะตอนที่ยังไม่มีเวลาเข้าเส้นชัย — มีแล้วจะไม่ถูกทับ</td></tr>
+      <tr><td><b>Check-in</b></td><td>เขียนเฉพาะตอนที่ยังไม่เคยเช็คอิน — เช็คอินแล้วจะไม่ถูกเปลี่ยนเวลา</td></tr>
+    </table>
+    <p>ระบบสิทธิ์ (RLS) ที่มีอยู่แล้วในระบบเป็นคนคุมสิทธิ์การเขียนให้อัตโนมัติ (เจ้าหน้าที่ที่ล็อกอินถูกต้องเท่านั้นที่เขียนได้) — ไม่ต้องเปิดช่องโหว่เพิ่ม และถ้าเขียนไม่ผ่านจริง ๆ (เช่นสิทธิ์ไม่พอ) แอปจะเห็น error ทันที ไม่ทิ้งคิวแบบเงียบ ๆ เหมือนตอนนี้</p>
+
+    <h3>3.2 กู้คืนข้อมูลที่หายไปแล้ว</h3>
+    <p>ระบบมีตาราง "บันทึกการสแกนทุกครั้ง" (scan_logs) เก็บหลักฐานไว้แยกต่างหาก ยังไม่หาย — ใช้กู้คืนเฉพาะจุดที่ขาดหายจาก cps ปัจจุบันได้ โดย<b>ไม่แตะข้อมูลที่ยังอยู่ครบ</b>:</p>
+    <table>
+      <tr><th>BIB</th><th>สถานะปัจจุบัน</th><th>พบใน Log</th><th>หลังกู้คืน</th></tr>
+      <tr><td class="mono">1860</td><td class="status-bad">cps ว่างเปล่า</td><td>Start, A1, A2</td><td class="status-ok">กู้คืนครบ 3 จุด</td></tr>
+      <tr><td class="mono">5114</td><td class="status-bad">cps ว่างเปล่า</td><td>A1</td><td class="status-ok">กู้คืน 1 จุด</td></tr>
+      <tr><td class="mono">5115</td><td class="status-bad">cps ว่างเปล่า</td><td>A1</td><td class="status-ok">กู้คืน 1 จุด</td></tr>
+      <tr><td class="mono">5134</td><td class="status-bad">cps ว่างเปล่า</td><td>A1</td><td class="status-ok">กู้คืน 1 จุด</td></tr>
+    </table>
+    <div class="callout callout-info">
+      <b>หมายเหตุ</b>
+      อีก 26 คนที่มีข้อมูล cps อยู่แล้วจะไม่ถูกแตะเลย ต่อให้เวลาในบันทึกกับเวลาในข้อมูลจริงต่างกันไม่กี่วินาที (ความต่างของนาฬิกาเครื่อง vs server) — ของเดิมที่มีอยู่ถือเป็นค่าที่ถูกต้องเสมอ กู้คืนเฉพาะที่ "หายไปทั้งหมด" เท่านั้น
+    </div>
+
+    <h3>3.3 ซ่อมคิวส่งข้อมูล ไม่ให้ค้างบล็อกกันทั้งจุด</h3>
+    <ul style="font-size:14px; padding-left:20px;">
+      <li>รายการที่ส่งไม่ผ่านซ้ำ ๆ จะถูก<b>เลื่อนไปท้ายคิว</b>แทนที่จะค้างขวางหัวคิวตลอดไป</li>
+      <li>เพิ่มการรอนานขึ้นเรื่อย ๆ ระหว่างลองใหม่ (ไม่ยิงรัวทุก 2.5 วิเหมือนเดิม)</li>
+      <li>ถ้าลองซ้ำจนครบจำนวนแล้วยังไม่ผ่าน จะพักไว้ในถังแยกต่างหาก พร้อมแจ้งเตือนบนหน้าจอ — เห็นชัดว่ามีรายการค้าง ไม่หายไปเงียบ ๆ</li>
+    </ul>
+
+    <h3>3.4 เครื่องสแกนแก้ cache ตัวเองอัตโนมัติ</h3>
+    <p>ทุกครั้งที่สแกนสำเร็จ เครื่องจะรับค่าจริงจาก server กลับมาอัปเดต cache ตัวเองทันที (ไม่ต้องเพิ่มระบบ realtime ใหม่ตามที่คุยกันไว้) — ลดโอกาสที่เครื่อง cache เก่าจะไปทับข้อมูลคนอื่นในสแกนครั้งถัดไป</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">4</span>ขั้นตอนตรวจสอบก่อนใช้งานจริง</h2>
+    <ul class="checklist">
+      <li><span class="check-icon check-plan">1</span> ทดสอบ: จำลอง 2 เครื่อง cache คนละเวอร์ชัน ยิงคนละจุด → ต้องเห็นข้อมูลอยู่ครบทั้ง 2 จุด (จำลองบั๊กเดิมซ้ำ ต้องไม่เกิดอีก)</li>
+      <li><span class="check-icon check-plan">2</span> ตรวจ BIB 1860 / 5114 / 5115 / 5134 → cps ต้องกลับมาครบตาม log</li>
+      <li><span class="check-icon check-plan">3</span> ตรวจ BIB ที่มีข้อมูลอยู่แล้ว (เช่น 1126, 1501, 1710) → ต้อง<b>ไม่เปลี่ยน</b>ค่าที่มีอยู่</li>
+      <li><span class="check-icon check-plan">4</span> ทดสอบยิงซ้ำ (rescan) จุดเดิม → ต้องไม่เปลี่ยนเวลาที่บันทึกไว้ครั้งแรก</li>
+      <li><span class="check-icon check-plan">5</span> ทดสอบคิวค้าง (จำลองส่งไม่ผ่าน) → ต้องไม่บล็อกสแกนอื่นที่ตามมา และมีแจ้งเตือนให้เห็น</li>
+      <li><span class="check-icon check-plan">6</span> ทดสอบจริงบนหน้าสแกน 2 เครื่องพร้อมกัน ก่อนส่งให้ verifier ตรวจอีกรอบ</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">5</span>สิ่งที่ไม่ได้แก้ในรอบนี้</h2>
+    <div class="callout callout-warn">
+      <b>ยังคงค้างจากรอบก่อน — ควรกลับมาดูก่อนวันพิมพ์ BIB</b>
+      หน้าสร้างบัตร BIB (GenerateBibModal) ยังมีบั๊กดึงข้อมูลได้สูงสุด 1000 แถวเหมือนเดิม (งานนี้มี 1064+ คน) — Gong เลือกเลื่อนแก้ไปก่อนหน้านี้ ยังไม่ได้แตะในแผนนี้
+    </div>
+  </div>
+
+  <footer>
+    เอกสารนี้เป็นแผนก่อนลงมือแก้ — ยังไม่มีการเปลี่ยนแปลงใด ๆ บนระบบจริง<br>
+    จัดทำโดย Whale · Mae Khanin Admin · 7 ก.ย. 2026
+  </footer>
+
+</div>
+</body>
+</html>
