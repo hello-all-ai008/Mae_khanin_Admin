@@ -5,7 +5,7 @@ import { useRace } from '../context/RaceContext';
 import { RefreshCw, Trophy, ArrowLeft, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ESlipModal from '../components/ESlipModal';
-import { computeRunnerRanks } from '../components/ESlip';
+import { computeRunnerRanks, formatEnglishLabel } from '../components/ESlip';
 import { fetchCategoryStartMap, attachGunStartTime } from '../lib/categoryStartTimes';
 
 export default function LiveLeaderboard() {
@@ -325,8 +325,9 @@ function parseAgeGroupMin(label) {
     eligibleRunners.forEach(r => {
       const cat = r.cat || 'Unknown';
       const gender = isMale(r.gender) ? 'Male' : (isFemale(r.gender) ? 'Female' : 'Unknown');
-      const genderLabel = gender === 'Male' ? 'ชาย' : (gender === 'Female' ? 'หญิง' : gender);
+      const cleanGender = formatEnglishLabel(r.gender) !== '—' ? formatEnglishLabel(r.gender) : gender;
       const ageGrp = r.age_group || 'Overall';
+      const cleanAge = formatEnglishLabel(ageGrp);
       
       const groupKey = `${cat}_${gender}_${ageGrp}`;
       if (!groups[groupKey]) {
@@ -334,7 +335,9 @@ function parseAgeGroupMin(label) {
           cat,
           gender,
           ageGrp,
-          label: `${ageGrp} (${genderLabel})`,
+          cleanAge,
+          cleanGender,
+          label: `${cleanAge} (${cleanGender})`,
           runners: []
         };
       }
@@ -385,6 +388,174 @@ function parseAgeGroupMin(label) {
 
   return (
     <div className="page active" style={{ maxWidth: '1400px', margin: '0 auto', overflowX: 'hidden' }}>
+      <style>{`
+        .admin-leaderboard-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 12px;
+        }
+        .admin-leaderboard-card {
+          background: #fff;
+          border-radius: 12px;
+          padding: 14px 12px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+          border: 1px solid var(--line);
+        }
+        .admin-leaderboard-header {
+          padding-left: 10px;
+          margin-bottom: 12px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .admin-leaderboard-header h3 {
+          margin: 0;
+          font-size: 15px;
+          font-weight: 800;
+        }
+        .admin-leaderboard-cat {
+          font-size: 11px;
+          color: var(--ink-2);
+          font-weight: 600;
+          margin-top: 2px;
+        }
+        .admin-leaderboard-rows {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .admin-leaderboard-row {
+          display: flex;
+          align-items: center;
+          padding-bottom: 8px;
+          gap: 6px;
+        }
+        .admin-leaderboard-rank {
+          width: 22px;
+          font-size: 15px;
+          font-weight: 800;
+          text-align: left;
+          flex-shrink: 0;
+        }
+        .admin-leaderboard-name-col {
+          flex: 1;
+          min-width: 0;
+          padding-left: 4px;
+        }
+        .admin-leaderboard-name {
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--ink);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: flex;
+          align-items: baseline;
+          gap: 4px;
+        }
+        .admin-leaderboard-name-text {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .admin-leaderboard-bib {
+          color: var(--ink-2);
+          font-weight: 600;
+          font-size: 11px;
+          flex-shrink: 0;
+        }
+        .admin-leaderboard-time-col {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+        .admin-leaderboard-time {
+          font-size: 13px;
+          font-weight: 600;
+          font-family: var(--mono);
+          white-space: nowrap;
+        }
+        .admin-leaderboard-net-label {
+          font-size: 9px;
+          color: var(--ink-2);
+        }
+        .admin-leaderboard-print-btn {
+          background: transparent;
+          border: none;
+          color: var(--ink-2);
+          cursor: pointer;
+          padding: 3px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        @media (max-width: 768px) {
+          .admin-leaderboard-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+          .admin-leaderboard-card {
+            padding: 7px 6px !important;
+            border-radius: 8px !important;
+          }
+          .admin-leaderboard-header {
+            margin-bottom: 6px !important;
+            padding-left: 5px !important;
+            border-left-width: 3px !important;
+          }
+          .admin-leaderboard-header h3 {
+            font-size: 0.74rem !important;
+            line-height: 1.15 !important;
+          }
+          .admin-leaderboard-cat {
+            font-size: 0.6rem !important;
+          }
+          .admin-leaderboard-rows {
+            gap: 2px !important;
+          }
+          .admin-leaderboard-row {
+            padding-bottom: 2px !important;
+            gap: 3px !important;
+          }
+          .admin-leaderboard-rank {
+            width: 14px !important;
+            font-size: 0.72rem !important;
+          }
+          .admin-leaderboard-name-col {
+            padding-left: 2px !important;
+          }
+          .admin-leaderboard-name {
+            font-size: 0.68rem !important;
+            line-height: 1.15 !important;
+            gap: 2px !important;
+          }
+          .admin-leaderboard-name-text {
+            max-width: 58px !important;
+          }
+          .admin-leaderboard-bib {
+            font-size: 0.52rem !important;
+            margin-right: 2px !important;
+          }
+          .admin-leaderboard-time-col {
+            gap: 2px !important;
+          }
+          .admin-leaderboard-time {
+            font-size: 0.68rem !important;
+          }
+          .admin-leaderboard-net-label {
+            font-size: 0.46rem !important;
+          }
+          .admin-leaderboard-print-btn {
+            padding: 1px !important;
+          }
+          .admin-leaderboard-print-btn svg {
+            width: 11px !important;
+            height: 11px !important;
+          }
+        }
+      `}</style>
       
       <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '32px' }}>
         <div>
@@ -501,18 +672,18 @@ function parseAgeGroupMin(label) {
                   {/* Male Champion */}
                   <div className="admin-overall-champ-row male">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                      <div style={{ width: '30px', height: '30px', borderRadius: '6px', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
-                        ชาย
+                      <div style={{ width: '36px', height: '28px', borderRadius: '6px', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', flexShrink: 0 }}>
+                        Male
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         {item.male ? (
                           <>
-                            <div style={{ fontWeight: 800, fontSize: '13.5px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div style={{ fontWeight: 800, fontSize: '13px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               🥇 {item.male.name}
                             </div>
                             <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap' }}>
                               <span style={{ fontWeight: 700, color: '#0284c7' }}>BIB: {item.male.bib}</span>
-                              {item.male.age_group && <span>· รุ่น {item.male.age_group}</span>}
+                              {item.male.age_group && <span>· {formatEnglishLabel(item.male.age_group)}</span>}
                             </div>
                           </>
                         ) : (
@@ -523,7 +694,7 @@ function parseAgeGroupMin(label) {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, paddingLeft: '6px' }}>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '13.5px', fontWeight: 700, color: item.male ? '#16a34a' : '#94a3b8', fontFamily: 'var(--mono)', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: item.male ? '#16a34a' : '#94a3b8', fontFamily: 'var(--mono)', whiteSpace: 'nowrap' }}>
                           {item.male ? formatMs(item.male.netTimeMs) : '--:--:--'}
                         </div>
                         {item.male?.netTimeMs != null && (
@@ -533,10 +704,10 @@ function parseAgeGroupMin(label) {
                       {item.male && (
                         <button 
                           onClick={() => setSelectedSlip({ runner: item.male, catRank: 'Overall 1' })} 
-                          style={{ background: 'rgba(0,0,0,0.04)', border: 'none', color: 'var(--ink-2)', cursor: 'pointer', padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          style={{ background: 'rgba(0,0,0,0.04)', border: 'none', color: 'var(--ink-2)', cursor: 'pointer', padding: '5px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                           title="Print E-Slip"
                         >
-                          <Printer size={15} />
+                          <Printer size={14} />
                         </button>
                       )}
                     </div>
@@ -545,18 +716,18 @@ function parseAgeGroupMin(label) {
                   {/* Female Champion */}
                   <div className="admin-overall-champ-row female">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                      <div style={{ width: '30px', height: '30px', borderRadius: '6px', background: '#fce7f3', color: '#db2777', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
-                        หญิง
+                      <div style={{ width: '46px', height: '28px', borderRadius: '6px', background: '#fce7f3', color: '#db2777', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', flexShrink: 0 }}>
+                        Female
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         {item.female ? (
                           <>
-                            <div style={{ fontWeight: 800, fontSize: '13.5px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div style={{ fontWeight: 800, fontSize: '13px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               🥇 {item.female.name}
                             </div>
                             <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap' }}>
                               <span style={{ fontWeight: 700, color: '#db2777' }}>BIB: {item.female.bib}</span>
-                              {item.female.age_group && <span>· รุ่น {item.female.age_group}</span>}
+                              {item.female.age_group && <span>· {formatEnglishLabel(item.female.age_group)}</span>}
                             </div>
                           </>
                         ) : (
@@ -567,7 +738,7 @@ function parseAgeGroupMin(label) {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, paddingLeft: '6px' }}>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '13.5px', fontWeight: 700, color: item.female ? '#16a34a' : '#94a3b8', fontFamily: 'var(--mono)', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: item.female ? '#16a34a' : '#94a3b8', fontFamily: 'var(--mono)', whiteSpace: 'nowrap' }}>
                           {item.female ? formatMs(item.female.netTimeMs) : '--:--:--'}
                         </div>
                         {item.female?.netTimeMs != null && (
@@ -577,10 +748,10 @@ function parseAgeGroupMin(label) {
                       {item.female && (
                         <button 
                           onClick={() => setSelectedSlip({ runner: item.female, catRank: 'Overall 1' })} 
-                          style={{ background: 'rgba(0,0,0,0.04)', border: 'none', color: 'var(--ink-2)', cursor: 'pointer', padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          style={{ background: 'rgba(0,0,0,0.04)', border: 'none', color: 'var(--ink-2)', cursor: 'pointer', padding: '5px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                           title="Print E-Slip"
                         >
-                          <Printer size={15} />
+                          <Printer size={14} />
                         </button>
                       )}
                     </div>
@@ -614,66 +785,59 @@ function parseAgeGroupMin(label) {
             const headerColor = catObj?.color || 'var(--ink)';
 
             return (
-              <div key={`${group.cat}_${group.label}`} style={{ background: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)', border: '1px solid var(--line)' }}>
+              <div key={`${group.cat}_${group.label}`} className="admin-leaderboard-card">
                 
                 {/* Card Header */}
-                <div style={{ borderLeft: `4px solid ${headerColor}`, paddingLeft: '12px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="admin-leaderboard-header" style={{ borderLeft: `4px solid ${headerColor}` }}>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: headerColor }}>{group.label}</h3>
-                    {selectedDistance === 'ALL' && <div style={{ fontSize: '13px', color: 'var(--ink-2)', fontWeight: 600, marginTop: '2px' }}>{group.cat}</div>}
+                    <h3 style={{ color: headerColor }}>{group.label}</h3>
+                    {selectedDistance === 'ALL' && <div className="admin-leaderboard-cat">{group.cat}</div>}
                   </div>
                 </div>
 
               {/* Rows */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="admin-leaderboard-rows">
                 {[1, 2, 3, 4, 5].map(rank => {
                   const runner = group.runners[rank - 1];
                   
                   return (
-                    <div key={rank} style={{ 
-                      display: 'flex', 
-                      alignItems: 'center',
-                      paddingBottom: '16px',
+                    <div key={rank} className="admin-leaderboard-row" style={{
                       borderBottom: rank !== 5 ? '1px solid var(--line)' : 'none',
                       opacity: runner ? 1 : 0.4
                     }}>
-                      <div style={{ 
-                        width: '32px', 
-                        fontSize: '20px', 
-                        fontWeight: 800, 
+                      <div className="admin-leaderboard-rank" style={{ 
                         color: rank === 1 ? '#f5b60a' : rank === 2 ? '#94a3b8' : rank === 3 ? '#b45309' : 'var(--line-heavy)',
-                        textAlign: 'left'
                       }}>
                         {rank}
                       </div>
                       
-                      <div style={{ flex: 1, paddingLeft: '12px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)' }}>
+                      <div className="admin-leaderboard-name-col">
+                        <div className="admin-leaderboard-name">
                           {runner ? (
                             <>
-                              {runner.bib && <span style={{ color: 'var(--ink-2)', marginRight: '6px', fontWeight: 600, fontSize: '12px' }}>{runner.bib}</span>}
-                              {runner.name || 'Unknown Runner'}
+                              {runner.bib && <span className="admin-leaderboard-bib">{runner.bib}</span>}
+                              <span className="admin-leaderboard-name-text">{runner.name || 'Unknown Runner'}</span>
                             </>
                           ) : '---'}
                         </div>
                       </div>
                       
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div className="admin-leaderboard-time-col">
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '14px', fontWeight: 600, color: runner ? '#16a34a' : 'var(--line-heavy)', fontFamily: 'var(--mono)' }}>
+                          <div className="admin-leaderboard-time" style={{ color: runner ? '#16a34a' : 'var(--line-heavy)' }}>
                             {runner ? formatMs(runner.netTimeMs) : '--:--:--'}
                           </div>
                           {runner?.netTimeMs != null && (
-                            <div style={{ fontSize: '10px', color: 'var(--ink-2)' }}>Net Time</div>
+                            <div className="admin-leaderboard-net-label">Net Time</div>
                           )}
                         </div>
                         {runner && (
                           <button 
+                            className="admin-leaderboard-print-btn"
                             onClick={() => setSelectedSlip({ runner, catRank: rank })} 
-                            style={{ background: 'transparent', border: 'none', color: 'var(--ink-2)', cursor: 'pointer', padding: '4px', display: 'flex' }}
                             title="Print E-Slip"
                           >
-                            <Printer size={16} />
+                            <Printer size={14} />
                           </button>
                         )}
                       </div>

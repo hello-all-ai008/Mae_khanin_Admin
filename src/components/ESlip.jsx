@@ -45,10 +45,25 @@ export function formatEnglishLabel(val) {
     if (cleaned) return cleaned;
   }
 
-  // 4. Common single-letter codes
+  // 4. Common single-letter codes or Thai genders
   const upper = str.toUpperCase();
-  if (upper === 'M' || upper === 'MALE') return 'Male';
-  if (upper === 'F' || upper === 'FEMALE') return 'Female';
+  if (upper === 'M' || upper === 'MALE' || str === 'ชาย') return 'Male';
+  if (upper === 'F' || upper === 'FEMALE' || str === 'หญิง') return 'Female';
+
+  // 5. Thai age patterns without parentheses fallback
+  if (/^ไม่เกิน\s*(\d+)/.test(str)) {
+    const m = str.match(/\d+/);
+    return m ? `Under ${m[0]} yrs` : 'Under 29 yrs';
+  }
+  if (/(\d+)\s*ปีขึ้นไป/.test(str)) {
+    const m = str.match(/\d+/);
+    return m ? `${m[0]} yrs & over` : '60 yrs & over';
+  }
+  if (/(\d+)\s*[-–]\s*(\d+)/.test(str)) {
+    const m = str.match(/(\d+)\s*[-–]\s*(\d+)/);
+    return m ? `${m[1]}-${m[2]} yrs` : str;
+  }
+  if (/ทั่วไป/i.test(str)) return 'Open';
 
   return str;
 }
