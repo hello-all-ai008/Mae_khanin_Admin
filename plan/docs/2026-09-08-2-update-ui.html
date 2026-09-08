@@ -381,10 +381,177 @@
           <td><strong>Rohn-Admin</strong></td>
           <td><code>https://github.com/hello-all-ai008/Mae_khanin_Admin.git</code></td>
           <td><span class="badge badge-green">main</span> &nbsp; <span class="badge badge-blue">Tiw-dev</span></td>
-          <td><code>a8fdbc4</code></td>
+          <td><code>e55256a</code></td>
         </tr>
       </tbody>
     </table>
+  </section>
+
+  <!-- SECTION 6: DATABASE GAP ANALYSIS (BASED ON DATABASEFLOW.JSX) -->
+  <section>
+    <h2 class="section-title">
+      <span class="num">6</span>
+      <span>วิเคราะห์จุดเชื่อมต่อ Database ที่เพิ่มมาใหม่ vs ตารางใน DatabaseFlow.jsx (Database Gap Analysis)</span>
+    </h2>
+
+    <p>
+      จากการตรวจสอบเปรียบเทียบโค้ดของฟังก์ชันที่เพิ่มเข้ามาใหม่ กับสถาปัตยกรรมโครงสร้างฐานข้อมูลมาตรฐานที่กำหนดไว้ใน <strong><a href="file:///d:/Tiw/Project_Trail_Running_Hub/Rohn-Admin/src/pages/DatabaseFlow.jsx" style="color: var(--accent); font-weight: bold; text-decoration: underline;">DatabaseFlow.jsx</a></strong> พบว่ามีหลายจุดที่ยังเป็นการใช้เทคนิคชั่วคราว (Workaround) หรือยังไม่ได้เชื่อมต่อไปยังตารางเป้าหมายที่แท้จริง ดังรายละเอียดต่อไปนี้:
+    </p>
+
+    <!-- SUMMARY GAP TABLE -->
+    <table>
+      <thead>
+        <tr>
+          <th>คอมโพเนนต์ / ฟังก์ชัน</th>
+          <th>สถานะปัจจุบันในโค้ด</th>
+          <th>สิ่งที่ยังขาด / ข้อจำกัด</th>
+          <th>ตารางที่ควรเชื่อมต่อตาม DatabaseFlow.jsx</th>
+          <th>ระดับความสำคัญ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>RunnerPageConfig.jsx</strong><br>(ระบบเปิด/ปิดหน้าฝั่ง Runner)</td>
+          <td><span class="badge badge-amber">ใช้ Workaround</span><br>บันทึก config ลงใน <code>runners.cps</code> โดยใช้แถวหลอก <code>bib = 'RUNNER_CONFIG'</code> หรือเซฟใน <code>localStorage</code></td>
+          <td>เป็นการสร้างข้อมูลนักวิ่งปลอมเข้าไปในตาราง <code>runners</code> หากระบบนับจำนวนคน หรือ Generate BIB ไม่ได้เขียนดักไว้อาจทำให้จำนวนนักวิ่งคลาดเคลื่อน</td>
+          <td>
+            <strong><code>events.config</code></strong> (เพิ่มคอลัมน์ JSONB ในตาราง <code>events</code>)<br>
+            หรือสร้างตาราง <strong><code>app_settings</code></strong> แยก
+          </td>
+          <td><span class="badge badge-pink" style="background:#fee2e2;color:#b91c1c;">เร่งด่วนสูง (High)</span></td>
+        </tr>
+        <tr>
+          <td><strong>RunnerProgressControl.jsx</strong><br>(ระบบรีเซ็ตเวลาสำหรับ Dry-Run)</td>
+          <td><span class="badge badge-blue">เชื่อมต่อบางส่วน</span><br>อัปเดตเคลียร์ค่า <code>cps = {}</code>, <code>finish = null</code>, <code>checked_in_at = null</code> ในตาราง <code>runners</code></td>
+          <td><strong>ไม่ได้เชื่อมโยงกับตาราง <code>scan_logs</code></strong>: เมื่อรีเซ็ตนักวิ่ง ข้อมูลใน <code>runners</code> หายไปจริง แต่แถวประวัติการสแกนใน <code>scan_logs</code> ยังคงค้างอยู่ ทำให้เกิด Data Inconsistency</td>
+          <td>
+            <strong><code>scan_logs</code></strong><br>
+            (ควรรันคำสั่ง <code>DELETE</code> หรืออัปเดต <code>is_valid = false</code> ใน <code>scan_logs</code> ของ runner นั้นด้วย)
+          </td>
+          <td><span class="badge badge-pink" style="background:#fee2e2;color:#b91c1c;">เร่งด่วนสูง (High)</span></td>
+        </tr>
+        <tr>
+          <td><strong>RunnerProgressControl.jsx</strong><br>(ความปลอดภัยและการตรวจสอบ)</td>
+          <td><span class="badge badge-amber">ยังไม่ตรวจสอบสิทธิ์</span><br>กดรีเซ็ตหรือแก้เวลาได้ทันทีผ่าน Browser Confirm ทั่วไป</td>
+          <td>ไม่มีการบันทึกประวัติว่าใครเป็นคนรีเซ็ต และไม่มีการบังคับใส่ PIN ของแอดมินก่อนลบข้อมูลก้อนใหญ่</td>
+          <td>
+            <strong><code>admin_users</code></strong> (เช็ค PIN ก่อนทำรายการ)<br>
+            <strong><code>action_logs</code></strong> (บันทึกประวัติการรีเซ็ตว่าใครทำ เมื่อไหร่)
+          </td>
+          <td><span class="badge badge-amber">ปานกลาง (Medium)</span></td>
+        </tr>
+        <tr>
+          <td><strong>LiveLeaderboard.jsx & Leaderboard.jsx</strong><br>(การจัดอันดับผลการแข่งขัน)</td>
+          <td><span class="badge badge-blue">คำนวณจากเวลาดิบ</span><br>ตรวจสอบเฉพาะว่ามี <code>start</code> และ <code>finish</code> แล้วนำมาคำนวณ Net Time</td>
+          <td><strong>ยังไม่ได้ดึงตาราง <code>checkpoint</code> มาตรวจ Route Integrity</strong>: หากนักวิ่งคนใดลัดเส้นทาง (เช่น ไม่ผ่านสถานี A1 หรือ A2 ตามที่กำหนดในระยะนั้น) ปัจจุบันยังมีโอกาสหลุดขึ้นไปรับเหรียญบน Leaderboard ได้</td>
+          <td>
+            <strong><code>checkpoint</code></strong> (ผูกกับ <code>categories</code> และ <code>stations</code> เพื่อเช็คว่าสแกนผ่านสถานีบังคับครบทุกจุดตามลำดับ <code>sequence_order</code>)
+          </td>
+          <td><span class="badge badge-amber">ปานกลาง (Medium)</span></td>
+        </tr>
+        <tr>
+          <td><strong>การระบุตัวตนผู้สแกน / ผู้บันทึก</strong><br>(<code>checked_in_by</code> / <code>scanned_by</code>)</td>
+          <td><span class="badge" style="background:#f1f5f9;color:#475569;">ค่าว่าง (Null)</span><br>เวลา Reset หรือบันทึกใหม่ยังเป็น null หรือพิมพ์เอง</td>
+          <td>ยังไม่ได้เชื่อมต่อระบบรายชื่อเจ้าหน้าที่และ Marshal ประจำงาน</td>
+          <td>
+            <strong><code>staff</code></strong> (ดึงรายชื่อเจ้าหน้าที่จาก <code>staff</code> ที่มีสถานะ <code>ACTIVE</code> ของงานนั้นๆ)
+          </td>
+          <td><span class="badge badge-green">ทั่วไป (Low)</span></td>
+        </tr>
+        <tr>
+          <td><strong>โปรไฟล์นักวิ่งหลัก</strong><br>(ข้ามงานวิ่ง)</td>
+          <td><span class="badge" style="background:#f1f5f9;color:#475569;">Flat Per-Event</span><br>ข้อมูลนักวิ่งเก็บซ้ำใน <code>runners</code> แยกแต่ละงานโดยตรง (<code>user_id = null</code>)</td>
+          <td>ยังไม่สามารถดูประวัติการวิ่งย้อนหลังข้ามหลายๆ งานของนักวิ่งคนเดียวกันได้</td>
+          <td>
+            <strong><code>users</code></strong> (เชื่อม <code>runners.user_id ➔ users.id</code>)
+          </td>
+          <td><span class="badge badge-green">ทั่วไป (Low)</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- IN-DEPTH DETAILS -->
+    <div class="grid-2" style="margin-top: 24px;">
+      <div class="card">
+        <h3>⚠️ 1. จุดที่ต้องปรับปรุงด่วน: RunnerPageConfig</h3>
+        <p>
+          ปัจจุบันหน้า <code>RunnerPageConfig.jsx</code> ฝากการตั้งค่าไว้ในตาราง <code>runners</code> โดยสร้าง BIB หลอกขึ้นมาชื่อ <code>RUNNER_CONFIG</code>:
+        </p>
+        <pre><code>// โค้ดปัจจุบันที่ใช้ชั่วคราว
+const { data } = await supabase
+  .from('runners')
+  .select('id, cps')
+  .eq('bib', 'RUNNER_CONFIG')
+  .maybeSingle();</code></pre>
+        <p>
+          <strong>ผลกระทบ:</strong> หากวันจริงแอดมินทำการ Import นักวิ่ง หรือ Rebuild BIB ระบบอาจเผลอนำ <code>RUNNER_CONFIG</code> ไปนับเป็นนักวิ่งตัวจริง หรือถูกลบทิ้งเมื่อมีการเคลียร์ข้อมูลนักวิ่ง<br>
+          <strong>แนวทางแก้ไขที่ถูกต้อง:</strong> ควรเพิ่มคอลัมน์ <code>config JSONB</code> เข้าไปในตาราง <code>events</code> ตามโครงสร้าง Schema ที่ถูกต้อง
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>🛡️ 2. จุดที่ต้องปรับปรุง: ความสมบูรณ์ของระบบ Reset ข้อมูล</h3>
+        <p>
+          ในหน้า <code>RunnerProgressControl.jsx</code> เมื่อกด <strong>Quick Reset</strong> หรือ <strong>Bulk Reset</strong>:
+        </p>
+        <ul>
+          <li>คำสั่งปัจจุบันรันแค่ <code>UPDATE runners SET cps = '{}', finish = null</code></li>
+          <li>แต่ในตาราง <strong><code>scan_logs</code></strong> ยังมีบันทึกประวัติการสแกนเวลาเก่าค้างอยู่</li>
+          <li>ควรอัปเดตให้คำสั่ง Reset ทำการล้าง <code>scan_logs</code> ของนักวิ่งคนนั้นออกด้วย หรือตั้งค่า <code>is_valid = false</code></li>
+          <li>ควรเพิ่มการบันทึกลงตาราง <strong><code>action_logs</code></strong> ทุกครั้งที่มีการ Reset ข้อมูล เพื่อป้องกันข้อผิดพลาดและใช้ตรวจสอบย้อนหลังได้</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SQL MIGRATION RECOMMENDATION -->
+    <div style="margin-top: 24px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+      <h3 style="margin-top: 0; color: var(--ink);">💻 สคริปต์ SQL แนะนำสำหรับปรับปรุงฐานข้อมูลให้ตรงตาม DatabaseFlow</h3>
+      <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 12px;">
+        สามารถนำคำสั่ง SQL ด้านล่างนี้ไปรันใน <strong>Supabase SQL Editor</strong> เพื่อแก้ปัญหาจุดเชื่อมต่อที่ยังค้างอยู่ได้ทันที:
+      </p>
+      <pre style="margin-bottom: 0;"><code>-- 1. เพิ่มคอลัมน์ config ลงในตาราง events เพื่อใช้เก็บการตั้งค่าหน้า Runner แทนการใช้ BIB หลอก
+ALTER TABLE public.events 
+ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{
+  "scanner": true,
+  "monitor": true,
+  "eslip": true,
+  "dashboard": true,
+  "leaderboard": true,
+  "displayMode": "disabled_badge",
+  "notices": {}
+}'::jsonb;
+
+-- 2. ย้ายข้อมูลการตั้งค่าเดิมจากแถว RUNNER_CONFIG เข้าไปไว้ใน events.config
+UPDATE public.events e
+SET config = r.cps
+FROM public.runners r
+WHERE r.event_id = e.id 
+  AND r.bib = 'RUNNER_CONFIG'
+  AND r.cps IS NOT NULL;
+
+-- 3. ลบแถว BIB หลอก RUNNER_CONFIG ออกจากตาราง runners เพื่อให้ตารางนักวิ่งสะอาด 100%
+DELETE FROM public.runners WHERE bib = 'RUNNER_CONFIG';
+
+-- 4. สร้างตาราง staff และ action_logs หากยังไม่มีในระบบ (อิงตาม DatabaseFlow.jsx)
+CREATE TABLE IF NOT EXISTS public.staff (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id UUID REFERENCES public.events(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'MARSHAL',
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.action_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_id UUID REFERENCES public.admin_users(id) ON DELETE SET NULL,
+    action_type VARCHAR(100) NOT NULL,
+    event_id UUID REFERENCES public.events(id) ON DELETE CASCADE,
+    details JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT now()
+);</code></pre>
+    </div>
+
   </section>
 
 </div>
