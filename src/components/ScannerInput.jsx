@@ -548,19 +548,19 @@ export default function ScannerInput({ onScan }) {
       </div>
 
       {/* ── Main Input & Action Buttons Bar ── */}
-      <div className="scan-flex" style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
-        <div className="scan-input-wrap" style={{ flex: '1 1 260px', position: 'relative', margin: 0, minWidth: '200px' }}>
-          <ScanLine size={22} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-2)' }} />
+      <div className="scan-flex" style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', maxWidth: '100%', boxSizing: 'border-box', flexWrap: 'wrap' }}>
+        <div className="scan-input-wrap" style={{ flex: '1 1 180px', position: 'relative', margin: 0, minWidth: '140px' }}>
+          <ScanLine size={20} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-2)' }} />
           <input 
             className="scan-input" 
-            placeholder="สแกน BIB หรือพิมพ์หมายเลข…" 
+            placeholder="สแกน BIB หรือพิมพ์เลข…" 
             autoComplete="off" 
             inputMode="numeric"
             value={bibInput}
             onChange={(e) => setBibInput(e.target.value)}
             onKeyDown={handleKeyDown}
             autoFocus={!showCamera}
-            style={{ width: '100%', paddingLeft: '48px', paddingRight: bibInput ? '38px' : '16px' }}
+            style={{ width: '100%', paddingLeft: '44px', paddingRight: bibInput ? '36px' : '14px', fontSize: '15px' }}
           />
           {bibInput && (
             <button
@@ -569,7 +569,7 @@ export default function ScannerInput({ onScan }) {
               title="ล้างหมายเลขที่พิมพ์"
               style={{
                 position: 'absolute',
-                right: '12px',
+                right: '10px',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 background: 'transparent',
@@ -594,14 +594,14 @@ export default function ScannerInput({ onScan }) {
           disabled={!bibInput.trim()}
           title="กดเพื่อบันทึกหมายเลข BIB ที่พิมพ์ (Enter BIB)"
           style={{ 
-            height: '46px',
-            padding: '0 16px', 
+            height: '44px',
+            padding: '0 14px', 
             borderRadius: '10px', 
             fontWeight: 700, 
-            fontSize: '13.5px', 
+            fontSize: '13px', 
             display: 'inline-flex', 
             alignItems: 'center', 
-            gap: '6px', 
+            gap: '5px', 
             whiteSpace: 'nowrap',
             background: bibInput.trim() ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : 'var(--bg-soft)', 
             color: bibInput.trim() ? '#ffffff' : 'var(--ink-2)', 
@@ -609,10 +609,11 @@ export default function ScannerInput({ onScan }) {
             cursor: bibInput.trim() ? 'pointer' : 'not-allowed',
             boxShadow: bibInput.trim() ? '0 4px 12px rgba(37, 99, 235, 0.35)' : 'none',
             transition: 'all 0.2s ease',
-            opacity: bibInput.trim() ? 1 : 0.65
+            opacity: bibInput.trim() ? 1 : 0.65,
+            flexShrink: 0
           }}
         >
-          <CornerDownLeft size={16} />
+          <CornerDownLeft size={15} />
           <span>Enter BIB</span>
         </button>
         

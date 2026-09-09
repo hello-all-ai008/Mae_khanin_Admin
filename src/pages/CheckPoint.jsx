@@ -225,58 +225,81 @@ export default function CheckPoint() {
   );
 
   return (
-    <div className="page active" style={{ maxWidth: '1440px', margin: '0 auto', paddingBottom: '60px' }}>
+    <div className="page active" style={{ maxWidth: '1440px', margin: '0 auto', paddingBottom: '60px', width: '100%', boxSizing: 'border-box', overflowX: 'hidden' }}>
       <style>{`
         .station-header-bar {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 12px;
-          margin-bottom: 14px;
+          gap: 8px;
+          margin-bottom: 12px;
           flex-wrap: wrap;
+          width: 100%;
+          box-sizing: border-box;
         }
         .live-stat-card {
           background: #ffffff;
-          border-radius: 16px;
+          border-radius: 14px;
           border: 1px solid var(--line);
-          padding: 14px 16px;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.03);
-          margin-bottom: 14px;
+          padding: 12px 14px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+          margin-bottom: 12px;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+          overflow: hidden;
         }
         .stat-grid-3 {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 8px;
-          margin-bottom: 12px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 6px;
+          margin-bottom: 10px;
+          width: 100%;
+          box-sizing: border-box;
         }
         .stat-pill {
           background: var(--bg-soft);
-          border-radius: 12px;
-          padding: 10px 8px;
+          border-radius: 10px;
+          padding: 8px 4px;
           text-align: center;
           display: flex;
           flex-direction: column;
           align-items: center;
-          justifyContent: center;
+          justify-content: center;
+          min-width: 0;
+          overflow: hidden;
+          box-sizing: border-box;
         }
         .stat-pill .val {
-          font-size: clamp(18px, 4vw, 24px);
+          font-size: clamp(16px, 4.5vw, 22px);
           font-weight: 900;
           font-family: var(--mono);
           line-height: 1.1;
+          word-break: break-all;
         }
         .stat-pill .lbl {
-          font-size: 11px;
+          font-size: clamp(9.5px, 2.8vw, 11px);
           color: var(--ink-2);
           font-weight: 600;
-          margin-top: 3px;
+          margin-top: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
         }
         @media (max-width: 768px) {
+          .station {
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
           .station-desktop-side {
             display: none !important;
           }
           .station-mobile-side {
             display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
           }
         }
         @media (min-width: 769px) {
@@ -436,7 +459,7 @@ export default function CheckPoint() {
 
           {/* Collapsible Recent Scans History */}
           {showHistory && (
-            <div className="card" style={{ marginTop: '16px', overflow: 'hidden', borderRadius: '14px' }}>
+            <div className="card" style={{ marginTop: '16px', overflow: 'hidden', borderRadius: '14px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
               {/* Header Bar */}
               <div style={{
                 display: 'flex',
@@ -471,9 +494,9 @@ export default function CheckPoint() {
                         color: 'var(--ink-2)',
                         cursor: 'pointer'
                       }}
-                      title="ล้างประวัติการสแกนบนหน้านี้ (ข้อมูลใน Database ไม่ได้รับผลกระทบ)"
+                      title="ล้างประวัติการสแกนบนหน้านี้"
                     >
-                      <Trash2 size={12} /> ล้าง
+                      <Trash2 size={12} /> ล้างประวัติ
                     </button>
                   )}
                 </div>
@@ -502,8 +525,8 @@ export default function CheckPoint() {
               </div>
 
               {/* Table */}
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ minWidth: '550px' }}>
+              <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ minWidth: '450px', width: '100%' }}>
                   <thead>
                     <tr>
                       <th style={{ width: '90px' }}>เวลา</th>

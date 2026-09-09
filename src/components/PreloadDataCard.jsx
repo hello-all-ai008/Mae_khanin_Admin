@@ -51,16 +51,20 @@ export default function PreloadDataCard({ eventId }) {
         background: isDataReady ? '#f8fafc' : '#fffbeb', 
         border: isDataReady ? '1px solid #cbd5e1' : '1.5px solid #f59e0b', 
         borderRadius: '14px', 
-        padding: '14px 18px', 
-        marginBottom: '16px',
+        padding: '12px 14px', 
+        marginBottom: '14px',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
         boxShadow: isDataReady ? '0 2px 8px rgba(0,0,0,0.03)' : '0 4px 12px rgba(245, 158, 11, 0.12)'
       }}
     >
       {/* ── Main Status & Action Bar ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
         
         {/* Left: Readiness Banner & Pre-load Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minWidth: 0 }}>
           
           {/* Main System Readiness Badge */}
           {isDataReady ? (
@@ -68,15 +72,16 @@ export default function PreloadDataCard({ eventId }) {
               display: 'inline-flex', 
               alignItems: 'center', 
               gap: '6px', 
-              padding: '6px 12px', 
+              padding: '5px 10px', 
               borderRadius: '24px', 
               background: '#dcfce7', 
               color: '#15803d', 
               border: '1px solid #86efac',
               fontWeight: 700,
-              fontSize: '13px'
+              fontSize: '12px',
+              whiteSpace: 'nowrap'
             }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }}></span>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px #22c55e', flexShrink: 0 }}></span>
               ✓ ข้อมูลพร้อมสแกน 100%
             </div>
           ) : isZeroRunners ? (
