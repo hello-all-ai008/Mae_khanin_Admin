@@ -10,21 +10,33 @@
   --mono:'IBM Plex Mono',ui-monospace,monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15px}
+html,body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15px;overflow-x:hidden;max-width:100vw;width:100%}
+#root{width:100%;max-width:100vw;overflow-x:hidden}
 button{font-family:inherit;cursor:pointer}
 input,select{font-family:inherit}
 
 /* ---------- Layout ---------- */
-.app{display:flex;flex-direction:column;min-height:100vh}
+.app{display:flex;flex-direction:column;min-height:100vh;width:100%;max-width:100vw;overflow-x:hidden}
 
-.navbar{width:100%;height:64px;border-bottom:1px solid var(--line);padding:0 24px;position:sticky;top:0;display:flex;align-items:center;background:var(--bg);z-index:100;}
-.navbar-left{display:flex;align-items:center;flex-shrink:0;}
+.navbar{width:100%;max-width:100vw;height:64px;border-bottom:1px solid var(--line);padding:0 24px;position:sticky;top:0;display:flex;align-items:center;background:var(--bg);z-index:100;box-sizing:border-box}
+.navbar-left{display:flex;align-items:center;flex-shrink:0;max-width:100%;overflow:hidden}
 .navbar-center{display:flex;align-items:center;gap:16px;margin-left:32px;flex:1;min-width:0;}
 .navbar-center::-webkit-scrollbar{display:none;}
 .nav-group-horizontal{display:flex;align-items:center;gap:4px;flex-shrink:0;}
 .nav-divider{width:1px;height:24px;background:var(--line);margin:0 4px;flex-shrink:0;}
 .navbar-mobile-toggle{display:none;}
 .navbar-right{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:16px;}
+
+.navbar-logo-pic{height:75px;width:auto;z-index:2;transition:height 0.2s ease}
+.navbar-logo-label{height:58px;width:auto;margin-left:-14px}
+.hide-mobile{display:block}
+
+/* Force Html5Qrcode video, canvas, and container to never blow out screen width */
+#qr-reader{width:100%!important;max-width:100%!important;overflow:hidden!important;position:relative!important;box-sizing:border-box!important}
+#qr-reader video,#qr-reader canvas,#qr-reader img{width:100%!important;max-width:100%!important;height:auto!important;object-fit:cover!important;box-sizing:border-box!important}
+#qr-reader__scan_region{width:100%!important;max-width:100%!important;overflow:hidden!important;box-sizing:border-box!important}
+#qr-reader__scan_region video{width:100%!important;max-width:100%!important;height:auto!important}
+#qr-reader__dashboard{width:100%!important;max-width:100%!important;box-sizing:border-box!important}
 
 /* Mobile Menu Styles */
 .mobile-menu-overlay{position:fixed;top:64px;left:0;right:0;bottom:0;background:var(--bg);z-index:90;transform:translateX(100%);transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);display:none;}
@@ -282,11 +294,83 @@ th:hover .th-hover-icon { opacity: 1; }
 }
 
 @media (max-width: 768px) {
+  .navbar {
+    padding: 0 12px !important;
+    height: 56px !important;
+    justify-content: space-between !important;
+    overflow: hidden !important;
+  }
+  .navbar-left {
+    flex: 1 !important;
+    min-width: 0 !important;
+    max-width: calc(100% - 48px) !important;
+  }
+  .navbar-center {
+    display: none !important;
+  }
+  .navbar-right {
+    display: none !important;
+  }
+  .navbar-mobile-toggle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+  }
+  .mobile-menu-overlay {
+    display: block !important;
+  }
+  .navbar-logo-pic {
+    height: 42px !important;
+  }
+  .navbar-logo-label, .hide-mobile {
+    display: none !important;
+  }
   .main {
-    padding: 16px 12px 60px !important;
+    padding: 10px 8px 60px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
   }
   .page {
-    padding: 12px 4px !important;
+    padding: 4px 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Scan Stations: CheckIn, CheckPoint, FinishLine */
+  .station {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 12px !important;
+  }
+  .station > div:first-child {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+  .station-desktop-side {
+    display: none !important;
+  }
+  .station-mobile-side {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .station-mobile-side {
+    display: none !important;
+  }
+  .station-desktop-side {
+    display: block !important;
   }
 }
 

@@ -489,10 +489,28 @@ export default function ScannerInput({ onScan }) {
   };
 
   return (
-    <div className="scan-wrapper" style={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
+    <div className="scan-wrapper" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+      <style>{`
+        #qr-reader, #qr-reader video, #qr-reader canvas {
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+          object-fit: cover !important;
+          box-sizing: border-box !important;
+        }
+        #qr-reader__scan_region, #qr-reader__scan_region video {
+          width: 100% !important;
+          max-width: 100% !important;
+          box-sizing: border-box !important;
+        }
+        #qr-reader__dashboard {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+      `}</style>
       {/* ── Operator / Scanner Personnel Selector Bar ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', flexWrap: 'wrap', minWidth: 0 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, color: 'var(--ink-2)' }}>
             <UserCheck size={14} /> ผู้สแกน:
           </span>
@@ -548,157 +566,200 @@ export default function ScannerInput({ onScan }) {
       </div>
 
       {/* ── Main Input & Action Buttons Bar ── */}
-      <div className="scan-flex" style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', maxWidth: '100%', boxSizing: 'border-box', flexWrap: 'wrap' }}>
-        <div className="scan-input-wrap" style={{ flex: '1 1 180px', position: 'relative', margin: 0, minWidth: '140px' }}>
-          <ScanLine size={20} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-2)' }} />
-          <input 
-            className="scan-input" 
-            placeholder="สแกน BIB หรือพิมพ์เลข…" 
-            autoComplete="off" 
-            inputMode="numeric"
-            value={bibInput}
-            onChange={(e) => setBibInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            autoFocus={!showCamera}
-            style={{ width: '100%', paddingLeft: '44px', paddingRight: bibInput ? '36px' : '14px', fontSize: '15px' }}
-          />
-          {bibInput && (
-            <button
-              type="button"
-              onClick={() => setBibInput('')}
-              title="ล้างหมายเลขที่พิมพ์"
-              style={{
-                position: 'absolute',
-                right: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--ink-2)',
-                cursor: 'pointer',
-                padding: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '100%', boxSizing: 'border-box', marginBottom: '14px' }}>
+        {/* Row 1: Manual Input + Enter BIB */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+          <div className="scan-input-wrap" style={{ flex: '1 1 auto', position: 'relative', margin: 0, minWidth: 0 }}>
+            <ScanLine size={19} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-2)' }} />
+            <input 
+              className="scan-input" 
+              placeholder="สแกน BIB หรือพิมพ์เลข…" 
+              autoComplete="off" 
+              inputMode="numeric"
+              value={bibInput}
+              onChange={(e) => setBibInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoFocus={!showCamera}
+              style={{ 
+                width: '100%', 
+                height: '44px',
+                padding: '0 36px 0 38px', 
+                fontSize: '15.5px',
+                borderRadius: '10px'
               }}
-            >
-              <X size={16} />
-            </button>
-          )}
+            />
+            {bibInput && (
+              <button
+                type="button"
+                onClick={() => setBibInput('')}
+                title="ล้างหมายเลขที่พิมพ์"
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--ink-2)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+
+          {/* Enter BIB Button for Manual Typing */}
+          <button 
+            type="button"
+            onClick={() => submitBib()}
+            disabled={!bibInput.trim()}
+            title="กดเพื่อบันทึกหมายเลข BIB ที่พิมพ์ (Enter BIB)"
+            style={{ 
+              height: '44px',
+              padding: '0 14px', 
+              borderRadius: '10px', 
+              fontWeight: 700, 
+              fontSize: '13px', 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '5px', 
+              whiteSpace: 'nowrap',
+              background: bibInput.trim() ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : 'var(--bg-soft)', 
+              color: bibInput.trim() ? '#ffffff' : 'var(--ink-2)', 
+              border: bibInput.trim() ? 'none' : '1px solid var(--line)', 
+              cursor: bibInput.trim() ? 'pointer' : 'not-allowed',
+              boxShadow: bibInput.trim() ? '0 4px 12px rgba(37, 99, 235, 0.35)' : 'none',
+              transition: 'all 0.2s ease',
+              opacity: bibInput.trim() ? 1 : 0.65,
+              flexShrink: 0
+            }}
+          >
+            <CornerDownLeft size={15} />
+            <span>Enter BIB</span>
+          </button>
         </div>
 
-        {/* Enter BIB Button for Manual Typing */}
-        <button 
-          type="button"
-          onClick={() => submitBib()}
-          disabled={!bibInput.trim()}
-          title="กดเพื่อบันทึกหมายเลข BIB ที่พิมพ์ (Enter BIB)"
-          style={{ 
-            height: '44px',
-            padding: '0 14px', 
-            borderRadius: '10px', 
-            fontWeight: 700, 
-            fontSize: '13px', 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: '5px', 
-            whiteSpace: 'nowrap',
-            background: bibInput.trim() ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : 'var(--bg-soft)', 
-            color: bibInput.trim() ? '#ffffff' : 'var(--ink-2)', 
-            border: bibInput.trim() ? 'none' : '1px solid var(--line)', 
-            cursor: bibInput.trim() ? 'pointer' : 'not-allowed',
-            boxShadow: bibInput.trim() ? '0 4px 12px rgba(37, 99, 235, 0.35)' : 'none',
-            transition: 'all 0.2s ease',
-            opacity: bibInput.trim() ? 1 : 0.65,
-            flexShrink: 0
-          }}
-        >
-          <CornerDownLeft size={15} />
-          <span>Enter BIB</span>
-        </button>
-        
-        {/* Toggle Sound */}
-        <button 
-          className="btn-icon" 
-          title={soundEnabled ? "ปิดเสียงบี๊บ" : "เปิดเสียงบี๊บ"}
-          onClick={() => setSoundEnabled(!soundEnabled)}
-          style={{ padding: '10px', borderRadius: '10px', border: '1px solid var(--line)', background: soundEnabled ? 'var(--bg-soft)' : '#fee2e2', color: soundEnabled ? 'var(--ink)' : 'var(--ink-2)' }}
-        >
-          {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
-        </button>
-
-        {/* Flip Camera Facing Button */}
-        {showCamera && (
+        {/* Row 2: Camera & Sound Utility Buttons */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+          {/* Toggle Sound */}
           <button 
+            type="button"
             className="btn-icon" 
-            title="สลับกล้องหน้า/หลัง"
-            onClick={toggleCameraFacing}
-            style={{ padding: '10px', borderRadius: '10px', border: '1px solid var(--line)', background: 'var(--bg-soft)' }}
+            title={soundEnabled ? "ปิดเสียงบี๊บ" : "เปิดเสียงบี๊บ"}
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            style={{ 
+              height: '38px',
+              padding: '0 12px', 
+              borderRadius: '9px', 
+              border: '1px solid var(--line)', 
+              background: soundEnabled ? 'var(--bg-soft)' : '#fee2e2', 
+              color: soundEnabled ? 'var(--ink)' : '#dc2626',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              fontSize: '12px',
+              fontWeight: 600
+            }}
           >
-            <RefreshCcw size={20} />
+            {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            <span style={{ fontSize: '11.5px' }}>{soundEnabled ? 'เปิดเสียง' : 'ปิดเสียง'}</span>
           </button>
-        )}
 
-        {/* Toggle Camera Open/Close Button */}
-        <button 
-          className={`btn-icon ${showCamera ? 'active' : ''}`} 
-          title={showCamera ? "ปิดกล้องสแกน" : "เปิดกล้องสแกนเนอร์"}
-          onClick={() => setShowCamera(!showCamera)}
-          style={{ 
-            padding: '10px 14px', 
-            borderRadius: '10px', 
-            border: '1px solid var(--line)', 
-            background: showCamera ? 'var(--warn)' : 'var(--ink)', 
-            color: '#fff',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontWeight: 600,
-            fontSize: '13px'
-          }}
-        >
-          {showCamera ? <><X size={18} /> ปิดกล้อง</> : <><Camera size={18} /> เปิดกล้อง</>}
-        </button>
+          {/* Flip Camera Facing Button */}
+          {showCamera && (
+            <button 
+              type="button"
+              className="btn-icon" 
+              title="สลับกล้องหน้า/หลัง"
+              onClick={toggleCameraFacing}
+              style={{ 
+                height: '38px',
+                padding: '0 12px', 
+                borderRadius: '9px', 
+                border: '1px solid var(--line)', 
+                background: 'var(--bg-soft)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '12px',
+                fontWeight: 600
+              }}
+            >
+              <RefreshCcw size={16} />
+              <span style={{ fontSize: '11.5px' }}>สลับกล้อง</span>
+            </button>
+          )}
+
+          {/* Toggle Camera Open/Close Button */}
+          <button 
+            type="button"
+            className={`btn-icon ${showCamera ? 'active' : ''}`} 
+            title={showCamera ? "ปิดกล้องสแกน" : "เปิดกล้องสแกนเนอร์"}
+            onClick={() => setShowCamera(!showCamera)}
+            style={{ 
+              height: '38px',
+              padding: '0 14px', 
+              borderRadius: '9px', 
+              border: '1px solid var(--line)', 
+              background: showCamera ? '#dc2626' : 'var(--ink)', 
+              color: '#fff',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: 700,
+              fontSize: '12.5px',
+              flex: '1 1 auto',
+              justifyContent: 'center',
+              maxWidth: showCamera ? '140px' : '170px'
+            }}
+          >
+            {showCamera ? <><X size={16} /> ปิดกล้อง</> : <><Camera size={16} /> เปิดกล้องสแกน</>}
+          </button>
+        </div>
       </div>
 
       {/* ── Camera Viewfinder & Interactive Controls ── */}
       {showCamera && (
-        <div style={{ marginTop: '14px', background: '#0f172a', borderRadius: '14px', overflow: 'hidden', border: '1px solid #334155', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
-          
+        <div style={{ marginTop: '14px', background: '#0f172a', borderRadius: '14px', overflow: 'hidden', border: '1px solid #334155', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
           {/* Top Control Bar: Mode & Viewport Controls */}
-          <div style={{ background: '#1e293b', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid #334155' }}>
+          <div style={{ background: '#1e293b', padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid #334155', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
             
             {/* Mode Switcher: Center (Default) / Full / Barcode 1D / QR Code 2D */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginRight: '2px' }}>มุมมองสแกน:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginRight: '2px' }}>มุมมอง:</span>
               <button 
                 type="button"
                 onClick={() => handleScanModeChange('center')}
                 title="กรอบโฟกัสกึ่งกลางหน้าจอ (ค่าเริ่มต้น)"
                 style={{ 
-                  padding: '5px 12px', 
-                  fontSize: '12px', 
+                  padding: '4px 8px', 
+                  fontSize: '11.5px', 
                   borderRadius: '6px', 
                   border: 'none', 
                   cursor: 'pointer', 
                   fontWeight: 700, 
                   display: 'inline-flex', 
                   alignItems: 'center', 
-                  gap: '5px', 
+                  gap: '4px', 
                   background: scanMode === 'center' ? 'var(--start)' : '#334155', 
                   color: scanMode === 'center' ? '#000' : '#e2e8f0',
                   boxShadow: scanMode === 'center' ? '0 0 10px rgba(0, 255, 128, 0.3)' : 'none'
                 }}
               >
-                <ScanLine size={13} /> กึ่งกลาง (Center)
+                <ScanLine size={12} /> กึ่งกลาง
               </button>
               <button 
                 type="button"
                 onClick={() => handleScanModeChange('full')}
                 title="สแกนเต็มกล้องทั้งหน้าจอ ไม่จำกัดกรอบแคบ (สแกนได้ทั้ง Barcode และ QR)"
                 style={{ 
-                  padding: '5px 10px', 
-                  fontSize: '12px', 
+                  padding: '4px 8px', 
+                  fontSize: '11.5px', 
                   borderRadius: '6px', 
                   border: 'none', 
                   cursor: 'pointer',
@@ -711,15 +772,15 @@ export default function ScannerInput({ onScan }) {
                   boxShadow: scanMode === 'full' ? '0 0 10px rgba(0, 255, 128, 0.3)' : 'none'
                 }}
               >
-                <Maximize2 size={13} /> เต็มกล้อง (Full)
+                <Maximize2 size={12} /> เต็มจอ
               </button>
               <button 
                 type="button"
                 onClick={() => handleScanModeChange('barcode')}
                 title="กรอบแนวนอนยาว เหมาะสำหรับเล็งเฉพาะเส้นบาร์โค้ด 1D"
                 style={{ 
-                  padding: '5px 10px', 
-                  fontSize: '12px', 
+                  padding: '4px 8px', 
+                  fontSize: '11.5px', 
                   borderRadius: '6px', 
                   border: 'none', 
                   cursor: 'pointer',
@@ -731,15 +792,15 @@ export default function ScannerInput({ onScan }) {
                   color: scanMode === 'barcode' ? '#000' : '#e2e8f0'
                 }}
               >
-                <Barcode size={14} /> Barcode (1D)
+                <Barcode size={13} /> 1D
               </button>
               <button 
                 type="button"
                 onClick={() => handleScanModeChange('qr')}
                 title="กรอบสี่เหลี่ยมจัตุรัส เหมาะสำหรับ QR Code 2D"
                 style={{ 
-                  padding: '5px 10px', 
-                  fontSize: '12px', 
+                  padding: '4px 8px', 
+                  fontSize: '11.5px', 
                   borderRadius: '6px', 
                   border: 'none', 
                   cursor: 'pointer',
@@ -751,19 +812,19 @@ export default function ScannerInput({ onScan }) {
                   color: scanMode === 'qr' ? '#000' : '#e2e8f0'
                 }}
               >
-                <QrCode size={14} /> QR Code (2D)
+                <QrCode size={13} /> QR
               </button>
             </div>
 
             {/* Right Tools: View Size & Aspect Ratio */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
               {/* Torch Button */}
               <button 
                 type="button"
                 onClick={toggleTorch}
                 title={isTorchOn ? "ปิดไฟฉาย" : "เปิดไฟฉายช่วยสแกน"}
                 style={{ 
-                  padding: '5px 9px', 
+                  padding: '4px 8px', 
                   borderRadius: '6px', 
                   border: 'none', 
                   cursor: 'pointer',
@@ -771,13 +832,13 @@ export default function ScannerInput({ onScan }) {
                   color: isTorchOn ? '#854d0e' : '#cbd5e1',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '12px',
+                  gap: '3px',
+                  fontSize: '11px',
                   fontWeight: 600
                 }}
               >
-                {isTorchOn ? <Flashlight size={14} /> : <FlashlightOff size={14} />}
-                <span style={{ fontSize: '11px' }}>{isTorchOn ? 'ไฟเปิด' : 'ไฟฉาย'}</span>
+                {isTorchOn ? <Flashlight size={13} /> : <FlashlightOff size={13} />}
+                <span>{isTorchOn ? 'ไฟเปิด' : 'ไฟฉาย'}</span>
               </button>
 
               {/* View Size Toggle */}
@@ -785,9 +846,9 @@ export default function ScannerInput({ onScan }) {
                 type="button"
                 onClick={() => setViewSize(viewSize === 'auto' ? 'standard' : (viewSize === 'standard' ? 'large' : (viewSize === 'large' ? 'compact' : 'auto')))}
                 title="ปรับขนาดความสูงของหน้าต่างกล้อง"
-                style={{ padding: '5px 9px', borderRadius: '6px', border: 'none', background: '#334155', color: '#cbd5e1', cursor: 'pointer', fontSize: '11px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                style={{ padding: '4px 8px', borderRadius: '6px', border: 'none', background: '#334155', color: '#cbd5e1', cursor: 'pointer', fontSize: '11px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}
               >
-                {viewSize === 'auto' ? '📐 จอเต็ม (Auto)' : (viewSize === 'compact' ? '🔍 กะทัดรัด' : (viewSize === 'large' ? '🔍 ขยายใหญ่' : '🔍 พอดี'))}
+                {viewSize === 'auto' ? '📐 จอเต็ม' : (viewSize === 'compact' ? '🔍 กะทัดรัด' : (viewSize === 'large' ? '🔍 ใหญ่' : '🔍 พอดี'))}
               </button>
             </div>
           </div>
@@ -797,15 +858,17 @@ export default function ScannerInput({ onScan }) {
             style={{ 
               position: 'relative', 
               width: '100%', 
+              maxWidth: '100%',
               maxHeight: getViewHeight(), 
               overflow: 'hidden', 
               background: '#000',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              boxSizing: 'border-box'
             }}
           >
-            <div id="qr-reader" style={{ width: '100%', minHeight: '220px', border: 'none' }}></div>
+            <div id="qr-reader" style={{ width: '100%', maxWidth: '100%', minHeight: '200px', border: 'none', overflow: 'hidden', boxSizing: 'border-box' }}></div>
           </div>
 
           {/* Live Scanner Detection Badge */}
@@ -818,19 +881,21 @@ export default function ScannerInput({ onScan }) {
                 borderBottom: '1px solid #334155',
                 display: 'flex', 
                 alignItems: 'center', 
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '8px',
+                justifyContent: 'space-between', 
+                flexWrap: 'wrap', 
+                gap: '8px', 
+                width: '100%',
+                boxSizing: 'border-box',
                 animation: 'fadeIn 0.2s ease-in-out'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minWidth: 0 }}>
                 <span style={{ 
                   fontSize: '12px', 
                   fontWeight: 700, 
                   color: lastDetected.matched ? '#4ade80' : '#f87171',
-                  display: 'inline-flex',
-                  alignItems: 'center',
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
                   gap: '4px'
                 }}>
                   {lastDetected.matched ? '✓ ตรวจพบ:' : '⚠️ ไม่พบรหัสในฐานข้อมูล:'}
@@ -848,7 +913,7 @@ export default function ScannerInput({ onScan }) {
                   </span>
                 </span>
                 {lastDetected.runner && (
-                  <span style={{ fontSize: '12.5px', color: '#f8fafc', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '12.5px', color: '#f8fafc', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                     {lastDetected.runner.name}
                     {lastDetected.runner.cat && (
                       <span style={{
@@ -872,7 +937,7 @@ export default function ScannerInput({ onScan }) {
                     fontSize: '11px', 
                     color: '#94a3b8', 
                     fontFamily: 'var(--mono)', 
-                    maxWidth: '260px', 
+                    maxWidth: '220px', 
                     overflow: 'hidden', 
                     textOverflow: 'ellipsis', 
                     whiteSpace: 'nowrap' 
@@ -885,28 +950,28 @@ export default function ScannerInput({ onScan }) {
           )}
 
           {/* Bottom Zoom & Focus Slider Bar */}
-          <div style={{ background: '#1e293b', padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', borderTop: '1px solid #334155' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '220px' }}>
-              <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <ZoomIn size={14} /> ซูมโฟกัส:
+          <div style={{ background: '#1e293b', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', borderTop: '1px solid #334155', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flex: '1 1 auto', minWidth: 0 }}>
+              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                <ZoomIn size={13} /> ซูม:
               </span>
               
               {/* Preset Zoom Buttons */}
-              <div style={{ display: 'flex', gap: '4px' }}>
-                {[1, 1.5, 2, 2.5, 3].map((z) => (
+              <div style={{ display: 'flex', gap: '3px' }}>
+                {[1, 1.5, 2, 2.5].map((z) => (
                   <button 
                     key={z} 
                     type="button"
                     onClick={() => applyZoom(z)}
                     style={{ 
-                      padding: '2px 8px', 
-                      fontSize: '11.5px', 
+                      padding: '2px 6px', 
+                      fontSize: '11px', 
                       borderRadius: '4px', 
-                      border: 'none',
+                      border: 'none', 
                       cursor: 'pointer',
                       fontWeight: 600,
-                      background: zoomLevel === z ? 'var(--start)' : '#334155',
-                      color: zoomLevel === z ? '#000' : '#e2e8f0'
+                      background: zoomLevel === z ? 'var(--start)' : '#334155', 
+                      color: zoomLevel === z ? '#000' : '#e2e8f0' 
                     }}
                   >
                     {z}x
@@ -922,7 +987,7 @@ export default function ScannerInput({ onScan }) {
                 step="0.1" 
                 value={zoomLevel} 
                 onChange={(e) => applyZoom(parseFloat(e.target.value))}
-                style={{ flex: 1, minWidth: '70px', accentColor: 'var(--start)', cursor: 'pointer' }} 
+                style={{ flex: '1 1 50px', minWidth: '40px', maxWidth: '110px', accentColor: 'var(--start)', cursor: 'pointer' }} 
               />
               <span style={{ fontSize: '11px', color: '#cbd5e1', fontFamily: 'var(--mono)', minWidth: '30px' }}>
                 {zoomLevel.toFixed(1)}x

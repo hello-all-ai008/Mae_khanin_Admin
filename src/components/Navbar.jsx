@@ -134,8 +134,8 @@ export default function Navbar() {
       <nav className="navbar">
         <div className="navbar-left">
           <div className="logo">
-            <img src={logoRohnPic} alt="ROHN" style={{ height: '100px', width: 'auto', zIndex: 2 }} />
-            <img src={logoRohnLabel} alt="ROHN Label" style={{ height: '75px', width: 'auto', marginLeft: '-16px' }} className="hide-mobile" />
+            <img src={logoRohnPic} alt="ROHN" className="navbar-logo-pic" />
+            <img src={logoRohnLabel} alt="ROHN Label" className="navbar-logo-label hide-mobile" />
           </div>
         </div>
 
