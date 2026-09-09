@@ -148,6 +148,19 @@ export default function RunnerProgressControl() {
     return map;
   }, [categories, checkpoints]);
 
+  // Map category ID or name -> ordered RAW checkpoint rows (unflattened, for RunnerTimingModal)
+  const rawCheckpointsByCategory = useMemo(() => {
+    const map = new Map();
+    categories.forEach(cat => {
+      const rows = (checkpoints || [])
+        .filter(cp => cp.category_id === cat.id)
+        .sort((a, b) => (a.sequence_order || 0) - (b.sequence_order || 0));
+      map.set(cat.id, rows);
+      if (cat.name) map.set(cat.name.trim().toLowerCase(), rows);
+    });
+    return map;
+  }, [categories, checkpoints]);
+
   // Helper to determine runner's status
   const getRunnerStatus = useCallback((r) => {
     if (r.race_status === 'DNF') return 'DNF';
@@ -968,7 +981,7 @@ export default function RunnerProgressControl() {
             setSelectedRunner(null);
           }}
           runner={selectedRunner}
-          categoryCheckpoints={categoryRoutesMap.get((selectedRunner.cat || '').trim().toLowerCase()) || categoryRoutesMap.get(selectedRunner.category_id) || []}
+          categoryCheckpoints={rawCheckpointsByCategory.get((selectedRunner.cat || '').trim().toLowerCase()) || rawCheckpointsByCategory.get(selectedRunner.category_id) || []}
           allStations={stations}
           onSaved={(updated) => {
             setRunners(prev => prev.map(r => r.id === updated.id ? { ...r, ...updated } : r));
