@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รายงานสรุปการทำงานและบันทึกปัญหา — 2026-09-09 Mobile UI & Monitor Realtime</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Noto+Sans+Thai:wght@300;400;600;700;800&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --surface-alt: #f1f5f9;
+    --ink: #0f172a;
+    --ink-muted: #475569;
+    --ink-light: #94a3b8;
+    --line: #e2e8f0;
+    --primary: #2563eb;
+    --primary-soft: #eff6ff;
+    --danger: #ef4444;
+    --danger-soft: #fef2f2;
+    --danger-border: #fecaca;
+    --warning: #f59e0b;
+    --warning-soft: #fffbeb;
+    --warning-border: #fde68a;
+    --success: #10b981;
+    --success-soft: #ecfdf5;
+    --success-border: #a7f3d0;
+    --code-bg: #1e293b;
+    --code-ink: #e2e8f0;
+    --radius: 14px;
+    --shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans Thai", "Outfit", system-ui, sans-serif;
+    line-height: 1.65;
+    padding-bottom: 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* ── Hero Header ── */
+  header.hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    color: #ffffff;
+    padding: 56px 0 48px;
+    margin-bottom: 40px;
+    border-bottom: 4px solid var(--primary);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+  }
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(37, 99, 235, 0.25);
+    border: 1px solid rgba(147, 197, 253, 0.3);
+    color: #93c5fd;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .hero-title {
+    margin: 0 0 14px;
+    font-size: clamp(26px, 4.5vw, 40px);
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  .hero-desc {
+    margin: 0 0 22px;
+    font-size: clamp(15px, 2vw, 17px);
+    color: #cbd5e1;
+    max-width: 780px;
+  }
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 13px;
+    color: #94a3b8;
+  }
+  .hero-meta strong { color: #f8fafc; }
+
+  /* ── Cards & Containers ── */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    padding: 28px;
+    margin-bottom: 30px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ── Urgent Alert Banner ── */
+  .alert-urgent {
+    background: var(--danger-soft);
+    border: 2px solid var(--danger-border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 36px;
+    position: relative;
+    box-shadow: 0 8px 24px -4px rgba(239, 68, 68, 0.12);
+  }
+  .alert-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #b91c1c;
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--danger-border);
+  }
+
+  .issue-box {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #fca5a5;
+    padding: 18px 20px;
+    margin-top: 16px;
+  }
+  .issue-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #991b1b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .badge-tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .badge-danger { background: #fee2e2; color: #991b1b; }
+  .badge-warning { background: #fef3c7; color: #92400e; }
+  .badge-success { background: #d1fae5; color: #065f46; }
+  .badge-info { background: #dbeafe; color: #1e40af; }
+
+  /* ── Headings ── */
+  h2.section-head {
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+  }
+  h3.sub-head {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 18px 0 10px;
+    color: #1e293b;
+  }
+
+  /* ── Code Box ── */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 16px 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  code {
+    font-family: "JetBrains Mono", monospace;
+    background: rgba(15, 23, 42, 0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #0f172a;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+  }
+
+  /* ── Tables ── */
+  .table-responsive {
+    overflow-x: auto;
+    margin: 16px 0;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    background: #ffffff;
+  }
+  th {
+    background: var(--surface-alt);
+    color: var(--ink-muted);
+    font-weight: 700;
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+
+  /* ── Lists & Highlights ── */
+  ul { padding-left: 22px; margin: 8px 0 16px; }
+  li { margin-bottom: 6px; }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px;
+    margin: 16px 0;
+  }
+  .feature-box {
+    background: var(--surface-alt);
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    padding: 18px;
+  }
+  .feature-box h4 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  footer {
+    text-align: center;
+    color: var(--ink-light);
+    font-size: 13px;
+    margin-top: 50px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero Header -->
+<header class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">⚡ Daily Handoff & Technical Summary</div>
+    <h1 class="hero-title">รายงานสรุปงานประจำวัน & วิเคราะห์ปัญหาเร่งด่วน</h1>
+    <p class="hero-desc">
+      สรุปภาพรวมการพัฒนา UI มือถือสำหรับจุดสแกน (Check-in, CheckPoint, FinishLine), ปรับแต่งบอร์ด LED สำหรับสมาร์ทโฟน, ระบบ Realtime Monitor Casting และรายงานวิเคราะห์ปัญหาที่ต้องแก้ไขด่วน
+    </p>
+    <div class="hero-meta">
+      <div><strong>วันที่:</strong> 2026-09-09</div>
+      <div><strong>โปรเจกต์:</strong> Rohn-Admin & Rohn-Runner</div>
+      <div><strong>Branch หลัก:</strong> <code>main</code>, <code>Tiw-dev</code></div>
+      <div><strong>สถานะ Build:</strong> ✓ ผ่าน 100% (Vite v8.2.2)</div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 🚨 URGENT ISSUES SECTION -->
+  <div class="alert-urgent">
+    <div class="alert-header">
+      <span>🚨</span>
+      <span>แจ้งเตือนปัญหาสำคัญเร่งด่วนที่พบ (Urgent Known Issues)</span>
+    </div>
+    <p style="margin: 0 0 16px; color: #7f1d1d; font-size: 15px;">
+      ตรวจพบปัญหาในการทดสอบระบบ 2 จุดสำคัญ ซึ่งส่งผลกระทบต่อกระบวนการ Check-in หน้างานและการแสดงผลจอ Monitor รายละเอียดและสาเหตุเชิงลึกมีดังนี้:
+    </p>
+
+    <!-- Issue 1 -->
+    <div class="issue-box">
+      <div class="issue-title">
+        <span class="badge-tag badge-danger">BUG #1</span>
+        <span>1. Check-in แล้วหน้า Monitor ไม่ Realtime และเวลาไม่ตรงกัน</span>
+      </div>
+      
+      <p><strong>พฤติกรรมของปัญหา:</strong></p>
+      <ul>
+        <li>เมื่อทำการสแกน Check-in บนหน้า <code>CheckIn.jsx</code> ข้อมูลนักวิ่งบนหน้า <code>Monitor.jsx</code> ไม่แสดงผลทันทีแบบเรียลไทม์ (ดีเลย์หรือไม่เด้งขึ้นมาเลย)</li>
+        <li>เวลาที่ปรากฏในกล่องสถานะ <strong>"Check in"</strong> บนหน้ามอนิเตอร์ ไม่ตรงกับเวลาที่เจ้าหน้าที่กดสแกนจริง เช่น แอดมินสแกนตอน <code>19:45:12</code> แต่หน้าจอกลับแสดงเวลา <code>06:00:00</code> หรือเวลาเริ่มต้นของงาน</li>
+      </ul>
+
+      <p><strong>การวิเคราะห์สาเหตุเชิงเทคนิค (Root Cause Analysis):</strong></p>
+      <ul>
+        <li><strong>การตัดการเชื่อมต่อ WebSocket ซ้ำซ้อน (Subscription Loop):</strong> ใน <code>Monitor.jsx</code> ตัว <code>useEffect</code> ฟัง Channel <code>supabase.channel('rohn_monitor_stream')</code> ถูกผูกไว้กับ Dependency Array <code>[castEvent, monitorId, getRunnerByBib]</code> เมื่อมีข้อความ Broadcast เข้ามา <code>castEvent</code> จะเปลี่ยนค่า ทำให้ React ยกเลิก Subscription เดิมแล้วเชื่อมต่อใหม่ทุกครั้ง จึงเกิดการหลุดของ Realtime Connection</li>
+        <li><strong>การดึงเวลาผิดตัวแปร (Fallback to Gun Start Time):</strong> ใน <code>Monitor.jsx</code> ตัวแปร <code>effectiveTime</code> มีการ Fallback ไปหยิบ <code>displayData.gunStartTime</code> หรือ <code>runner.gun_start_time</code> (ซึ่งเป็นเวลาปล่อยตัวตอนเช้า เช่น <code>06:00:00</code>) แทนที่จะยึดเวลาเช็คอินจริง <code>checkinTime</code> (Timestamp ที่สแกนจริง)</li>
+        <li><strong>ข้อจำกัด Cross-Origin Isolation:</strong> แอดมิน (พอร์ต 5173 หรือมือถือ) และ Runner Monitor (พอร์ต 5174 หรือจอทีวี) อยู่คนละโดเมน/พอร์ต ทำให้ <code>BroadcastChannel</code> ในเครื่องไม่ส่งถึงกัน จึงต้องพึ่งพา Supabase Realtime WebSocket 100%</li>
+      </ul>
+
+      <div style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px 14px; border-radius: 6px; font-size: 13px; color: #1e40af; margin-top: 10px;">
+        <strong>แนวทางแก้ไข (Fix Plan):</strong> แยก Realtime Subscription ใน <code>Monitor.jsx</code> ออกเป็นอิสระไม่ให้ Re-subscribe ซ้ำซ้อน และปรับลำดับการแสดงผลเวลาให้ยึด <code>displayData.checkinTime</code> เป็นอันดับแรกเสมอ
+      </div>
+    </div>
+
+    <!-- Issue 2 -->
+    <div class="issue-box" style="margin-top: 20px;">
+      <div class="issue-title">
+        <span class="badge-tag badge-danger">BUG #2</span>
+        <span>2. หน้าแก้ไขเวลา ลบเวลาออกไปแล้ว แต่กลับมา Check-in ใหม่ไม่ได้</span>
+      </div>
+
+      <p><strong>พฤติกรรมของปัญหา:</strong></p>
+      <ul>
+        <li>เมื่อเข้าไปที่หน้าจัดการเวลา (<code>RunnerTimingModal</code> หรือ <code>RunnerProgressControl</code>) แล้วลบเวลา Check-in ออก (เพื่อทดสอบหรือรีเซ็ตนักวิ่ง)</li>
+        <li>พอกลับมาสแกน BIB เดิมที่หน้า <code>CheckIn.jsx</code> ระบบขึ้นแจ้งเตือนว่า <strong>"Check in แล้ว : XX:XX:XX (ยึดเวลาแรก)"</strong> และไม่ยอมบันทึกการเช็คอินใหม่ให้</li>
+      </ul>
+
+      <p><strong>การวิเคราะห์สาเหตุเชิงเทคนิค (Root Cause Analysis):</strong></p>
+      <ul>
+        <li><strong>ความไม่ตรงกันระหว่าง Database กับ In-Memory State:</strong> ฐานข้อมูลจริงใน Supabase เก็บเวลาเช็คอินในคอลัมน์ <code>checked_in_at</code> (TIMESTAMP) และสถานะ <code>registration_status</code> แต่ในหน่วยความจำของ <code>RaceContext.jsx</code> มีการแปลงเป็นตัวแปร <code>r.checkin</code> (Epoch Milliseconds)</li>
+        <li><strong>การลบเวลาไม่ได้ล้าง State ใน RaceContext:</strong> เมื่อกดบันทึกใน <code>RunnerTimingModal.jsx</code> โค้ดส่งอัปเดตลง Supabase เป็น <code>checked_in_at: null</code> แต่ในแคชและหน่วยความจำของ <code>RaceContext</code> ตัวแปร <code>r.checkin</code> ยังคงค้างค่าเวลาเดิมอยู่</li>
+        <li><strong>ฟังก์ชัน <code>processScan</code> ตรวจสอบ <code>if (r.checkin)</code>:</strong> ฟังก์ชันตรวจจับว่าหาก <code>r.checkin</code> มีค่าอยู่ จะถือว่าเป็น <strong>สแกนซ้ำ (Rescan)</strong> ทันที ส่งผลให้ <code>result.success = false</code> และปฏิเสธการเช็คอินรอบใหม่</li>
+      </ul>
+
+      <div style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px 14px; border-radius: 6px; font-size: 13px; color: #1e40af; margin-top: 10px;">
+        <strong>แนวทางแก้ไข (Fix Plan):</strong> ใน <code>RunnerTimingModal</code> ต้องอัปเดตให้ <code>checkin: null</code> พร้อมกับ <code>checked_in_at: null</code> และเรียก <code>updateRunner()</code> หรือ <code>refreshRunners()</code> ใน <code>RaceContext</code> เพื่อล้างแคชทันที
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: WORK DONE TODAY -->
+  <div class="card">
+    <h2 class="section-head">
+      <span>📱</span>
+      <span>2. สรุปผลการพัฒนาและปรับปรุงระบบในวันนี้ (2026-09-09)</span>
+    </h2>
+
+    <div class="grid-2">
+      <div class="feature-box">
+        <h4>1. Responsive Mobile Scanner Pages</h4>
+        <p style="font-size: 14px; color: var(--ink-muted); margin: 0 0 8px;">
+          แก้ไขปัญหาจอล้นแนวนอน (Horizontal Overflow) บนหน้าจอมือถือทุกขนาดอย่างสมบูรณ์แบบ
+        </p>
+        <ul style="font-size: 13px; padding-left: 18px; margin: 0;">
+          <li>ครอบคลุม 3 หน้าสแกน: <code>CheckIn.jsx</code>, <code>CheckPoint.jsx</code>, <code>FinishLine.jsx</code></li>
+          <li>ปรับแถบสรุปข้อมูลเป็น <code>.stat-grid-3</code> ไม่ตกบรรทัด</li>
+          <li>ตารางสแกนล่าสุดสามารถเลื่อนแนวนอนเฉพาะตาราง ไม่ดันโครงสร้างหน้า</li>
+        </ul>
+      </div>
+
+      <div class="feature-box">
+        <h4>2. Dark LED Mobile Result Card</h4>
+        <p style="font-size: 14px; color: var(--ink-muted); margin: 0 0 8px;">
+          พัฒนาคอมโพเนนต์ <code>MobileScanResultCard.jsx</code> จำลองป้ายไฟ LED ความคมชัดสูง
+        </p>
+        <ul style="font-size: 13px; padding-left: 18px; margin: 0;">
+          <li>BIB ขนาดใหญ่พิเศษ มองเห็นชัดเจนกลางแจ้ง</li>
+          <li>แสดง Category Tag สีตามระยะทางจริง (10KM, 5KM)</li>
+          <li>แสดงผลสถานะผ่าน (เขียว), สแกนซ้ำ (ส้ม), ไม่พบ (แดง) ชัดเจน</li>
+        </ul>
+      </div>
+
+      <div class="feature-box">
+        <h4>3. Streamlined & Clutter-Free UI</h4>
+        <p style="font-size: 14px; color: var(--ink-muted); margin: 0 0 8px;">
+          จัดระเบียบพื้นที่หน้าจอมือถือให้คลีนและใช้งานง่ายที่สุด
+        </p>
+        <ul style="font-size: 13px; padding-left: 18px; margin: 0;">
+          <li>ย้ายการตั้งค่าสถานี/จอ Monitor/แคช ไปไว้ใน <code>StationSetupModal</code></li>
+          <li>ประวัติการสแกนด้านล่างสามารถกดพับเก็บ (Collapsible) ได้</li>
+          <li>เพิ่มพื้นที่การทำงานให้กับช่องสแกนกล้องและผลลัพธ์</li>
+        </ul>
+      </div>
+
+      <div class="feature-box">
+        <h4>4. Monitor Page Updates (Rohn-Runner)</h4>
+        <p style="font-size: 14px; color: var(--ink-muted); margin: 0 0 8px;">
+          ปรับปรุงหน้าจอ Monitor สำหรับแสดงผลบนจอทีวีและโปรเจกเตอร์
+        </p>
+        <ul style="font-size: 13px; padding-left: 18px; margin: 0;">
+          <li>เปลี่ยนป้ายจาก <strong>"START DATE"</strong> เป็น <strong>"Check in"</strong> ตามที่ระบุ</li>
+          <li>รองรับการลากปรับขนาดสัดส่วนซ้าย-ขวา (Resizable Split Divider)</li>
+          <li>เชื่อมต่อ Supabase Realtime Broadcast รองรับการยิงข้อมูลข้ามอุปกรณ์</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: REPOSITORIES & GIT SYNC -->
+  <div class="card">
+    <h2 class="section-head">
+      <span>🔀</span>
+      <span>3. สถานะ Source Code และการซิงค์ GitHub Repositories</span>
+    </h2>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Repository</th>
+            <th>Local Directory</th>
+            <th>Branches ซิงค์แล้ว</th>
+            <th>Build Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Mae_khanin_Admin</strong> (Rohn-Admin)</td>
+            <td><code>D:\Tiw\Project_Trail_Running_Hub\Rohn-Admin</code></td>
+            <td><span class="badge-tag badge-success">main</span> <span class="badge-tag badge-info">Tiw-dev</span></td>
+            <td>✓ Passed (Vite 8.2.2)</td>
+          </tr>
+          <tr>
+            <td><strong>ROHN-RUNNER</strong> (Rohn-Runner)</td>
+            <td><code>D:\Tiw\Project_Trail_Running_Hub\Rohn-Runner</code></td>
+            <td><span class="badge-tag badge-success">main</span> <span class="badge-tag badge-info">Tiw-dev</span></td>
+            <td>✓ Passed (Vite 8.2.2)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 4: NEXT STEPS -->
+  <div class="card">
+    <h2 class="section-head">
+      <span>📋</span>
+      <span>4. รายการสิ่งที่ยังขาด & แผนการดำเนินงานถัดไป (Pending Gaps & Next Steps)</span>
+    </h2>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 35%;">รายการงาน (Task)</th>
+            <th style="width: 15%; text-align: center;">ความสำคัญ</th>
+            <th style="width: 50%;">แนวทางการดำเนินการแก้ไข</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. ปรับปรุง Realtime Connection บน Monitor</strong></td>
+            <td style="text-align: center;"><span class="badge-tag badge-danger">เร่งด่วน</span></td>
+            <td>แยก Subscription ของ <code>rohn_monitor_stream</code> ไม่ให้ทำลายและเชื่อมต่อใหม่เมื่อ State เปลี่ยน เพื่อให้ข้อความเด้งขึ้นทันที 100%</td>
+          </tr>
+          <tr>
+            <td><strong>2. แก้ไขการแสดงเวลา Check-in บน Monitor</strong></td>
+            <td style="text-align: center;"><span class="badge-tag badge-danger">เร่งด่วน</span></td>
+            <td>เปลี่ยน Logic การคำนวณเวลาให้ยึดเวลาที่สแกนเช็คอินจริง (Check-in Time) ไม่นำเวลาปล่อยตัว (Gun Start Time) มาแสดงทับ</td>
+          </tr>
+          <tr>
+            <td><strong>3. แก้ไขการลบเวลาแล้วเช็คอินใหม่ไม่ได้</strong></td>
+            <td style="text-align: center;"><span class="badge-tag badge-danger">เร่งด่วน</span></td>
+            <td>ใน <code>RunnerTimingModal</code> และ <code>RaceContext</code> ต้องล้างทั้ง <code>checked_in_at = null</code> และ <code>checkin = null</code> เพื่อให้สแกนใหม่ได้ทันที</td>
+          </tr>
+          <tr>
+            <td><strong>4. ทดสอบ End-to-End บนอุปกรณ์จริง</strong></td>
+            <td style="text-align: center;"><span class="badge-tag badge-warning">สำคัญ</span></td>
+            <td>ทดสอบใช้สมาร์ทโฟนจริงสแกนที่หน้า <code>/checkin</code> แล้วตรวจดูการเด้งขึ้นของข้อมูลและเวลาบนจอทีวี <code>/monitor/1</code> พร้อมกัน</td>
+          </tr>
+          <tr>
+            <td><strong>5. ทดสอบระบบแคชออฟไลน์ (Offline Mode)</strong></td>
+            <td style="text-align: center;"><span class="badge-tag badge-info">ปกติ</span></td>
+            <td>ตัดสัญญาณอินเทอร์เน็ตบนมือถือ แล้วทดสอบสแกนต่อเนื่องเพื่อยืนยันว่าคิวออฟไลน์ซิงค์ขึ้น Cloud ได้อย่างถูกต้องเมื่อเน็ตกลับมา</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    <p>Trail Running Hub Engineering Documentation • 2026-09-09</p>
+    <p>ไฟล์เอกสาร: <code>2026-09-09-ui-phone.html</code> | บันทึกไว้ที่: <code>Rohn-Admin/handoff</code> และ <code>Rohn-Admin/plan/docs</code></p>
+  </footer>
+
+</div>
+
+</body>
+</html>
