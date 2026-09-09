@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { fetchAllRows } from '../../lib/supabaseFetch';
 import { jsPDF } from 'jspdf';
 import { X, Download, Loader2 } from 'lucide-react';
 import QRCode from 'qrcode';
@@ -28,15 +29,31 @@ export default function GenerateBibModal({ onClose, dimensions, layers }) {
     fetchEvents();
   }, []);
 
-  // Fetch categories and runners when event changes
+  // Fetch categories and runners when event changes (paged to bypass 1000-row limit)
   useEffect(() => {
     if (!selectedEventId) return;
     async function fetchData() {
       const { data: catData } = await supabase.from('categories').select('name').eq('event_id', selectedEventId);
       if (catData) setCategories(catData.map(c => c.name));
       
-      const { data: runData } = await supabase.from('runners').select('*').eq('event_id', selectedEventId);
-      if (runData) setRunners(runData);
+      const { data: runData, error: runError } = await fetchAllRows((from, to) =>
+        supabase
+          .from('runners')
+          .select('*')
+          .eq('event_id', selectedEventId)
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
+      if (runError) console.error('Error fetching runners for BIB generation:', runError);
+      if (runData) {
+        const cleanRunners = runData
+          .filter(r => r.bib !== 'RUNNER_CONFIG' && !String(r.bib || '').startsWith('__'))
+          .map(r => ({
+            ...r,
+            cat: r.cat || r.cat_name || (r.distance != null && r.unit ? `${r.distance}${r.unit}` : (r.distance != null ? String(r.distance) : ''))
+          }));
+        setRunners(cleanRunners);
+      }
     }
     fetchData();
   }, [selectedEventId]);

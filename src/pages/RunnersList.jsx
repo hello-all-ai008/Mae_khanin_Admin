@@ -83,8 +83,9 @@ export default function RunnersList() {
 
       if (error) throw error;
       if (runData) {
-        setRunners(runData);
-        const uniqueCats = [...new Set(runData.map(r => r.cat).filter(Boolean))].sort();
+        const cleanRunners = runData.filter(r => r.bib !== 'RUNNER_CONFIG' && !String(r.bib || '').startsWith('__'));
+        setRunners(cleanRunners);
+        const uniqueCats = [...new Set(cleanRunners.map(r => r.cat).filter(Boolean))].sort();
         setCategories(uniqueCats);
       }
     } catch (err) {

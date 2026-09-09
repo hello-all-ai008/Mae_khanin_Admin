@@ -72,7 +72,7 @@ export default function OverallDashboard() {
           .range(from, to)
       );
       if (runError) throw runError;
-      let actualRunners = runData || [];
+      let actualRunners = (runData || []).filter(r => r.bib !== 'RUNNER_CONFIG' && !String(r.bib || '').startsWith('__'));
       actualRunners = actualRunners.map(r => attachGunStartTime(r, catStartMap));
       setRunners(actualRunners);
 

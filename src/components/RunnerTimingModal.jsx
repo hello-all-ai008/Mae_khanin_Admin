@@ -129,13 +129,13 @@ export default function RunnerTimingModal({
     });
   };
 
-  // Quick action: toggle DNS (Did Not Start). Non-destructive — only touches
-  // race_status; check-in/checkpoint/finish data is left exactly as-is, so
-  // DNS stays distinguishable from a reset. Mutually exclusive with DNF.
+  // Quick action: toggle DNS (Did Not Start). Mutually exclusive with DNF.
   const handleToggleDns = () => {
     if (!isDns) {
+      if (finishStr && !window.confirm(`BIB ${runner.bib} มีเวลาเข้าเส้นชัยอยู่แล้ว การตั้งเป็น DNS จะล้างเวลาเข้าเส้นชัยทิ้ง ยืนยันหรือไม่?`)) return;
       setIsDns(true);
       setDnsAt(new Date().toISOString());
+      setFinishStr(''); // Clear finish if marked DNS
       setIsDnf(false);
       setDnfAt(null);
     } else {
@@ -185,6 +185,10 @@ export default function RunnerTimingModal({
 
       const finalRaceStatus = isDnf ? 'DNF' : (isDns ? 'DNS' : null);
       const finalRaceStatusAt = isDnf ? (dnfAt || new Date().toISOString()) : (isDns ? (dnsAt || new Date().toISOString()) : null);
+      const raceStatusChanged = finalRaceStatus !== runner.race_status;
+      const finalRaceStatusBy = !finalRaceStatus
+        ? null
+        : (raceStatusChanged ? (currentOperator || 'Staff') : (runner.race_status_by || currentOperator || 'Staff'));
 
       const payload = {
         registration_status: finalRegistrationStatus,
@@ -193,7 +197,7 @@ export default function RunnerTimingModal({
         finish: finalFinish,
         race_status: finalRaceStatus,
         race_status_at: finalRaceStatusAt,
-        race_status_by: finalRaceStatus ? (currentOperator || 'Staff') : null,
+        race_status_by: finalRaceStatusBy,
         updated_at: new Date().toISOString()
       };
 

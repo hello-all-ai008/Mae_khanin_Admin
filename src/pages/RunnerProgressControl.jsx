@@ -291,9 +291,12 @@ export default function RunnerProgressControl() {
   // Quick Action: Mark DNS
   const handleQuickDns = async (runner) => {
     const isCurrentlyDns = runner.race_status === 'DNS';
+    const willClearFinish = !isCurrentlyDns && runner.finish;
     const confirmMsg = isCurrentlyDns
       ? `ยกเลิกสถานะ DNS ของ BIB ${runner.bib}?`
-      : `ตั้งค่า BIB ${runner.bib} เป็น DNS (ไม่ได้เริ่มแข่งขัน)?`;
+      : willClearFinish
+        ? `BIB ${runner.bib} มีเวลาเข้าเส้นชัยอยู่แล้ว การตั้งเป็น DNS จะล้างเวลาเข้าเส้นชัยทิ้ง ยืนยันหรือไม่?`
+        : `ตั้งค่า BIB ${runner.bib} เป็น DNS (ไม่ได้เริ่มแข่งขัน)?`;
     if (!window.confirm(confirmMsg)) return;
 
     try {
@@ -308,6 +311,7 @@ export default function RunnerProgressControl() {
             race_status: 'DNS',
             race_status_at: new Date().toISOString(),
             race_status_by: currentOperator || 'Staff',
+            finish: null,
             updated_at: new Date().toISOString()
           };
 

@@ -77,7 +77,9 @@ export default function LiveLeaderboard() {
       );
       if (runError) throw runError;
       
-      let actualRunners = (runData || []).map(r => {
+      let actualRunners = (runData || [])
+        .filter(r => r.bib !== 'RUNNER_CONFIG' && !String(r.bib || '').startsWith('__'))
+        .map(r => {
         const cat = r.cat || r.cat_name || (r.distance != null && r.unit ? `${r.distance}${r.unit}` : (r.distance != null ? String(r.distance) : ''));
         const runnerWithCat = { ...r, cat };
         return attachGunStartTime(runnerWithCat, catStartMap);
@@ -251,8 +253,8 @@ function parseAgeGroupMin(label) {
   const { overallLeaders, leaderboards } = useMemo(() => {
     if (!runners.length) return { overallLeaders: [], leaderboards: [] };
     
-    // 1. Process all finished runners
-    const allFinishedRunners = runners.filter(r => r.finish);
+    // 1. Process all finished runners (exclude DNS and DNF)
+    const allFinishedRunners = runners.filter(r => r.finish && r.race_status !== 'DNS' && r.race_status !== 'DNF');
 
     const allFinishedWithTimes = allFinishedRunners.map(r => {
       const finishEpoch = parseTimeToEpoch(r.finish);
@@ -695,10 +697,12 @@ function parseAgeGroupMin(label) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, paddingLeft: '6px' }}>
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontSize: '13px', fontWeight: 700, color: item.male ? '#16a34a' : '#94a3b8', fontFamily: 'var(--mono)', whiteSpace: 'nowrap' }}>
-                          {item.male ? formatMs(item.male.netTimeMs) : '--:--:--'}
+                          {item.male ? formatMs(item.male.netTimeMs, item.male.finish) : '--:--:--'}
                         </div>
-                        {item.male?.netTimeMs != null && (
-                          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>Net Time</div>
+                        {item.male && (
+                          <div style={{ fontSize: '10px', color: item.male.netTimeMs != null ? '#64748b' : '#0284c7', fontWeight: 600 }}>
+                            {item.male.netTimeMs != null ? 'Net Time' : 'Finish Time'}
+                          </div>
                         )}
                       </div>
                       {item.male && (
@@ -739,10 +743,12 @@ function parseAgeGroupMin(label) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, paddingLeft: '6px' }}>
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontSize: '13px', fontWeight: 700, color: item.female ? '#16a34a' : '#94a3b8', fontFamily: 'var(--mono)', whiteSpace: 'nowrap' }}>
-                          {item.female ? formatMs(item.female.netTimeMs) : '--:--:--'}
+                          {item.female ? formatMs(item.female.netTimeMs, item.female.finish) : '--:--:--'}
                         </div>
-                        {item.female?.netTimeMs != null && (
-                          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>Net Time</div>
+                        {item.female && (
+                          <div style={{ fontSize: '10px', color: item.female.netTimeMs != null ? '#64748b' : '#0284c7', fontWeight: 600 }}>
+                            {item.female.netTimeMs != null ? 'Net Time' : 'Finish Time'}
+                          </div>
                         )}
                       </div>
                       {item.female && (
@@ -825,10 +831,12 @@ function parseAgeGroupMin(label) {
                       <div className="admin-leaderboard-time-col">
                         <div style={{ textAlign: 'right' }}>
                           <div className="admin-leaderboard-time" style={{ color: runner ? '#16a34a' : 'var(--line-heavy)' }}>
-                            {runner ? formatMs(runner.netTimeMs) : '--:--:--'}
+                            {runner ? formatMs(runner.netTimeMs, runner.finish) : '--:--:--'}
                           </div>
-                          {runner?.netTimeMs != null && (
-                            <div className="admin-leaderboard-net-label">Net Time</div>
+                          {runner && (
+                            <div className="admin-leaderboard-net-label" style={{ color: runner.netTimeMs != null ? undefined : '#0284c7' }}>
+                              {runner.netTimeMs != null ? 'Net Time' : 'Finish Time'}
+                            </div>
                           )}
                         </div>
                         {runner && (
