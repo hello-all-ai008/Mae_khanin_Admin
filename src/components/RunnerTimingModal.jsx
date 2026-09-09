@@ -12,7 +12,7 @@ export default function RunnerTimingModal({
   allStations = [],
   onSaved
 }) {
-  const { currentOperator, categories } = useRace();
+  const { currentOperator, categories, updateRunner } = useRace();
   const catColor = runner
     ? (Array.isArray(categories) ? categories.find(c => c.id === runner.category_id || c.name === runner.cat)?.color : null) || '#3b82f6'
     : '#3b82f6';
@@ -211,9 +211,11 @@ export default function RunnerTimingModal({
 
       const updatedRunner = {
         ...runner,
-        ...payload
+        ...payload,
+        checkin: finalCheckedInAt ? new Date(finalCheckedInAt).getTime() : null
       };
 
+      updateRunner(updatedRunner);
       onSaved?.(updatedRunner);
       onClose();
     } catch (err) {

@@ -237,6 +237,19 @@ function getRunnerStartEpoch(r, finishEpoch, stations = [], categories = []) {
   }
 
   // NOTE: Check-in is pre-race registration, NEVER race start!
+
+  // 4. Earliest checkpoint scan before finish (proxy start when no
+  //    explicit start time is known — e.g. runner started but the gun/CP1
+  //    start scan was never recorded, only a later checkpoint was)
+  if (r.cps && typeof r.cps === 'object') {
+    const cpTimes = Object.values(r.cps)
+      .map(v => parseTimeToEpoch(v, finishEpoch))
+      .filter(t => t != null && (!finishEpoch || t < finishEpoch));
+    if (cpTimes.length > 0) {
+      return Math.min(...cpTimes);
+    }
+  }
+
   return null;
 }
 
