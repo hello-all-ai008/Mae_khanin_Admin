@@ -1,15 +1,22 @@
 import { useState, useMemo } from 'react';
-import { RefreshCw, CheckCircle2, WifiOff, Trash2 } from 'lucide-react';
+import { RefreshCw, CheckCircle2, WifiOff, Trash2, Settings, ChevronDown, ChevronUp, MapPin, Flag, Layers, Lock } from 'lucide-react';
 import { useRace, CHECKPOINTS } from '../context/RaceContext';
 import LedBoard from '../components/LedBoard';
 import ScannerInput from '../components/ScannerInput';
-import PreloadDataCard from '../components/PreloadDataCard';
 import ScanSyncBadge from '../components/ScanSyncBadge';
+import StationSetupModal from '../components/StationSetupModal';
+import MobileScanResultCard from '../components/MobileScanResultCard';
 
 const safeFormatTime = (ts) => {
   if (!ts) return '—';
   const d = new Date(ts);
-  return isNaN(d.getTime()) ? '—' : d.toTimeString().slice(0, 8);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleTimeString('th-TH', { 
+    timeZone: 'Asia/Bangkok',
+    hour12: false, 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    second: '2-digit' 
+  });
 };
 
 export default function CheckPoint() {
@@ -19,6 +26,8 @@ export default function CheckPoint() {
     setSelectedEventId,
     runners,
     loadingRunners,
+    categories,
+    categoryCheckpoints,
     checkpoints,
     processScan,
     scanLog,
@@ -33,6 +42,8 @@ export default function CheckPoint() {
   const [selectedCp, setSelectedCp] = useState(() => {
     return localStorage.getItem('trail_selected_cp') || '';
   });
+  const [isSetupOpen, setIsSetupOpen] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
 
   const handleSelectCp = (cpId) => {
     setSelectedCp(cpId);
@@ -45,8 +56,6 @@ export default function CheckPoint() {
 
   // Keep selectedCp in sync with available checkpoints from database.
   // Only offer type === 'CP' stations here — START/FINISH belong to their own pages.
-  // `checkpoints` defaults to the hardcoded CHECKPOINTS list (no `type` field) before
-  // real station data loads, so only filter once real type data has actually arrived.
   const activeCpList = useMemo(() => {
     if (!checkpoints || checkpoints.length === 0) return CHECKPOINTS;
     const hasTypeData = checkpoints.some(cp => cp.type);
@@ -66,6 +75,67 @@ export default function CheckPoint() {
   const currentCpId = isStationLocked
     ? lockedStationId
     : (validSelectedCp || (activeCpList[0]?.id || 'A1'));
+
+  const cpIndex = activeCpList.findIndex(cp => cp.id === currentCpId);
+  const cpLabel = cpIndex !== -1 ? `A${cpIndex + 1}` : 'CP';
+  const cpFullName = getCpName(currentCpId);
+
+  const activeEventName = useMemo(() => {
+    const ev = (events || []).find(e => e.id === selectedEventId);
+    return ev?.name || 'งานวิ่งปัจจุบัน';
+  }, [events, selectedEventId]);
+
+  // Database-backed Station Passing Count according to DatabaseFlow.jsx
+  // Each category is bound to stations via `checkpoint` table (category_id, station_id).
+  const stats = useMemo(() => {
+    const cleanRunners = (runners || []).filter(r => r.bib !== 'RUNNER_CONFIG' && !String(r.bib || '').startsWith('__'));
+    
+    // Find matching checkpoint rows for this station
+    const matchingCps = (categoryCheckpoints || []).filter(cp => {
+      return cp.station_id === currentCpId || 
+             cp.id === currentCpId ||
+             (cp.stations && (cp.stations.name === cpFullName || cp.stations.id === currentCpId));
+    });
+
+    const boundCategoryIds = new Set(matchingCps.map(cp => cp.category_id).filter(Boolean));
+    
+    // Determine bound category names
+    const boundCatNames = (categories || [])
+      .filter(c => boundCategoryIds.has(c.id))
+      .map(c => c.name || c.code);
+
+    // If specific categories are bound, scope runners to those categories; otherwise all active runners
+    let targetRunners = cleanRunners;
+    if (boundCategoryIds.size > 0) {
+      targetRunners = cleanRunners.filter(r => 
+        (r.category_id && boundCategoryIds.has(r.category_id)) || 
+        (r.cat && boundCatNames.includes(r.cat))
+      );
+    }
+
+    // Filter out DNS (did not start)
+    targetRunners = targetRunners.filter(r => r.race_status !== 'DNS');
+
+    // Count runners who scanned/passed this station
+    const passed = targetRunners.filter(r => {
+      if (!r.cps || typeof r.cps !== 'object') return false;
+      return Boolean(
+        r.cps[currentCpId] || 
+        (cpFullName && r.cps[cpFullName]) || 
+        r.cps[cpLabel] ||
+        (cpLabel === 'A1' && (r.cps.a1 || r.cps['A1'])) ||
+        (cpLabel === 'A2' && (r.cps.a2 || r.cps['A2'])) ||
+        (cpLabel === 'A3' && (r.cps.a3 || r.cps['A3'])) ||
+        (cpLabel === 'A4' && (r.cps.a4 || r.cps['A4']))
+      );
+    }).length;
+
+    const total = targetRunners.length;
+    const remaining = Math.max(0, total - passed);
+    const percent = total > 0 ? Math.round((passed / total) * 100) : 0;
+
+    return { total, passed, remaining, percent, boundCatNames, cpLabel, cpFullName };
+  }, [runners, categoryCheckpoints, categories, currentCpId, cpLabel, cpFullName]);
 
   const handleScan = (bib, preResolvedRunner = null) => {
     try {
@@ -94,9 +164,10 @@ export default function CheckPoint() {
     return scanLog.filter(log => (
       log.station === cpName || 
       log.stationId === currentCpId || 
-      log.station === currentCpId
-    )).slice(0, 10);
-  }, [scanLog, currentCpId, getCpName]);
+      log.station === currentCpId ||
+      log.station === cpLabel
+    )).slice(0, 15);
+  }, [scanLog, currentCpId, getCpName, cpLabel]);
 
   const handleClearRecentLog = async () => {
     const cpName = getCpName(currentCpId);
@@ -112,183 +183,382 @@ export default function CheckPoint() {
     }
   };
 
-  return (
-    <div className="page active">
-      <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <span className="station-tag tag-cp"><span className="dot"></span>Station · Check Point</span>
-          <h1>Check Point ระหว่างเส้นทาง</h1>
-          <p>เลือกจุดเช็คพอยต์ที่เจ้าหน้าที่ประจำอยู่ แล้วยิงบาร์โค้ดนักวิ่งที่ผ่านจุด</p>
+  // Extra Setup Controls for Station CP Selector
+  const cpSetupControls = (
+    <div>
+      <label style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+        <MapPin size={16} style={{ color: '#2563eb' }} />
+        เลือกจุด Check Point ประจำสถานี:
+      </label>
+      {isStationLocked ? (
+        <div style={{
+          padding: '10px 12px',
+          borderRadius: '8px',
+          background: '#f1f5f9',
+          border: '1px solid #cbd5e1',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontWeight: 700,
+          color: '#334155',
+          fontSize: '13px'
+        }}>
+          <Lock size={15} color="#64748b" />
+          <span>{cpLabel} · {cpFullName}</span>
+          <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500, marginLeft: 'auto' }}>(ล็อกตามบัญชีเจ้าหน้าที่)</span>
         </div>
+      ) : (
+        <select 
+          className="search" 
+          style={{ width: '100%', padding: '10px 12px', fontSize: '14px', fontWeight: 700, borderRadius: '8px', background: '#fff', border: '1px solid var(--line)' }}
+          value={currentCpId} 
+          onChange={(e) => handleSelectCp(e.target.value)}
+        >
+          {activeCpList.map((cp, idx) => (
+            <option key={cp.id} value={cp.id}>
+              {`A${idx + 1} — ${cp.name || `Checkpoint ${idx + 1}`}`}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
 
-        {/* Event Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-soft)', padding: '8px 14px', borderRadius: '10px', border: '1px solid var(--line)' }}>
-          <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--ink)' }}>เลือกงานวิ่ง:</label>
-          <select 
-            className="search" 
-            style={{ width: '220px', padding: '6px 10px', fontSize: '0.85rem' }}
-            value={selectedEventId} 
-            onChange={(e) => setSelectedEventId(e.target.value)}
-          >
-            {events.length === 0 && <option value="">ไม่มีงานวิ่งในระบบ</option>}
-            {events.map(ev => (
-              <option key={ev.id} value={ev.id}>{ev.name}</option>
-            ))}
-          </select>
-          <span style={{ fontSize: '0.8rem', color: 'var(--ink-2)' }}>
-            {loadingRunners ? 'กำลังโหลด...' : `(${runners.length} คน)`}
+  return (
+    <div className="page active" style={{ maxWidth: '1440px', margin: '0 auto', paddingBottom: '60px' }}>
+      <style>{`
+        .station-header-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 14px;
+          flex-wrap: wrap;
+        }
+        .live-stat-card {
+          background: #ffffff;
+          border-radius: 16px;
+          border: 1px solid var(--line);
+          padding: 14px 16px;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+          margin-bottom: 14px;
+        }
+        .stat-grid-3 {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+        .stat-pill {
+          background: var(--bg-soft);
+          border-radius: 12px;
+          padding: 10px 8px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justifyContent: center;
+        }
+        .stat-pill .val {
+          font-size: clamp(18px, 4vw, 24px);
+          font-weight: 900;
+          font-family: var(--mono);
+          line-height: 1.1;
+        }
+        .stat-pill .lbl {
+          font-size: 11px;
+          color: var(--ink-2);
+          font-weight: 600;
+          margin-top: 3px;
+        }
+        @media (max-width: 768px) {
+          .station-desktop-side {
+            display: none !important;
+          }
+          .station-mobile-side {
+            display: block !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .station-mobile-side {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      {/* ── Top Bar: Station Badge + Event Title + Setup Trigger Button ── */}
+      <div className="station-header-bar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span className="station-tag tag-cp" style={{ margin: 0 }}>
+            <span className="dot"></span>{cpLabel} · Check Point
+          </span>
+          <span style={{ 
+            fontSize: '12px', 
+            fontWeight: 700, 
+            color: 'var(--ink-2)', 
+            background: 'var(--bg-soft)', 
+            padding: '4px 10px', 
+            borderRadius: '99px',
+            border: '1px solid var(--line)',
+            maxWidth: '220px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+            🏆 {activeEventName}
           </span>
         </div>
-      </div>
-      
-      {/* Preload & Offline Cache Bar */}
-      <PreloadDataCard eventId={selectedEventId} />
 
-      <div className="station">
-        <div>
-          <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>เลือกจุด Check Point:</label>
-            {isStationLocked ? (
-              <span
-                title="จุด Check Point ถูกล็อกตามสถานีที่บัญชีนี้ได้รับมอบหมาย เปลี่ยนเองไม่ได้"
-                className="search"
-                style={{ display: 'inline-flex', alignItems: 'center', fontWeight: 600, cursor: 'not-allowed', color: 'var(--ink)' }}
-              >
-                🔒 {getCpName(currentCpId)}
-              </span>
-            ) : (
-              <select className="search" value={currentCpId} onChange={(e) => handleSelectCp(e.target.value)}>
-                {activeCpList.map((cp, idx) => <option key={cp.id} value={cp.id}>{`A${idx + 1}`}</option>)}
-              </select>
-            )}
-          </div>
-          
-          <ScannerInput onScan={handleScan} />
-          <p className="scan-hint">สามารถสแกนบันทึกเวลาที่จุดนี้ได้ทันทีโดยไม่ต้องเรียงตามลำดับขั้น · พิมพ์หมายเลข BIB แล้วกดปุ่ม <span className="kbd">Enter BIB</span> ได้</p>
-          
-          <div className="card" style={{ marginTop: '16px', overflow: 'hidden' }}>
-            {/* Real-time Database Status Header Bar */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
+        {/* Action Buttons: Setup & History Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={() => setIsSetupOpen(true)}
+            style={{
+              display: 'inline-flex',
               alignItems: 'center',
-              padding: '10px 16px',
-              background: 'var(--bg-soft)',
-              borderBottom: '1px solid var(--line)',
-              flexWrap: 'wrap',
-              gap: '8px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)' }}>
-                  ประวัติการสแกนล่าสุด ({getCpName(currentCpId)})
-                </span>
-                <span style={{ fontSize: '12px', color: 'var(--ink-2)' }}>
-                  ({recentLog.length} รายการ)
-                </span>
-                {recentLog.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleClearRecentLog}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      background: '#fff',
-                      border: '1px solid var(--line)',
-                      borderRadius: '6px',
-                      padding: '2px 8px',
-                      fontSize: '11px',
-                      color: 'var(--ink-2)',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
-                    }}
-                    title="ล้างประวัติการสแกนบนหน้านี้ (ข้อมูลใน Database ไม่ได้รับผลกระทบ)"
-                  >
-                    <Trash2 size={12} /> ล้างประวัติ
-                  </button>
-                )}
-              </div>
+              gap: '6px',
+              padding: '7px 14px',
+              borderRadius: '10px',
+              background: '#ffffff',
+              border: '1px solid var(--line)',
+              color: 'var(--ink)',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 5px rgba(0,0,0,0.04)'
+            }}
+            title="เปิดเมนูเลือกจุดตรวจ A1/A2 และการตั้งค่า"
+          >
+            <Settings size={16} color="#2563eb" />
+            <span>ตั้งค่า ({cpLabel})</span>
+          </button>
 
-              {/* Status Indicator */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {pendingSyncQueue.length > 0 ? (
-                  isOnline ? (
-                    <span className="db-sync-badge syncing" title="ระบบกำลังทยอยส่งข้อมูลขึ้น Database ในพื้นหลัง">
-                      <RefreshCw size={12} className="spin" />
-                      กำลังส่งไป Database ({pendingSyncQueue.length} รายการ)...
-                    </span>
-                  ) : (
-                    <span className="db-sync-badge offline" title="บันทึกลงในเครื่องเรียบร้อย จะส่งไป Database อัตโนมัติเมื่อมีเน็ต">
-                      <WifiOff size={12} />
-                      ออฟไลน์: บันทึกในเครื่อง ({pendingSyncQueue.length} รอส่ง)
-                    </span>
-                  )
-                ) : (
-                  <span className="db-sync-badge synced" title="ข้อมูลเชื่อมโยงคลาวด์ Database เรียบร้อย">
-                    <CheckCircle2 size={12} />
-                    Database: ข้อมูลตรงกัน 100%
-                  </span>
-                )}
-              </div>
-            </div>
+          <button
+            type="button"
+            onClick={() => setShowHistory(!showHistory)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 12px',
+              borderRadius: '10px',
+              background: showHistory ? '#eff6ff' : '#ffffff',
+              border: `1px solid ${showHistory ? '#bfdbfe' : 'var(--line)'}`,
+              color: showHistory ? '#1d4ed8' : 'var(--ink-2)',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+            title={showHistory ? "ซ่อนประวัติการสแกน" : "แสดงประวัติการสแกน"}
+          >
+            <span>ประวัติ ({recentLog.length})</span>
+            {showHistory ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          </button>
+        </div>
+      </div>
 
-            <div style={{ overflowX: 'auto' }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th style={{ width: '165px' }}>เวลา</th>
-                    <th style={{ width: '155px' }}>BIB</th>
-                    <th style={{ minWidth: '260px' }}>ชื่อนักวิ่ง</th>
-                    <th style={{ width: '200px' }}>ผู้สแกน</th>
-                    <th style={{ textAlign: 'center', width: '150px' }}>สแกน</th>
-                    <th style={{ textAlign: 'right', width: '220px' }}>ส่ง Database</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentLog.map((log, i) => (
-                    <tr key={log.syncId || log.id || `${log.bib}_${i}`}>
-                      <td className="mono" style={{ width: '165px' }}>{safeFormatTime(log.time)}</td>
-                      <td className="mono" style={{ width: '155px', fontWeight: 700, color: 'var(--ink)' }}>{String(log.bib ?? '—')}</td>
-                      <td style={{ minWidth: '260px', fontWeight: 500 }}>{String(log.name ?? '—')}</td>
-                      <td style={{ width: '200px', fontSize: '12px', color: 'var(--ink-2)' }}>
-                        {log.operator ? `👤 ${log.operator}` : '—'}
-                      </td>
-                      <td style={{ textAlign: 'center', width: '150px' }}>
-                        {log.ok ? (
-                          <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '13px' }}>✓ ผ่าน</span>
-                        ) : log.isRescan ? (
-                          <span 
-                            style={{ 
-                              color: '#d97706', 
-                              fontWeight: 700, 
-                              fontSize: '11px', 
-                              background: '#fef3c7', 
-                              padding: '2px 8px', 
-                              borderRadius: '4px',
-                              border: '1px solid #fde68a'
-                            }} 
-                            title={log.msg || "สแกนซ้ำ — สแกนได้ครั้งเดียวและยึดเวลาแรกเสมอ"}
-                          >
-                            ⚠️ สแกนซ้ำ (เวลาแรก)
-                          </span>
-                        ) : (
-                          <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '13px' }}>✗ ไม่พบข้อมูล</span>
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'right', width: '220px' }}>
-                        <ScanSyncBadge log={log} />
-                      </td>
-                    </tr>
-                  ))}
-                  {recentLog.length === 0 && <tr><td colSpan="6" className="empty">ยังไม่มีการสแกน</td></tr>}
-                </tbody>
-              </table>
+      {/* ── Real-Time Database Counter & Progress Card (Per Station) ── */}
+      <div className="live-stat-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 800, color: 'var(--ink)' }}>
+            <Flag size={16} color="#2563eb" />
+            <span>สถานี {cpLabel}: {cpFullName}</span>
+          </div>
+          {stats.boundCatNames.length > 0 && (
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>ระยะที่ผ่านจุดนี้:</span>
+              {stats.boundCatNames.map(cn => (
+                <span key={cn} style={{ fontSize: '11px', fontWeight: 700, background: '#eff6ff', color: '#1d4ed8', padding: '1px 6px', borderRadius: '4px', border: '1px solid #bfdbfe' }}>
+                  {cn}
+                </span>
+              ))}
             </div>
+          )}
+        </div>
+
+        <div className="stat-grid-3">
+          {/* Passed Count */}
+          <div className="stat-pill" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+            <span className="val" style={{ color: '#15803d' }}>{stats.passed}</span>
+            <span className="lbl" style={{ color: '#166534' }}>ผ่านจุดนี้แล้ว</span>
+          </div>
+
+          {/* Remaining Count */}
+          <div className="stat-pill" style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
+            <span className="val" style={{ color: '#b45309' }}>{stats.remaining}</span>
+            <span className="lbl" style={{ color: '#92400e' }}>ยังไม่ผ่าน</span>
+          </div>
+
+          {/* Target for this station */}
+          <div className="stat-pill" style={{ background: 'var(--bg-soft)', border: '1px solid var(--line)' }}>
+            <span className="val" style={{ color: '#0f172a' }}>{stats.total}</span>
+            <span className="lbl">เป้าหมายจุดนี้</span>
           </div>
         </div>
-        
-        <LedBoard runner={ledState.runner} message={ledState.message} warn={ledState.warn} />
+
+        {/* Visual Progress Bar */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11.5px', marginBottom: '5px' }}>
+            <span style={{ fontWeight: 700, color: 'var(--ink)' }}>ความคืบหน้านักวิ่งผ่านจุด {cpLabel}</span>
+            <span style={{ fontWeight: 800, color: '#2563eb' }}>{stats.percent}% ({stats.passed}/{stats.total} คน)</span>
+          </div>
+          <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden' }}>
+            <div 
+              style={{ 
+                width: `${stats.percent}%`, 
+                height: '100%', 
+                background: 'linear-gradient(90deg, #0284c7 0%, #2563eb 100%)', 
+                borderRadius: '99px',
+                transition: 'width 0.4s ease'
+              }} 
+            />
+          </div>
+        </div>
       </div>
+
+      {/* ── Main Station Content: Left Scanner + Right LED (Desktop) ── */}
+      <div className="station">
+        <div>
+          {/* Main Scanner Input Box & Camera Controls */}
+          <ScannerInput onScan={handleScan} />
+
+          {/* Instant Scan Feedback Card (Mobile-First) */}
+          <div className="station-mobile-side" style={{ marginTop: '12px' }}>
+            <MobileScanResultCard 
+              runner={ledState.runner} 
+              message={ledState.message} 
+              warn={ledState.warn} 
+              categories={categories}
+              stationName={cpLabel}
+            />
+          </div>
+
+          {/* Collapsible Recent Scans History */}
+          {showHistory && (
+            <div className="card" style={{ marginTop: '16px', overflow: 'hidden', borderRadius: '14px' }}>
+              {/* Header Bar */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '10px 14px',
+                background: 'var(--bg-soft)',
+                borderBottom: '1px solid var(--line)',
+                flexWrap: 'wrap',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)' }}>
+                    ประวัติการสแกน ({cpLabel})
+                  </span>
+                  <span style={{ fontSize: '11px', color: 'var(--ink-2)' }}>
+                    ({recentLog.length} รายการ)
+                  </span>
+                  {recentLog.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearRecentLog}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: '#fff',
+                        border: '1px solid var(--line)',
+                        borderRadius: '6px',
+                        padding: '2px 8px',
+                        fontSize: '11px',
+                        color: 'var(--ink-2)',
+                        cursor: 'pointer'
+                      }}
+                      title="ล้างประวัติการสแกนบนหน้านี้ (ข้อมูลใน Database ไม่ได้รับผลกระทบ)"
+                    >
+                      <Trash2 size={12} /> ล้าง
+                    </button>
+                  )}
+                </div>
+
+                {/* Database Sync Status */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {pendingSyncQueue.length > 0 ? (
+                    isOnline ? (
+                      <span className="db-sync-badge syncing" style={{ fontSize: '11px', padding: '3px 8px' }}>
+                        <RefreshCw size={11} className="spin" />
+                        ซิงค์ Database ({pendingSyncQueue.length})...
+                      </span>
+                    ) : (
+                      <span className="db-sync-badge offline" style={{ fontSize: '11px', padding: '3px 8px' }}>
+                        <WifiOff size={11} />
+                        ออฟไลน์ ({pendingSyncQueue.length})
+                      </span>
+                    )
+                  ) : (
+                    <span className="db-sync-badge synced" style={{ fontSize: '11px', padding: '3px 8px' }}>
+                      <CheckCircle2 size={11} />
+                      ซิงค์คลาวด์ 100%
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Table */}
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ minWidth: '550px' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: '90px' }}>เวลา</th>
+                      <th style={{ width: '90px' }}>BIB</th>
+                      <th>ชื่อนักวิ่ง</th>
+                      <th style={{ width: '110px' }}>ผู้สแกน</th>
+                      <th style={{ textAlign: 'center', width: '90px' }}>สถานะ</th>
+                      <th style={{ textAlign: 'right', width: '130px' }}>Database</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentLog.map((log, i) => (
+                      <tr key={log.syncId || log.id || `${log.bib}_${i}`}>
+                        <td className="mono" style={{ fontSize: '12px' }}>{safeFormatTime(log.time)}</td>
+                        <td className="mono" style={{ fontWeight: 800, color: '#0284c7' }}>{String(log.bib ?? '—')}</td>
+                        <td style={{ fontWeight: 600 }}>{String(log.name ?? '—')}</td>
+                        <td style={{ fontSize: '12px', color: 'var(--ink-2)' }}>{log.operator || 'Staff'}</td>
+                        <td style={{ textAlign: 'center' }}>
+                          {log.ok ? (
+                            <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '12px' }}>✓ ผ่าน</span>
+                          ) : log.isRescan ? (
+                            <span style={{ color: '#d97706', fontWeight: 700, fontSize: '11px', background: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>⚠️ ซ้ำ</span>
+                          ) : (
+                            <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '12px' }}>✗ ไม่พบ</span>
+                          )}
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <ScanSyncBadge log={log} />
+                        </td>
+                      </tr>
+                    ))}
+                    {recentLog.length === 0 && <tr><td colSpan="6" className="empty">ยังไม่มีการสแกนในเซสชันนี้</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Desktop LED Board Column */}
+        <div className="station-desktop-side">
+          <LedBoard runner={ledState.runner} message={ledState.message} warn={ledState.warn} />
+        </div>
+      </div>
+
+      {/* Unified Station Setup Modal */}
+      <StationSetupModal
+        isOpen={isSetupOpen}
+        onClose={() => setIsSetupOpen(false)}
+        title="การตั้งค่าจุดตรวจ Check Point"
+        stationTag={`Station · ${cpLabel} (${cpFullName})`}
+        extraControls={cpSetupControls}
+        onClearLog={handleClearRecentLog}
+        scanCount={recentLog.length}
+      />
     </div>
   );
 }

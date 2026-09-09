@@ -87,6 +87,7 @@ export function RaceProvider({ children }) {
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
   const [categories, setCategories] = useState([]);
+  const [categoryCheckpoints, setCategoryCheckpoints] = useState([]);
   const [runners, setRunners] = useState([]);
   const runnersRef = useRef(runners);
   runnersRef.current = runners;
@@ -499,6 +500,7 @@ export function RaceProvider({ children }) {
           `)
           .in('category_id', catIds);
         mappedCheckpoints = cpData || [];
+        setCategoryCheckpoints(mappedCheckpoints);
       }
 
       const catMap = {};
@@ -855,6 +857,7 @@ export function RaceProvider({ children }) {
             `)
             .in('category_id', catIds);
           mappedCheckpoints = cpData || [];
+          setCategoryCheckpoints(mappedCheckpoints);
         }
 
         const catMap = {};
@@ -1353,6 +1356,7 @@ export function RaceProvider({ children }) {
       selectedEventId,
       setSelectedEventId,
       categories,
+      categoryCheckpoints,
       checkpoints,
       loadingRunners,
       runners,
