@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { RefreshCw, CheckCircle2, WifiOff, Tv, ExternalLink, Trash2, Settings, ChevronDown, ChevronUp, UserCheck, Users, Clock, Flame } from 'lucide-react';
 import { useRace } from '../context/RaceContext';
+import { supabase } from '../lib/supabaseClient';
 import LedBoard from '../components/LedBoard';
 import ScannerInput from '../components/ScannerInput';
 import ScanSyncBadge from '../components/ScanSyncBadge';
@@ -42,6 +43,22 @@ export default function CheckIn() {
   const [isSetupOpen, setIsSetupOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(true);
 
+  // Persistent Supabase Realtime channel for cross-device / cross-origin monitor casting
+  const monitorChannelRef = useRef(null);
+
+  useEffect(() => {
+    const channel = supabase.channel('rohn_monitor_stream', {
+      config: { broadcast: { ack: false } }
+    });
+    channel.subscribe();
+    monitorChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      monitorChannelRef.current = null;
+    };
+  }, []);
+
   // Database-backed check-in stats & counts
   const stats = useMemo(() => {
     const cleanRunners = (runners || []).filter(r => r.bib !== 'RUNNER_CONFIG' && !String(r.bib || '').startsWith('__'));
@@ -61,6 +78,10 @@ export default function CheckIn() {
   const castToMonitor = (targetMonitorId, runnerData) => {
     if (!targetMonitorId || targetMonitorId === 'none' || !runnerData) return;
 
+    const checkinTime = runnerData.checkin 
+      ? (typeof runnerData.checkin === 'number' ? new Date(runnerData.checkin).toISOString() : runnerData.checkin)
+      : (runnerData.checked_in_at || new Date().toISOString());
+
     const eventPayload = {
       type: 'ROHN_MONITOR_CAST',
       source: 'rohn_admin_checkin',
@@ -69,9 +90,36 @@ export default function CheckIn() {
       name: runnerData.name || '',
       distance: (runnerData.distance || runnerData.cat || '').toString().toUpperCase().replace(/\s+/g, ''),
       ageGroup: runnerData.age_group || runnerData.ageGroup || runnerData.age || '-',
+      checkinTime: checkinTime,
+      gunStartTime: runnerData.gun_start_time || checkinTime,
       timestamp: Date.now()
     };
 
+    // 1. Supabase Realtime Broadcast (Works across different origins, browsers, and devices)
+    try {
+      if (monitorChannelRef.current) {
+        monitorChannelRef.current.send({
+          type: 'broadcast',
+          event: 'monitor_cast',
+          payload: eventPayload
+        });
+      }
+    } catch (e) {
+      console.warn('Supabase monitor broadcast failed:', e);
+    }
+
+    if (selectedEventId) {
+      try {
+        const evChannel = supabase.channel(`results:${selectedEventId}`);
+        evChannel.send({
+          type: 'broadcast',
+          event: 'monitor_cast',
+          payload: eventPayload
+        }).catch(() => {});
+      } catch (e) {}
+    }
+
+    // 2. LocalStorage & BroadcastChannel (Fast same-origin fallback)
     try {
       localStorage.setItem('react_cast_event', JSON.stringify(eventPayload));
       localStorage.setItem('rohn_monitor_cast', JSON.stringify(eventPayload));
@@ -89,6 +137,7 @@ export default function CheckIn() {
       bc2.close();
     } catch (e) {}
 
+    // 3. Window postMessage (Direct child window fallback)
     if (openedMonitor && !openedMonitor.closed) {
       try {
         openedMonitor.postMessage(eventPayload, '*');
@@ -116,14 +165,26 @@ export default function CheckIn() {
       const result = processScan('Check-in', bib, null, preResolvedRunner);
       
       if (!result.success) {
-        const notFoundRunner = result.runner || preResolvedRunner || { bib: String(bib || '—'), name: 'NOT FOUND', nat: '', age: '', cat: '' };
-        setLedState({ 
-          runner: notFoundRunner, 
-          message: result.message || 'NOT FOUND', 
-          warn: true 
-        });
-        if (monitorId && monitorId !== 'none') {
-          castToMonitor(monitorId, { bib: String(bib || '—'), name: 'NOT FOUND', cat: '-', age: '-' });
+        if (result.isRescan && result.runner) {
+          // Runner already checked in (re-scan): still show valid runner details on screen
+          setLedState({ 
+            runner: result.runner, 
+            message: result.message || 'Checked In แล้ว', 
+            warn: true 
+          });
+          if (monitorId && monitorId !== 'none') {
+            castToMonitor(monitorId, result.runner);
+          }
+        } else {
+          const notFoundRunner = result.runner || preResolvedRunner || { bib: String(bib || '—'), name: 'NOT FOUND', nat: '', age: '', cat: '' };
+          setLedState({ 
+            runner: notFoundRunner, 
+            message: result.message || 'NOT FOUND', 
+            warn: true 
+          });
+          if (monitorId && monitorId !== 'none') {
+            castToMonitor(monitorId, { bib: String(bib || '—'), name: 'NOT FOUND', cat: '-', age: '-' });
+          }
         }
       } else {
         setLedState({ 
