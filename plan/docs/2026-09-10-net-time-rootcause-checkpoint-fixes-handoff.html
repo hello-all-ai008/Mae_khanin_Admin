@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุปงาน Net Time Root Cause + Checkpoint Config — ส่งต่อทีม</title>
+<style>
+  :root{
+    --bg:#efe9e0; --bg-alt:#e6ded1; --surface:#f7f2e9; --surface-2:#fbf8f2;
+    --ink:#3a342b; --ink-soft:#6b6153; --line:#d8cfbe;
+    --accent:#8a6d4b; --accent-2:#5f7a6a; --amber:#b8853a;
+    --danger:#a85c4a; --danger-bg:#f3e3dd; --ok-bg:#e7ede4; --ok:#4f7a5a;
+    --shadow: 0 2px 10px rgba(58,52,43,0.08), 0 8px 24px rgba(58,52,43,0.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Sarabun","Noto Sans Thai","Segoe UI",system-ui,sans-serif;line-height:1.65;padding:0 0 64px;}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px;}
+  header.hero{background:linear-gradient(135deg,#4a4436,#5f5847 55%,#6b6350);color:#f3ede1;padding:44px 0 36px;margin-bottom:36px;}
+  header.hero .eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:#d8cba9;margin-bottom:10px;}
+  header.hero h1{margin:0 0 10px;font-size:clamp(22px,3.2vw,30px);font-weight:700;}
+  header.hero p{margin:4px 0;color:#e6ddc9;font-size:14.5px;}
+  header.hero .sessions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+  header.hero .sessions span{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:999px;padding:5px 12px;font-size:12.5px;font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+
+  section{margin-bottom:34px;}
+  h2.section-title{font-size:20px;margin:0 0 16px;padding-bottom:10px;border-bottom:2px solid var(--line);display:flex;align-items:center;gap:10px;}
+  h2.section-title .num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;flex:none;}
+  h3.sub-title{font-size:15.5px;margin:22px 0 10px;color:var(--ink);}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;box-shadow:var(--shadow);margin-bottom:18px;}
+  .card h3{margin:0 0 4px;font-size:17px;}
+  .card .meta{color:var(--ink-soft);font-size:13px;margin-bottom:16px;}
+  .card .meta code{background:var(--bg-alt);padding:1px 6px;border-radius:5px;font-size:12px;}
+  .card p{font-size:14px;margin:8px 0;}
+  .card ul{font-size:14px;margin:8px 0;padding-left:20px;}
+  .card li{margin-bottom:6px;}
+  .card code{background:var(--bg-alt);padding:1px 6px;border-radius:5px;font-size:12.5px;font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;margin-right:6px;margin-bottom:6px;}
+  .tag.add{background:var(--ok-bg);color:var(--ok);}
+  .tag.fix{background:#eee3cf;color:var(--amber);}
+  .tag.investigate{background:#e6e2d6;color:var(--ink-soft);}
+  .tag.open{background:var(--danger-bg);color:var(--danger);}
+  .tag.critical{background:#f3e3dd;color:var(--danger);border:1px solid #d6a793;}
+  .tag.done{background:var(--ok-bg);color:var(--ok);border:1px solid #a9c2ab;}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:680px){.grid-2{grid-template-columns:1fr;}}
+
+  .box{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .box h4{margin:0 0 8px;font-size:13.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
+  .box ul{margin:0;padding-left:20px;font-size:14px;}
+  .box ul li{margin-bottom:6px;}
+  .box code{background:var(--bg-alt);padding:1px 6px;border-radius:5px;font-size:12.5px;font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+
+  .callout{border-radius:12px;padding:18px 20px;border:1px solid #e0b98a;background:#f6e9d3;}
+  .callout.danger{border-color:#d6a793;background:var(--danger-bg);}
+  .callout.ok{border-color:#a9c2ab;background:var(--ok-bg);}
+  .callout h4{margin:0 0 10px;font-size:15px;color:#7a5322;}
+  .callout.danger h4{color:#7a4032;}
+  .callout.ok h4{color:#3f5f47;}
+  .callout ul{margin:0;padding-left:20px;font-size:14px;}
+  .callout li{margin-bottom:6px;}
+  .callout p{font-size:14px;margin:0 0 8px;}
+
+  table.simple{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px;}
+  table.simple th, table.simple td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;}
+  table.simple th{color:var(--ink-soft);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;}
+  .scroll-x{overflow-x:auto;}
+
+  .diff-mock{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
+  @media (max-width:680px){.diff-mock{grid-template-columns:1fr;}}
+  .diff-col{border-radius:10px;padding:14px 16px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;overflow-x:auto;}
+  .diff-col.bad{background:var(--danger-bg);border:1px solid #d6a793;}
+  .diff-col.good{background:var(--ok-bg);border:1px solid #a9c2ab;}
+  .diff-col .diff-label{font-family:"Sarabun","Noto Sans Thai",sans-serif;font-weight:700;font-size:12.5px;margin-bottom:8px;}
+  .diff-col.bad .diff-label{color:var(--danger);}
+  .diff-col.good .diff-label{color:var(--ok);}
+  .diff-col div.line{padding:2px 0;white-space:pre;}
+
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;}
+  .badge.finished{background:var(--ok-bg);color:var(--ok);}
+  .badge.pushme{background:var(--danger-bg);color:var(--danger);}
+
+  /* mockup: leaderboard row before/after */
+  .lb-mock{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px;}
+  .lb-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;background:#fff;border:1px solid var(--line);margin-bottom:8px;}
+  .lb-row .lb-name{font-weight:700;font-size:13.5px;}
+  .lb-row .lb-bib{font-size:11.5px;color:var(--ink-soft);}
+  .lb-row .lb-time{font-family:ui-monospace,monospace;font-weight:700;font-size:14px;text-align:right;}
+  .lb-row .lb-time-label{font-size:10px;font-weight:600;text-align:right;}
+  .lb-row.finish .lb-time-label{color:#0284c7;}
+  .lb-row.net .lb-time-label{color:var(--ink-soft);}
+
+  /* mockup: git timeline */
+  .git-timeline{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:20px;margin-top:14px;}
+  .gt-item{display:flex;align-items:flex-start;gap:14px;padding-bottom:16px;position:relative;}
+  .gt-item:not(:last-child)::before{content:"";position:absolute;left:9px;top:22px;bottom:-4px;width:2px;background:var(--line);}
+  .gt-dot{width:20px;height:20px;border-radius:50%;background:var(--accent-2);flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;}
+  .gt-dot::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff;}
+  .gt-item.bad .gt-dot{background:var(--danger);}
+  .gt-item.ok .gt-dot{background:var(--ok);}
+  .gt-item.now .gt-dot{background:var(--amber);}
+  .gt-body .gt-title{font-weight:700;font-size:14.5px;}
+  .gt-body .gt-title .hash{font-weight:500;color:var(--ink-soft);font-size:12px;font-family:ui-monospace,monospace;}
+  .gt-body .gt-note{font-size:13px;color:var(--ink-soft);margin-top:2px;}
+  .gt-body .gt-note.warn{color:var(--danger);font-weight:600;}
+
+  /* mockup: repo state cards */
+  .repo-card{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:13px;}
+  .repo-card.warn{border-color:#d6a793;background:var(--danger-bg);}
+  .repo-card .repo-name{font-weight:700;font-size:14px;margin-bottom:6px;}
+  .repo-card code{font-family:ui-monospace,monospace;font-size:12px;background:rgba(0,0,0,0.05);padding:1px 5px;border-radius:4px;}
+
+  footer{text-align:center;color:var(--ink-soft);font-size:12.5px;margin-top:40px;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Mae Khanin Admin · ส่งต่อทีม 2026-09-10</div>
+    <h1>Net Time Root Cause, Checkpoint Config Fix, Station-Name RLS — สรุป 2 เซสชัน</h1>
+    <p>ช่วงเวลาทำงาน 2026-09-09 บ่าย (2 เซสชันคู่ขนาน ไม่ชนไฟล์กัน) · ระบบที่แตะ: Mae_khanin_Admin, ROHN-RUNNER, Supabase (kjtbfzsgnsvkfjgayuys)</p>
+    <div class="sessions">
+      <span>d5971199 · 14:01–16:13</span>
+      <span>c4aba48a · 14:05–17:24</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <div class="callout danger">
+      <h4>⚠ สิ่งที่ต้องทำก่อนอื่น — Push ROHN-RUNNER dev-gong</h4>
+      <p>ทั้ง 2 เซสชันจบโดยยังไม่ commit อะไรเลย — แต่ตรวจ live repo ตอนนี้พบว่า <strong>งานเกือบทั้งหมดถูก commit ไปแล้วโดยอีกเซสชันที่รันทีหลัง</strong> ยกเว้นอันเดียว: commit <code>2d2ff99</code> (แก้ Net Time root cause จริง) ของ ROHN-RUNNER <strong>ยัง push ไม่ถึง origin/main</strong> — เว็บ Vercel จริงยังรันโค้ดเก่าที่ก้องเจอบั๊กอยู่</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num">0</span>สถานะ Repo จริงตอนนี้ (เช็คสด ไม่ใช่จากบันทึกเซสชัน)</h2>
+    <div class="grid-2">
+      <div class="repo-card">
+        <div class="repo-name">Mae_khanin_Admin</div>
+        branch <code>dev-gong</code> · HEAD <code>85e835d</code><br>
+        สะอาด ตรงกับ <code>origin/main</code> เป๊ะ ไม่มีอะไรค้าง
+      </div>
+      <div class="repo-card warn">
+        <div class="repo-name">ROHN-RUNNER</div>
+        branch <code>dev-gong</code> · HEAD <code>2d2ff99</code><br>
+        สะอาด แต่ <strong>ล้ำหน้า origin/main 1 commit ที่ยังไม่ push</strong>
+      </div>
+    </div>
+
+    <h3 class="sub-title">Commit ที่เกิดขึ้นจริง ↔ ตรงกับงานในเซสชันไหน</h3>
+    <div class="scroll-x">
+    <table class="simple">
+      <tr><th>Commit (repo)</th><th>ข้อความ commit</th><th>ตรงกับ</th></tr>
+      <tr><td><code>498f9a7</code> Admin</td><td>update check-in logic to exclude pre-registered runners</td><td>d5971199 · §1.1</td></tr>
+      <tr><td><code>70516c0</code> Admin</td><td>feat(db): expose CP stations + grant anon</td><td>c4aba48a · §2.1</td></tr>
+      <tr><td><code>75bac9e</code> Admin</td><td>feat(runner): raw checkpoints mapping</td><td>d5971199 · §1.3</td></tr>
+      <tr><td><code>85e835d</code> Admin</td><td>feat(leaderboard): earliest checkpoint scan before finish</td><td>c4aba48a · §2.2</td></tr>
+      <tr><td><code>f90ab82</code> ROHN-RUNNER</td><td>feat(leaderboard): mobile layout/styling</td><td>c4aba48a · §2.4</td></tr>
+      <tr><td><code>2d2ff99</code> ROHN-RUNNER</td><td>fix(results): improve start time validation</td><td>c4aba48a · §2.5 — <strong>ยังไม่ push</strong></td></tr>
+      <tr><td><code>5666bcb</code> ROHN-RUNNER</td><td>feat(monitor): check-in timestamp resolution</td><td>d5971199 · §1.2</td></tr>
+    </table>
+    </div>
+    <p style="font-size:13px;color:var(--ink-soft);margin-top:10px;">Migration ของ §1.3 (<code>add_missing_cp_checkpoint_bindings</code>) apply ไปที่ DB จริงแล้วผ่าน Supabase MCP แต่ยังไม่มีไฟล์ใน <code>supabase/migrations/</code> — เสี่ยงต่ำ (เป็น INSERT ... WHERE NOT EXISTS) แต่ควรเขียนไฟล์เก็บไว้ถ้ามีเวลา</p>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num">1</span>เซสชัน d5971199 (14:01–16:13) — แก้บั๊กที่ Tiw รายงาน + CP(A1) ไม่ขึ้น</h2>
+
+    <div class="card">
+      <h3>1.1 Admin: check-in ค้าง scan ซ้ำไม่ได้ <span class="tag done">FIXED · committed</span></h3>
+      <div class="meta"><code>RunnerTimingModal.jsx</code> · <code>RaceContext.jsx</code></div>
+      <p><strong>ต้นเหตุ:</strong> <code>RaceContext</code> เช็คค่า <code>r.checkin</code> ที่ค้างในหน่วยความจำ ไม่เคยอัปเดตใหม่ — ตอน Modal เคลียร์ check-in ใน DB แต่ไม่เคยเรียก <code>updateRunner()</code> ทำให้ scan ซ้ำถูกบล็อกทั้งที่ล้างค่าไปแล้วจริง</p>
+      <p><strong>แก้:</strong> Modal เรียก <code>updateRunner()</code> ด้วยค่า checkin สดก่อน save เสร็จ + กัน 2 ชั้นที่ RaceContext ด้วยเงื่อนไข <code>registration_status !== 'PRE_REGISTERED'</code></p>
+      <p style="font-size:13px;color:var(--ink-soft);">Verifier: ผ่านรอบเดียว build clean, test 94/94 ผ่าน — แต่เจอจุดเก่าที่ยังไม่แก้: <code>EditRunnerModal.jsx</code> / bulk-reset ก็ไม่เรียก <code>updateRunner()</code> เหมือนกัน (ดู §3 ข้อ 10)</p>
+    </div>
+
+    <div class="card">
+      <h3>1.2 ROHN-RUNNER: Monitor.jsx realtime กระตุก + เวลาปล่อยตัวโชว์เป็น "Check in" ผิด <span class="tag done">FIXED · committed</span></h3>
+      <div class="meta"><code>src/pages/Monitor.jsx</code></div>
+      <p><strong>ต้นเหตุ:</strong> effect ตัวเดียวผูก subscribe realtime channel ไว้กับ dependency ที่เปลี่ยนทุกครั้งที่มี broadcast เข้า → channel ถูกทำลาย-สร้างใหม่ทุก scan ทำให้เดี้ยง/กระตุก</p>
+      <p><strong>แก้:</strong> แยกเป็น 2 effect (รับ event ราคาถูก vs. subscribe transport ที่ dep นิ่งแล้ว) + เพิ่ม <code>resolveCheckinTime()</code> เป็นจุดตัดสินใจเดียวว่าเวลานี้ "check-in จริง" หรือ "แค่กำหนดการปล่อยตัว"</p>
+      <p style="font-size:13px;color:var(--ink-soft);">Round 1 verifier เจอ HIGH (regression) — แก้ด้วยการถามก้องเลือกพฤติกรรมที่ต้องการ (เลือก "Start (scheduled)" เสมอ สำหรับ self-serve scan) ไม่ใช่บั๊กจริง Round 2 ผ่าน แต่เจอจุดใหม่ยังไม่แก้: <code>handleManualSubmit</code> (คีย์ BIB มือ) ยังปลอมเวลา "ตอนนี้" แล้วโชว์ "Check in" เสมอ (§3 ข้อ 11)</p>
+    </div>
+
+    <div class="card">
+      <h3>1.3 Admin: /runner-progress ไม่ขึ้น CP(A1) <span class="tag done">FIXED · committed</span></h3>
+      <div class="meta"><code>RunnerProgressControl.jsx</code> + Supabase migration</div>
+      <p><strong>ต้นเหตุ 2 จุด:</strong> (1) ตาราง config ไม่เคยผูก A1/A2/Finish กับทั้ง 2 รุ่นเลย ทั้งที่ scan จริงมีข้อมูลอยู่แล้ว (2) โค้ดส่ง props รูปแบบผิดให้ Modal ทำให้ได้ <code>id: undefined</code> / "Checkpoint N" ปลอม</p>
+      <p><strong>แก้:</strong> migration เพิ่มแถว config ที่ขาด (cutoff_time = NULL ตามที่ก้องเลือก) + เพิ่ม memo ใหม่ส่ง raw junction row ที่ถูกรูปแบบให้ Modal</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num">2</span>เซสชัน c4aba48a (14:05–17:24) — ไล่บั๊ก Net Time ให้ถึงรากจริง</h2>
+
+    <div class="card">
+      <h3>2.1 ROHN-RUNNER: /eslip โชว์ "Checkpoint 1" แทน "A1" <span class="tag done">FIXED · committed</span></h3>
+      <div class="meta">RLS + GRANT บน Supabase — ไม่แตะโค้ดแอปเลย</div>
+      <p>โค้ดไม่มีบั๊ก — ปัญหาคือ <code>public.stations</code> ไม่มี GRANT SELECT ให้ <code>anon</code> เลย (เช็คด้วย curl ตรงๆ ได้ "permission denied") Postgres บล็อกที่ชั้น grant ก่อน RLS จะทำงานด้วยซ้ำ ฉะนั้น policy ของ Start/Finish ที่มีอยู่ก็ไม่เคยทำงานจริง แค่บังเอิญไม่โดนเพราะ label เป็น string ฝังตายตัว</p>
+      <p><strong>แก้:</strong> 2 migration — เพิ่ม policy สำหรับ type='CP' + เพิ่ม GRANT SELECT ให้ anon</p>
+    </div>
+
+    <div class="card">
+      <h3>2.2 → 2.5 Admin & ROHN-RUNNER: ไล่บั๊ก Net Time ไม่ขึ้น ยาว 4 รอบ <span class="tag done">FIXED · committed (ROHN-RUNNER ยัง push ไม่ถึง)</span></h3>
+      <div class="meta"><code>LiveLeaderboard.jsx</code> (Admin) · <code>src/lib/results.js</code> (ROHN-RUNNER)</div>
+
+      <h4 style="font-size:13px;color:var(--ink-soft);margin:14px 0 4px;">รอบ 1 — คืนค่า fallback ที่หายไปจาก regression เก่า (Admin)</h4>
+      <p>commit <code>cbc21cf</code> เคยลบ fallback สแกนจุดตรวจแรกสุดออกจาก <code>getRunnerStartEpoch</code> → คืนกลับมา แต่ <strong>ไม่ได้แก้ที่ ROHN-RUNNER เลย</strong> เพราะเป็นคนละไฟล์คนละ repo</p>
+
+      <h4 style="font-size:13px;color:var(--ink-soft);margin:14px 0 4px;">รอบ 2 — ก้องทดสอบแล้วบอก "ไม่ได้ผล" → เจอรัน dev server 2 ตัวพร้อมกัน</h4>
+      <p>Admin (:5173) กับ ROHN-RUNNER (:5174) รันพร้อมกัน — leaderboard ที่ก้องดูจริงคือของ ROHN-RUNNER คนละไฟล์กับที่เพิ่งแก้ไป จึงมิเรอร์ fallback เดียวกันไปใส่ <code>results.js</code></p>
+
+      <h4 style="font-size:13px;color:var(--ink-soft);margin:14px 0 4px;">รอบ 3 — deploy ขึ้น Vercel แล้วยังไม่หาย → เจอรากจริง</h4>
+      <p>เช็ค view definition ของ <code>public_results</code> เจอว่า <code>gun_start_time</code> จริงๆ คือ <strong>เวลา cutoff ตามกำหนดการของรุ่น</strong> ไม่ใช่เวลาสแกนจริง ข้อมูลทดสอบตอนนี้เข้าเส้นชัยก่อนวันแข่งจริง (12 ก.ย.) ทำให้ค่า cutoff (ตั้งไว้เป็น 12 ก.ย.) ดันมาอยู่ "หลัง" เวลาเข้าเส้นชัย แล้วโค้ดก็ยอมรับมันโดยไม่เช็คก่อน — ทำให้ fallback CP-scan ไม่เคยถูกเรียกเลย</p>
+
+      <h4 style="font-size:13px;color:var(--ink-soft);margin:14px 0 4px;">แก้จริง — เพิ่มเงื่อนไข "เวลาเริ่มต้องมาก่อนเข้าเส้นชัยเท่านั้น"</h4>
+      <div class="diff-mock">
+        <div class="diff-col bad">
+          <div class="diff-label">❌ ก่อนแก้</div>
+          <div class="line">if (ep != null) return ep;</div>
+          <div class="line" style="color:#8a5c4a;">// ยอมรับ gun_start_time</div>
+          <div class="line" style="color:#8a5c4a;">// แม้มันจะมาทีหลัง finish</div>
+        </div>
+        <div class="diff-col good">
+          <div class="diff-label">✅ หลังแก้</div>
+          <div class="line">if (ep != null &amp;&amp;</div>
+          <div class="line">    (!refTimestamp ||</div>
+          <div class="line">     ep &lt; refTimestamp))</div>
+          <div class="line">  return ep;</div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--ink-soft);margin-top:10px;">ทดสอบจำลองด้วยข้อมูลจริง BIB 1501/1490/1860 ยืนยันตกลงไปใช้ CP-scan fallback ถูกต้อง — <strong>นี่คือ commit <code>2d2ff99</code> ที่ยัง push ไม่ถึง origin/main</strong></p>
+    </div>
+
+    <div class="card">
+      <h3>2.4 ROHN-RUNNER: ชื่อ/BIB ถูกตัดบนมือถือ <span class="tag done">FIXED · committed</span></h3>
+      <div class="meta"><code>Leaderboard.jsx</code></div>
+      <p>จัดแถว Top-5 ใหม่เป็น class ชื่อเฉพาะ + CSS มือถือให้ชื่อ/BIB/เวลาเรียงเป็นบรรทัด แทนการตัดด้วย ellipsis เดิม</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num">3</span>สรุปสถานะจริงของทุกอย่างที่ค้าง (เช็คสดกับโค้ดปัจจุบัน)</h2>
+    <p style="font-size:14px;color:var(--ink-soft);">เทียบ pending list เดิมจากทั้ง 2 เซสชัน กับโค้ดจริงตอนนี้ — ข่าวดีคือหลายอันมีอีกเซสชันหนึ่ง (เช้าวันเดียวกัน ก่อน 2 เซสชันนี้เริ่ม) แก้ไปแล้วโดยไม่รู้ตัว</p>
+    <div class="scroll-x">
+    <table class="simple">
+      <tr><th>#</th><th>รายการ</th><th>สถานะจริงตอนนี้</th></tr>
+      <tr><td>1</td><td><strong>Push ROHN-RUNNER dev-gong → origin</strong></td><td><span class="tag open">ยังต้องทำ</span> Vercel ยังรันโค้ดเก่า</td></tr>
+      <tr><td>2</td><td>GenerateBibModal 1000-row cap</td><td><span class="tag done">แก้แล้ว</span> (commit อื่น เช้าวันเดียวกัน)</td></tr>
+      <tr><td>3</td><td>Admin leaderboard finish-time fallback</td><td><span class="tag done">แก้แล้ว</span></td></tr>
+      <tr><td>4</td><td>ROHN-RUNNER ESlip timezone</td><td><span class="tag done">แก้แล้ว</span></td></tr>
+      <tr><td>5</td><td>LiveLeaderboard ตัด DNS/DNF ออกจากอันดับ</td><td><span class="tag done">แก้แล้ว</span></td></tr>
+      <tr><td>6</td><td>DNS toggle ล้าง finishStr ค้าง / race_status_by ถูกเขียนทับทุกครั้ง</td><td><span class="tag done">แก้แล้ว</span></td></tr>
+      <tr><td>7</td><td>A1/A2 rollout (10 จุด)</td><td><span class="tag open">ยังทำแค่ 1/10</span> รอคำตอบก้อง: หน้า setup เก็บชื่อจริงหรือเปลี่ยนด้วย</td></tr>
+      <tr><td>8</td><td>ROHN-RUNNER category-color</td><td><span class="tag open">ยังไม่เริ่ม</span> รอ migration RLS</td></tr>
+      <tr><td>9</td><td>Unit test สำหรับฟังก์ชันคำนวณเวลา/สถานะ</td><td><span class="tag open">ยังไม่มี</span> — ฟังก์ชันนี้พังซ้ำมาแล้วหลายรอบใน 2 วัน</td></tr>
+      <tr><td>10</td><td>EditRunnerModal/bulk-reset ไม่ sync RaceContext</td><td><span class="tag open">ยังไม่แก้</span></td></tr>
+      <tr><td>11</td><td>Monitor.jsx handleManualSubmit ปลอมเวลา</td><td><span class="tag open">ยังไม่แก้</span></td></tr>
+      <tr><td>12</td><td>ของ Tiw: RUNNER_CONFIG dummy row / ไม่มี PIN mass-reset / ไม่เช็คเส้นทาง</td><td><span class="tag investigate">บรรเทาบางส่วน</span> กรองแถวปลอมออกแค่ 4 จุด ยังไม่แก้ราก</td></tr>
+      <tr><td>13</td><td>Admin ESlip.jsx โค้ดซ้ำ (~487-522)</td><td><span class="tag investigate">แจ้งไว้เฉยๆ</span> ไม่น่ากระทบจริง (คนละ auth context)</td></tr>
+      <tr><td>14</td><td>ชื่อไฟล์ migration ไม่ตรง timestamp remote</td><td><span class="tag open">ยังไม่แก้</span> จุดเล็กน้อย ไม่กระทบระบบ ค้างมานาน</td></tr>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="callout ok">
+      <h4>ลำดับความสำคัญสำหรับคนรับงานต่อ</h4>
+      <ul>
+        <li><strong>1. Push ROHN-RUNNER dev-gong ให้ถึง main แล้ว deploy ใหม่</strong> — ทุกอย่างอื่นในเอกสารนี้ ไม่ว่าจะแก้แล้วหรือยังไม่แก้ ไม่บล็อกวันแข่งเท่าอันนี้</li>
+        <li>2. A1/A2 rollout — รอคำตอบก้องแค่ 1 คำถามก็เดินหน้าได้</li>
+        <li>3. เขียน test ให้ฟังก์ชันคำนวณเวลา — ไม่ต้องแก้โค้ด แค่ใช้เวลา แต่จุดนี้พังซ้ำบ่อยที่สุด</li>
+        <li>4. ที่เหลือ (category-color, SQL ของ Tiw, บั๊กจุดที่รู้แล้วแต่ยังไม่แก้) ไม่บล็อกวันแข่ง 12-13 ก.ย.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>สรุปจากการอ่าน transcript ดิบของ 2 เซสชัน + ตรวจ git log/diff จริงของทั้ง 2 repo วันที่ 2026-09-10</footer>
+</div>
+
+</body>
+</html>
