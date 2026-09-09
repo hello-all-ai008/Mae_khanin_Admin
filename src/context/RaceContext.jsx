@@ -1060,7 +1060,7 @@ export function RaceProvider({ children }) {
       result.stationName = 'Check-in';
       const syncId = 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
 
-      if (r.checkin) {
+      if (r.checkin && r.registration_status !== 'PRE_REGISTERED') {
         // ── สแกนซ้ำ: สแกนไม่ได้ครั้งต่อไป แต่เก็บ Log ปกติ และยึดเวลาแรกเสมอ ──
         const firstTime = typeof r.checkin === 'number' ? r.checkin : new Date(r.checkin).getTime();
         const dFirst = new Date(firstTime);
