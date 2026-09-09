@@ -125,11 +125,11 @@ export default function FinishLine() {
         }
         .live-stat-card {
           background: #ffffff;
-          border-radius: 14px;
+          border-radius: 12px;
           border: 1px solid var(--line);
-          padding: 12px 14px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-          margin-bottom: 12px;
+          padding: 8px 10px;
+          box-shadow: 0 1px 6px rgba(0,0,0,0.02);
+          margin-bottom: 8px;
           width: 100%;
           max-width: 100%;
           box-sizing: border-box;
@@ -139,14 +139,14 @@ export default function FinishLine() {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 6px;
-          margin-bottom: 10px;
+          margin-bottom: 6px;
           width: 100%;
           box-sizing: border-box;
         }
         .stat-pill {
           background: var(--bg-soft);
-          border-radius: 10px;
-          padding: 8px 4px;
+          border-radius: 8px;
+          padding: 5px 4px;
           text-align: center;
           display: flex;
           flex-direction: column;
@@ -157,21 +157,19 @@ export default function FinishLine() {
           box-sizing: border-box;
         }
         .stat-pill .val {
-          font-size: clamp(16px, 4.5vw, 22px);
-          font-weight: 900;
+          font-size: clamp(15px, 4.2vw, 19px);
+          font-weight: 800;
           font-family: var(--mono);
           line-height: 1.1;
-          word-break: break-all;
         }
         .stat-pill .lbl {
-          font-size: clamp(9.5px, 2.8vw, 11px);
+          font-size: clamp(9px, 2.7vw, 11px);
           color: var(--ink-2);
           font-weight: 600;
-          margin-top: 2px;
+          margin-top: 1px;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          max-width: 100%;
         }
         @media (max-width: 768px) {
           .station {
@@ -197,19 +195,19 @@ export default function FinishLine() {
 
       {/* ── Top Bar: Station Badge + Event Title + Setup Trigger Button ── */}
       <div className="station-header-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span className="station-tag tag-fin" style={{ margin: 0 }}>
-            <span className="dot"></span>Station · Finish Line เส้นชัย
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          <span className="station-tag tag-fin" style={{ margin: 0, padding: '4px 10px', fontSize: '11.5px' }}>
+            <span className="dot"></span>Finish Line เส้นชัย
           </span>
           <span style={{ 
-            fontSize: '12px', 
+            fontSize: '11.5px', 
             fontWeight: 700, 
             color: 'var(--ink-2)', 
             background: 'var(--bg-soft)', 
-            padding: '4px 10px', 
+            padding: '3px 8px', 
             borderRadius: '99px',
             border: '1px solid var(--line)',
-            maxWidth: '220px',
+            maxWidth: '180px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
@@ -219,27 +217,27 @@ export default function FinishLine() {
         </div>
 
         {/* Action Buttons: Setup & History Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
             type="button"
             onClick={() => setIsSetupOpen(true)}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '7px 14px',
-              borderRadius: '10px',
+              gap: '5px',
+              padding: '6px 12px',
+              borderRadius: '9px',
               background: '#ffffff',
               border: '1px solid var(--line)',
               color: 'var(--ink)',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: '0 2px 5px rgba(0,0,0,0.04)'
+              boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
             }}
             title="เปิดเมนูตั้งค่าสถานีและตัวเลือกออฟไลน์"
           >
-            <Settings size={16} color="#2563eb" />
+            <Settings size={15} color="#2563eb" />
             <span>ตั้งค่า</span>
           </button>
 
@@ -249,20 +247,20 @@ export default function FinishLine() {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '7px 12px',
-              borderRadius: '10px',
+              gap: '5px',
+              padding: '6px 10px',
+              borderRadius: '9px',
               background: showHistory ? '#eff6ff' : '#ffffff',
               border: `1px solid ${showHistory ? '#bfdbfe' : 'var(--line)'}`,
               color: showHistory ? '#1d4ed8' : 'var(--ink-2)',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 700,
               cursor: 'pointer'
             }}
             title={showHistory ? "ซ่อนประวัติการสแกน" : "แสดงประวัติการสแกน"}
           >
             <span>ประวัติ ({recentLog.length})</span>
-            {showHistory ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+            {showHistory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
         </div>
       </div>
@@ -291,13 +289,13 @@ export default function FinishLine() {
           </div>
         </div>
 
-        {/* Visual Progress Bar */}
+        {/* Visual Progress Bar (Compact 4px) */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11.5px', marginBottom: '5px' }}>
-            <span style={{ fontWeight: 700, color: 'var(--ink)' }}>ความคืบหน้านักวิ่งเข้าเส้นชัย</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10.5px', marginBottom: '3px' }}>
+            <span style={{ fontWeight: 600, color: 'var(--ink)' }}>ความคืบหน้า</span>
             <span style={{ fontWeight: 800, color: '#16a34a' }}>{stats.percent}% ({stats.finished}/{stats.started} คน)</span>
           </div>
-          <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden' }}>
             <div 
               style={{ 
                 width: `${stats.percent}%`, 
@@ -309,17 +307,17 @@ export default function FinishLine() {
             />
           </div>
 
-          {/* DNF / DNS Badges if any */}
+          {/* DNF / DNS Badges if any (Compact) */}
           {(stats.dnfCount > 0 || stats.dnsCount > 0) && (
-            <div style={{ display: 'flex', gap: '8px', marginTop: '8px', fontSize: '11.5px' }}>
+            <div style={{ display: 'flex', gap: '6px', marginTop: '6px', fontSize: '10.5px' }}>
               {stats.dnfCount > 0 && (
-                <span style={{ background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
-                  DNF ถอนตัว: {stats.dnfCount} คน
+                <span style={{ background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                  DNF: {stats.dnfCount} คน
                 </span>
               )}
               {stats.dnsCount > 0 && (
-                <span style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
-                  DNS ไม่ได้สตาร์ท: {stats.dnsCount} คน
+                <span style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                  DNS: {stats.dnsCount} คน
                 </span>
               )}
             </div>
@@ -334,7 +332,7 @@ export default function FinishLine() {
           <ScannerInput onScan={handleScan} />
 
           {/* Mobile Instant Scan Result Card */}
-          <div className="station-mobile-side" style={{ marginTop: '12px' }}>
+          <div className="station-mobile-side" style={{ marginTop: '10px' }}>
             <MobileScanResultCard
               runner={ledState.runner}
               message={ledState.message}
@@ -343,10 +341,6 @@ export default function FinishLine() {
               stationName="Finish Line"
             />
           </div>
-
-          <p className="scan-hint" style={{ marginTop: '10px' }}>
-            สแกนซ้ำจะไม่ทับเวลาเดิม — ยึดเวลา Finish ครั้งแรกเสมอ · พิมพ์หมายเลข BIB แล้วกดปุ่ม <span className="kbd">Enter BIB</span> ได้
-          </p>
 
           {/* Collapsible Recent Scan Log */}
           {showHistory && (

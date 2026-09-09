@@ -508,61 +508,25 @@ export default function ScannerInput({ onScan }) {
           max-width: 100% !important;
         }
       `}</style>
-      {/* ── Operator / Scanner Personnel Selector Bar ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', flexWrap: 'wrap', minWidth: 0 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, color: 'var(--ink-2)' }}>
-            <UserCheck size={14} /> ผู้สแกน:
-          </span>
-          {/* Read-only: the operator comes from the signed-in session and
-              cannot be switched by hand. */}
-          <span
-            title="ชื่อผู้สแกนมาจากบัญชีที่เข้าสู่ระบบ เปลี่ยนเองไม่ได้"
-            style={{ padding: '4px 10px', fontSize: '12.5px', fontWeight: 700, borderRadius: '8px', border: '1px solid var(--line)', background: 'var(--bg-soft)', color: 'var(--ink)' }}
-          >
-            👤 {currentOperator || '—'}
-            {currentStaff?.role ? ` (${currentStaff.role})` : ''}
-          </span>
-          {/* Sign-out deliberately does NOT live on the scanning screen: one stray
-              tap next to the scan field used to strand a field station for the rest
-              of the race. It now sits in the navbar behind a confirmation. */}
-        </div>
-
-        {/* Mini Readiness Status Indicator */}
-        <div>
+      {/* ── Operator / Readiness Micro Status Bar ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '11.5px', color: 'var(--ink-2)', width: '100%', boxSizing: 'border-box', padding: '0 2px' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
+          <UserCheck size={13} style={{ color: '#2563eb' }} />
+          ผู้สแกน: <b style={{ color: 'var(--ink)' }}>{currentOperator || 'Staff'}</b>
+        </span>
+        <span>
           {runners && runners.length > 0 && lastSyncedTime ? (
-            <span style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '5px', 
-              fontSize: '11.5px', 
-              fontWeight: 700, 
-              color: '#15803d', 
-              background: '#dcfce7', 
-              padding: '3px 9px', 
-              borderRadius: '12px',
-              border: '1px solid #86efac'
-            }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px #22c55e' }}></span>
-              พร้อมสแกน ({runners.length} คน)
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#16a34a', fontWeight: 700 }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px rgba(34, 197, 94, 0.4)' }}></span>
+              พร้อมสแกน {runners.length} คน
             </span>
           ) : (
-            <span style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '4px', 
-              fontSize: '11.5px', 
-              fontWeight: 700, 
-              color: '#92400e', 
-              background: '#fef3c7', 
-              padding: '3px 9px', 
-              borderRadius: '12px',
-              border: '1px solid #fde68a'
-            }}>
-              ⚠️ รอเตรียมข้อมูล
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#d97706', fontWeight: 700 }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b' }}></span>
+              รอข้อมูล
             </span>
           )}
-        </div>
+        </span>
       </div>
 
       {/* ── Main Input & Action Buttons Bar ── */}

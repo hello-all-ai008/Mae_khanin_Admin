@@ -210,11 +210,11 @@ export default function CheckIn() {
         }
         .live-stat-card {
           background: #ffffff;
-          border-radius: 14px;
+          border-radius: 12px;
           border: 1px solid var(--line);
-          padding: 12px 14px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-          margin-bottom: 12px;
+          padding: 8px 10px;
+          box-shadow: 0 1px 6px rgba(0,0,0,0.02);
+          margin-bottom: 8px;
           width: 100%;
           max-width: 100%;
           box-sizing: border-box;
@@ -224,14 +224,14 @@ export default function CheckIn() {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 6px;
-          margin-bottom: 10px;
+          margin-bottom: 6px;
           width: 100%;
           box-sizing: border-box;
         }
         .stat-pill {
           background: var(--bg-soft);
-          border-radius: 10px;
-          padding: 8px 4px;
+          border-radius: 8px;
+          padding: 5px 4px;
           text-align: center;
           display: flex;
           flex-direction: column;
@@ -242,21 +242,19 @@ export default function CheckIn() {
           box-sizing: border-box;
         }
         .stat-pill .val {
-          font-size: clamp(16px, 4.5vw, 22px);
-          font-weight: 900;
+          font-size: clamp(15px, 4.2vw, 19px);
+          font-weight: 800;
           font-family: var(--mono);
           line-height: 1.1;
-          word-break: break-all;
         }
         .stat-pill .lbl {
-          font-size: clamp(9.5px, 2.8vw, 11px);
+          font-size: clamp(9px, 2.7vw, 11px);
           color: var(--ink-2);
           font-weight: 600;
-          margin-top: 2px;
+          margin-top: 1px;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          max-width: 100%;
         }
         @media (max-width: 768px) {
           .station {
@@ -282,19 +280,19 @@ export default function CheckIn() {
 
       {/* ── Top Bar: Station Badge + Event Title + Setup Trigger Button ── */}
       <div className="station-header-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span className="station-tag tag-start" style={{ margin: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          <span className="station-tag tag-start" style={{ margin: 0, padding: '4px 10px', fontSize: '11.5px' }}>
             <span className="dot"></span>Check-in ปล่อยตัว
           </span>
           <span style={{ 
-            fontSize: '12px', 
+            fontSize: '11.5px', 
             fontWeight: 700, 
             color: 'var(--ink-2)', 
             background: 'var(--bg-soft)', 
-            padding: '4px 10px', 
+            padding: '3px 8px', 
             borderRadius: '99px',
             border: '1px solid var(--line)',
-            maxWidth: '220px',
+            maxWidth: '180px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
@@ -304,27 +302,27 @@ export default function CheckIn() {
         </div>
 
         {/* Action Buttons: Setup & History Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
             type="button"
             onClick={() => setIsSetupOpen(true)}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '7px 14px',
-              borderRadius: '10px',
+              gap: '5px',
+              padding: '6px 12px',
+              borderRadius: '9px',
               background: '#ffffff',
               border: '1px solid var(--line)',
               color: 'var(--ink)',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: '0 2px 5px rgba(0,0,0,0.04)'
+              boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
             }}
             title="เปิดเมนูตั้งค่าสถานีและตัวเลือกออฟไลน์"
           >
-            <Settings size={16} color="#2563eb" />
+            <Settings size={15} color="#2563eb" />
             <span>ตั้งค่า</span>
           </button>
 
@@ -334,20 +332,20 @@ export default function CheckIn() {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '7px 12px',
-              borderRadius: '10px',
+              gap: '5px',
+              padding: '6px 10px',
+              borderRadius: '9px',
               background: showHistory ? '#eff6ff' : '#ffffff',
               border: `1px solid ${showHistory ? '#bfdbfe' : 'var(--line)'}`,
               color: showHistory ? '#1d4ed8' : 'var(--ink-2)',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 700,
               cursor: 'pointer'
             }}
             title={showHistory ? "ซ่อนประวัติการสแกน" : "แสดงประวัติการสแกน"}
           >
             <span>ประวัติ ({recentLog.length})</span>
-            {showHistory ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+            {showHistory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
         </div>
       </div>
@@ -374,13 +372,13 @@ export default function CheckIn() {
           </div>
         </div>
 
-        {/* Visual Progress Bar */}
+        {/* Visual Progress Bar (Compact 4px) */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11.5px', marginBottom: '5px' }}>
-            <span style={{ fontWeight: 700, color: 'var(--ink)' }}>ความคืบหน้าการเช็คอิน</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10.5px', marginBottom: '3px' }}>
+            <span style={{ fontWeight: 600, color: 'var(--ink)' }}>ความคืบหน้า</span>
             <span style={{ fontWeight: 800, color: '#16a34a' }}>{stats.percent}% ({stats.checkedIn}/{stats.total} คน)</span>
           </div>
-          <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden' }}>
             <div 
               style={{ 
                 width: `${stats.percent}%`, 

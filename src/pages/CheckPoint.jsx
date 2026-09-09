@@ -239,11 +239,11 @@ export default function CheckPoint() {
         }
         .live-stat-card {
           background: #ffffff;
-          border-radius: 14px;
+          border-radius: 12px;
           border: 1px solid var(--line);
-          padding: 12px 14px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-          margin-bottom: 12px;
+          padding: 8px 10px;
+          box-shadow: 0 1px 6px rgba(0,0,0,0.02);
+          margin-bottom: 8px;
           width: 100%;
           max-width: 100%;
           box-sizing: border-box;
@@ -253,14 +253,14 @@ export default function CheckPoint() {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 6px;
-          margin-bottom: 10px;
+          margin-bottom: 6px;
           width: 100%;
           box-sizing: border-box;
         }
         .stat-pill {
           background: var(--bg-soft);
-          border-radius: 10px;
-          padding: 8px 4px;
+          border-radius: 8px;
+          padding: 5px 4px;
           text-align: center;
           display: flex;
           flex-direction: column;
@@ -271,21 +271,19 @@ export default function CheckPoint() {
           box-sizing: border-box;
         }
         .stat-pill .val {
-          font-size: clamp(16px, 4.5vw, 22px);
-          font-weight: 900;
+          font-size: clamp(15px, 4.2vw, 19px);
+          font-weight: 800;
           font-family: var(--mono);
           line-height: 1.1;
-          word-break: break-all;
         }
         .stat-pill .lbl {
-          font-size: clamp(9.5px, 2.8vw, 11px);
+          font-size: clamp(9px, 2.7vw, 11px);
           color: var(--ink-2);
           font-weight: 600;
-          margin-top: 2px;
+          margin-top: 1px;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          max-width: 100%;
         }
         @media (max-width: 768px) {
           .station {
@@ -333,27 +331,27 @@ export default function CheckPoint() {
         </div>
 
         {/* Action Buttons: Setup & History Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
             type="button"
             onClick={() => setIsSetupOpen(true)}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '7px 14px',
-              borderRadius: '10px',
+              gap: '5px',
+              padding: '6px 12px',
+              borderRadius: '9px',
               background: '#ffffff',
               border: '1px solid var(--line)',
               color: 'var(--ink)',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: '0 2px 5px rgba(0,0,0,0.04)'
+              boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
             }}
             title="เปิดเมนูเลือกจุดตรวจ A1/A2 และการตั้งค่า"
           >
-            <Settings size={16} color="#2563eb" />
+            <Settings size={15} color="#2563eb" />
             <span>ตั้งค่า ({cpLabel})</span>
           </button>
 
@@ -363,43 +361,26 @@ export default function CheckPoint() {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '7px 12px',
-              borderRadius: '10px',
+              gap: '5px',
+              padding: '6px 10px',
+              borderRadius: '9px',
               background: showHistory ? '#eff6ff' : '#ffffff',
               border: `1px solid ${showHistory ? '#bfdbfe' : 'var(--line)'}`,
               color: showHistory ? '#1d4ed8' : 'var(--ink-2)',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 700,
               cursor: 'pointer'
             }}
             title={showHistory ? "ซ่อนประวัติการสแกน" : "แสดงประวัติการสแกน"}
           >
             <span>ประวัติ ({recentLog.length})</span>
-            {showHistory ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+            {showHistory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
         </div>
       </div>
 
       {/* ── Real-Time Database Counter & Progress Card (Per Station) ── */}
       <div className="live-stat-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 800, color: 'var(--ink)' }}>
-            <Flag size={16} color="#2563eb" />
-            <span>สถานี {cpLabel}: {cpFullName}</span>
-          </div>
-          {stats.boundCatNames.length > 0 && (
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '11px', color: '#64748b' }}>ระยะที่ผ่านจุดนี้:</span>
-              {stats.boundCatNames.map(cn => (
-                <span key={cn} style={{ fontSize: '11px', fontWeight: 700, background: '#eff6ff', color: '#1d4ed8', padding: '1px 6px', borderRadius: '4px', border: '1px solid #bfdbfe' }}>
-                  {cn}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
         <div className="stat-grid-3">
           {/* Passed Count */}
           <div className="stat-pill" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
@@ -420,13 +401,20 @@ export default function CheckPoint() {
           </div>
         </div>
 
-        {/* Visual Progress Bar */}
+        {/* Visual Progress Bar (Compact 4px) */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11.5px', marginBottom: '5px' }}>
-            <span style={{ fontWeight: 700, color: 'var(--ink)' }}>ความคืบหน้านักวิ่งผ่านจุด {cpLabel}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10.5px', marginBottom: '3px', flexWrap: 'wrap', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontWeight: 600, color: 'var(--ink)' }}>ความคืบหน้า {cpLabel}</span>
+              {stats.boundCatNames.length > 0 && (
+                <span style={{ fontSize: '9.5px', color: '#64748b' }}>
+                  ({stats.boundCatNames.join(', ')})
+                </span>
+              )}
+            </div>
             <span style={{ fontWeight: 800, color: '#2563eb' }}>{stats.percent}% ({stats.passed}/{stats.total} คน)</span>
           </div>
-          <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden' }}>
             <div 
               style={{ 
                 width: `${stats.percent}%`, 
