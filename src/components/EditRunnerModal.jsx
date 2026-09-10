@@ -56,24 +56,30 @@ export default function EditRunnerModal({ isOpen, onClose, runner, onSave, event
     setIsSaving(true);
     
     try {
-      // `.select('id')` so an RLS-filtered UPDATE (204, no error) is not reported as success.
+      const updatePayload = {
+        bib: formData.bib,
+        name: formData.name,
+        cat: formData.cat,
+        gender: formData.gender,
+        age: formData.age,
+        nat: formData.nat,
+        registration_status: formData.registration_status,
+        ...(formData.registration_status === 'PRE_REGISTERED' ? { checked_in_at: null, checked_in_by: null } : {})
+      };
+
       assertWriteOk(
         await supabase
           .from('runners')
-          .update({
-            bib: formData.bib,
-            name: formData.name,
-            cat: formData.cat,
-            gender: formData.gender,
-            age: formData.age,
-            nat: formData.nat,
-            registration_status: formData.registration_status
-          })
+          .update(updatePayload)
           .eq('id', runner.id)
           .select('id')
       );
 
-      onSave({ ...runner, ...formData });
+      onSave({
+        ...runner,
+        ...updatePayload,
+        checkin: formData.registration_status === 'PRE_REGISTERED' ? null : runner.checkin
+      });
       onClose();
     } catch (err) {
       console.error(err);

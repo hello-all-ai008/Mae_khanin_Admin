@@ -8,7 +8,7 @@ import EditRunnerModal from '../components/EditRunnerModal';
 import { Trash2, RefreshCw, Users } from 'lucide-react';
 
 export default function RunnersList() {
-  const { addToast, showConfirm } = useRace();
+  const { addToast, showConfirm, updateRunner, preloadEventData } = useRace();
   // addToast comes from RaceContext and gets a new identity on every context
   // render — read it via ref so fetchRunners's own identity stays stable and
   // doesn't re-trigger the fetch/realtime-resubscribe effects below.
@@ -142,6 +142,9 @@ export default function RunnersList() {
 
   const handleSaveRunner = (updatedRunner) => {
     setRunners(prev => prev.map(r => r.id === updatedRunner.id ? updatedRunner : r));
+    if (typeof updateRunner === 'function') {
+      updateRunner(updatedRunner);
+    }
     addToast('อัปเดตข้อมูลนักวิ่งสำเร็จ', false);
   };
 
@@ -152,6 +155,9 @@ export default function RunnersList() {
       // `.select('id')` so an RLS-filtered DELETE (204, no error) is not reported as success.
       assertWriteOk(await supabase.from('runners').delete().eq('id', id).select('id'));
       setRunners(prev => prev.filter(r => r.id !== id));
+      if (preloadEventData && selectedEventId) {
+        preloadEventData(selectedEventId, true).catch(console.warn);
+      }
       addToast('ลบข้อมูลสำเร็จ', false);
     } catch (err) {
       console.error(err);
@@ -185,6 +191,13 @@ export default function RunnersList() {
 
       setRunners([]);
       setCategories([]);
+      if (preloadEventData && selectedEventId) {
+        try {
+          await preloadEventData(selectedEventId, true);
+        } catch (e) {
+          console.warn('Preload sync after clear runners warning:', e);
+        }
+      }
       addToast(`✓ ล้างรายชื่อนักวิ่งทั้งหมด (${deleted.length} คน) เรียบร้อยแล้ว`, false);
     } catch (err) {
       console.error('Clear runners error:', err);

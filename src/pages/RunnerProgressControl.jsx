@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function RunnerProgressControl() {
-  const { addToast, currentOperator } = useRace();
+  const { addToast, currentOperator, preloadEventData } = useRace();
   const addToastRef = useRef(addToast);
   useEffect(() => {
     addToastRef.current = addToast;
@@ -421,6 +421,13 @@ export default function RunnerProgressControl() {
 
       addToastRef.current?.('✅ รีเซ็ตข้อมูลสำเร็จเรียบร้อย');
       setConfirmResetType(null);
+      if (preloadEventData && selectedEventId) {
+        try {
+          await preloadEventData(selectedEventId, true);
+        } catch (preloadErr) {
+          console.warn('Preload sync after reset warning:', preloadErr);
+        }
+      }
       await fetchData(false);
     } catch (err) {
       console.error('Reset execution failed:', err);

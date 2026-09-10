@@ -980,8 +980,13 @@ export function RaceProvider({ children }) {
 
   const updateRunner = (updatedRunner) => {
     setRunners(prev => {
-      const next = prev.map(r => String(r.bib).trim() === String(updatedRunner.bib).trim() ? updatedRunner : r);
+      const next = prev.map(r => (String(r.bib).trim() === String(updatedRunner.bib).trim() || (updatedRunner.id && r.id === updatedRunner.id)) ? { ...r, ...updatedRunner } : r);
       runnersRef.current = next;
+      if (selectedEventId) {
+        try {
+          localStorage.setItem(`trail_cached_runners_${selectedEventId}`, JSON.stringify(next));
+        } catch {}
+      }
       return next;
     });
   };
@@ -1008,18 +1013,22 @@ export function RaceProvider({ children }) {
 
       // Only mirror into local state once the database has the row.
       setStaffList(prev => [...prev, result.data]);
-      addToast(`✓ เพิ่มเจ้าหน้าที่ "${trimmed}" เรียบร้อย`, false);
+      addToast(`เพิ่มเจ้าหน้าที่ "${trimmed}" เรียบร้อยแล้ว`);
       return result.data;
     } catch (err) {
-      console.error('Staff insert failed:', err);
-      addToast(`เพิ่มเจ้าหน้าที่ "${trimmed}" ไม่สำเร็จ: ${writeErrorMessage(err)}`, true);
+      console.error('Staff insert error:', err);
+      addToast(`เกิดข้อผิดพลาด: ${err.message}`, true);
       return null;
     }
   };
 
+  // ═════════════════════════════════════════════════════════════════════════════
+  // Core Scanner Engine (CheckPoint / Finish / Check-in)
+  // ═════════════════════════════════════════════════════════════════════════════
+
   const formatDuration = (ms) => {
-    if (ms == null || isNaN(ms)) return '—';
-    const s = Math.max(0, Math.floor(ms / 1e3));
+    if (!ms || ms < 0) return '00:00:00';
+    const s = Math.floor(ms / 1000);
     const h = String(Math.floor(s / 3600)).padStart(2, '0');
     const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
     const ss = String(s % 60).padStart(2, '0');
@@ -1060,9 +1069,11 @@ export function RaceProvider({ children }) {
       result.stationName = 'Check-in';
       const syncId = 'scan_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
 
-      if (r.checkin && r.registration_status !== 'PRE_REGISTERED') {
+      const isAlreadyCheckedIn = r.registration_status === 'CHECKED_IN' || Boolean(r.checked_in_at) || Boolean(r.checkin && r.registration_status !== 'PRE_REGISTERED');
+
+      if (isAlreadyCheckedIn) {
         // ── สแกนซ้ำ: สแกนไม่ได้ครั้งต่อไป แต่เก็บ Log ปกติ และยึดเวลาแรกเสมอ ──
-        const firstTime = typeof r.checkin === 'number' ? r.checkin : new Date(r.checkin).getTime();
+        const firstTime = typeof r.checkin === 'number' ? r.checkin : (r.checked_in_at ? new Date(r.checked_in_at).getTime() : now);
         const dFirst = new Date(firstTime);
         const firstTimeStr = dFirst.toTimeString().slice(0, 8);
 
