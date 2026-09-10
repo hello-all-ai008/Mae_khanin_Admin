@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function RunnerProgressControl() {
-  const { addToast, currentOperator, preloadEventData } = useRace();
+  const { addToast, currentOperator, preloadEventData, updateRunner } = useRace();
   const addToastRef = useRef(addToast);
   useEffect(() => {
     addToastRef.current = addToast;
@@ -294,6 +294,9 @@ export default function RunnerProgressControl() {
       );
 
       setRunners(prev => prev.map(r => r.id === runner.id ? { ...r, ...payload } : r));
+      if (typeof updateRunner === 'function') {
+        updateRunner({ id: runner.id, bib: runner.bib, ...payload });
+      }
       addToastRef.current?.(`รีเซ็ตข้อมูล BIB ${runner.bib} เรียบร้อย`);
     } catch (err) {
       console.error(err);
@@ -337,6 +340,9 @@ export default function RunnerProgressControl() {
       );
 
       setRunners(prev => prev.map(r => r.id === runner.id ? { ...r, ...payload } : r));
+      if (typeof updateRunner === 'function') {
+        updateRunner({ id: runner.id, bib: runner.bib, ...payload });
+      }
       addToastRef.current?.(isCurrentlyDns ? `ยกเลิก DNS ของ BIB ${runner.bib} แล้ว` : `ตั้งค่า BIB ${runner.bib} เป็น DNS แล้ว`);
     } catch (err) {
       console.error(err);
@@ -373,6 +379,9 @@ export default function RunnerProgressControl() {
       );
 
       setRunners(prev => prev.map(r => r.id === runner.id ? { ...r, ...payload } : r));
+      if (typeof updateRunner === 'function') {
+        updateRunner({ id: runner.id, bib: runner.bib, ...payload });
+      }
       addToastRef.current?.(isCurrentlyDnf ? `ยกเลิก DNF ของ BIB ${runner.bib} แล้ว` : `บันทึก BIB ${runner.bib} เป็น DNF แล้ว`);
     } catch (err) {
       console.error(err);
