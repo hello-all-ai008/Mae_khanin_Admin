@@ -29,3 +29,6 @@ dist-ssr
 *.xlsx
 *.csv
 check_headers.cjs
+# Sibling directories — not part of this project
+../tester/
+../to-do-list/

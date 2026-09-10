@@ -146,8 +146,9 @@ export default function CheckIn() {
   };
 
   const openMonitorWindow = () => {
+    const runnerPort = window.location.port === '5173' ? '5174' : '5173';
     const targetUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? `http://${window.location.hostname}:5174/monitor/${monitorId === 'all' ? '1' : monitorId}`
+      ? `http://${window.location.hostname}:${runnerPort}/monitor/${monitorId === 'all' ? '1' : monitorId}`
       : `https://rohn-runner.vercel.app/monitor/${monitorId === 'all' ? '1' : monitorId}`;
     
     const win = window.open(

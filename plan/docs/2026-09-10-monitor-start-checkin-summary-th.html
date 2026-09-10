@@ -1,0 +1,264 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>สรุปงาน 10 ก.ย. 2569 — Monitor Start/Check-in Display Fix</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', 'IBM Plex Sans Thai', 'Noto Sans Thai', sans-serif;
+      background: #f0f4f8;
+      color: #1a202c;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    header {
+      background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 32px rgba(43,108,176,0.25);
+    }
+    header h1 { font-size: 1.9rem; font-weight: 800; margin-bottom: 0.5rem; }
+    header p { opacity: 0.85; font-size: 0.95rem; }
+    .badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-left: 8px;
+    }
+    .badge-green { background: #c6f6d5; color: #276749; }
+    .badge-blue { background: #bee3f8; color: #2c5282; }
+    .badge-yellow { background: #fefcbf; color: #7b6000; }
+    .badge-red { background: #fed7d7; color: #9b2335; }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.8rem 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      border-left: 5px solid #2b6cb0;
+    }
+    .card.warn { border-left-color: #d69e2e; }
+    .card.success { border-left-color: #38a169; }
+    .card.error { border-left-color: #e53e3e; }
+    h2 { font-size: 1.2rem; font-weight: 700; color: #2b6cb0; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+    h3 { font-size: 1rem; font-weight: 700; color: #2d3748; margin: 1rem 0 0.5rem; }
+    p { margin-bottom: 0.8rem; font-size: 0.95rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.4rem; font-size: 0.95rem; }
+    code {
+      background: #edf2f7;
+      color: #c53030;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Fira Code', 'Courier New', monospace;
+      font-size: 0.85em;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th { background: #ebf8ff; color: #2b6cb0; padding: 10px 14px; text-align: left; font-weight: 700; }
+    td { padding: 10px 14px; border-bottom: 1px solid #e2e8f0; }
+    tr:last-child td { border-bottom: none; }
+    .status-yes { color: #38a169; font-weight: 700; }
+    .status-no { color: #e53e3e; font-weight: 700; }
+    .flow-box {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 1rem 0;
+    }
+    .flow-item {
+      flex: 1;
+      min-width: 200px;
+      background: #ebf8ff;
+      border: 1.5px solid #90cdf4;
+      border-radius: 10px;
+      padding: 1rem;
+      font-size: 0.88rem;
+    }
+    .flow-item .label { font-weight: 700; color: #2b6cb0; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .divider { height: 1px; background: #e2e8f0; margin: 1.2rem 0; }
+    footer { text-align: center; color: #718096; font-size: 0.85rem; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>สรุปงาน: Monitor Start vs Check In Display Fix</h1>
+      <p>วันที่ 10 กันยายน 2569 &nbsp;|&nbsp; โปรเจกต์ ROHN Runner &amp; ROHN Admin &nbsp;|&nbsp; <span class="badge badge-green">Completed</span></p>
+    </header>
+
+    <!-- Section 1: ปัญหาที่พบ -->
+    <div class="card error">
+      <h2>🔴 ปัญหาที่พบ (Problem Identified)</h2>
+      <p>หน้า Monitor (<code>/monitor/:id</code>) แสดงข้อความ <strong>"Check in (scheduled)"</strong> สำหรับทุกการสแกน ซึ่งไม่ถูกต้อง ควรต้องแยกออกเป็น 2 กรณีคือ:</p>
+      <ul>
+        <li>สแกนจาก <strong>หน้า Scanner</strong> หรือ <strong>Manual BIB บน Monitor</strong> → แสดง <strong>"START"</strong> ตามด้วย <strong>เวลาปล่อยตัว (gun_start_time)</strong> ตามระยะทางของนักวิ่งคนนั้น</li>
+        <li>เช็คอินจาก <strong>Admin CheckIn (Rohn-Admin)</strong> → แสดง <strong>"CHECK IN"</strong> ตามด้วย <strong>เวลาที่เช็คอินจริงจากฐานข้อมูล</strong></li>
+      </ul>
+    </div>
+
+    <!-- Section 2: สาเหตุ -->
+    <div class="card warn">
+      <h2>⚠️ สาเหตุของปัญหา (Root Cause)</h2>
+      <ul>
+        <li>ฟังก์ชัน <code>resolveCheckinTime()</code> เดิมไม่แยกประเภทของ source ที่ส่งมาจาก broadcast</li>
+        <li>View <code>public_results</code> ของ Supabase บางแถวมี <code>gun_start_time = null</code> ทำให้การ fallback ไม่ทำงาน</li>
+        <li>ไม่มีการตรวจสอบ field <code>source</code> ในข้อมูล broadcast (<code>'rohn_runner_scanner'</code> vs <code>'rohn_admin_checkin'</code>)</li>
+      </ul>
+    </div>
+
+    <!-- Section 3: สิ่งที่แก้ไข -->
+    <div class="card success">
+      <h2>✅ สิ่งที่แก้ไข (Changes Made)</h2>
+
+      <h3>Rohn-Runner: RunnerContext.jsx</h3>
+      <p>เพิ่ม fallback ใน <code>checkInRunner()</code> — ถ้า <code>runner.gun_start_time</code> ว่าง ให้หา runner อื่นที่ระยะทางเดียวกันที่มีข้อมูลนี้:</p>
+      <code>runners.find(r =&gt; distance เดียวกัน &amp;&amp; r.gun_start_time)</code>
+
+      <div class="divider"></div>
+
+      <h3>Rohn-Runner: Monitor.jsx</h3>
+      <ul>
+        <li>ลบ <code>resolveCheckinTime()</code> — แทนด้วย logic ที่ตรวจ <code>source</code></li>
+        <li>เพิ่ม helper <code>getGunStartTimeByDistance(runner, runnersList)</code> — resolve gun_start_time โดยใช้ระยะทางและ cat_name</li>
+        <li>อัปเดต <code>applyEvent()</code> ให้แยก:
+          <ul>
+            <li><code>rohn_admin_checkin</code> → ดึง checkinTime จาก broadcast หรือ runner.checked_in_at</li>
+            <li><code>rohn_runner_scanner</code> → ใช้ gunStartTime จาก getGunStartTimeByDistance()</li>
+          </ul>
+        </li>
+        <li>อัปเดต render: <code>statusLabel</code> = <strong>"Check in"</strong> หรือ <strong>"Start"</strong> ตาม source</li>
+      </ul>
+
+      <div class="divider"></div>
+
+      <h3>Rohn-Admin: CheckIn.jsx</h3>
+      <p>แก้ URL ของ <code>openMonitorWindow()</code> ให้ตรวจ port แบบ dynamic แทนที่ hardcode:</p>
+      <code>const runnerPort = window.location.port === '5173' ? '5174' : '5173';</code>
+    </div>
+
+    <!-- Section 4: ผลการตรวจสอบ -->
+    <div class="card">
+      <h2>🔍 ผลการตรวจสอบ (Verification)</h2>
+      <table>
+        <tr>
+          <th>สถานการณ์</th>
+          <th>ผลที่คาดหวัง</th>
+          <th>สถานะ</th>
+        </tr>
+        <tr>
+          <td>Manual BIB บน Monitor — BIB 1750 (10KM)</td>
+          <td>START • 9 ก.ย. 2569 / 06:00:00</td>
+          <td class="status-yes">✅ ผ่าน</td>
+        </tr>
+        <tr>
+          <td>Manual BIB บน Monitor — BIB 5114 (5KM)</td>
+          <td>START • 13 ก.ย. 2569 / 06:15:00</td>
+          <td class="status-yes">✅ ผ่าน</td>
+        </tr>
+        <tr>
+          <td>สแกนจากหน้า Scanner — BIB 1750</td>
+          <td>สำเร็จ + Start Time 06:00:00</td>
+          <td class="status-yes">✅ ผ่าน</td>
+        </tr>
+        <tr>
+          <td>ส่งจาก Admin CheckIn (source: rohn_admin_checkin)</td>
+          <td>CHECK IN + เวลาจริงจาก DB</td>
+          <td class="status-yes">✅ ผ่าน</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Section 5: Database Reference -->
+    <div class="card">
+      <h2>🗄️ ข้อมูลจากฐานข้อมูล (Database Reference)</h2>
+      <p>อ้างอิงจาก <code>DatabaseFlow.jsx</code> — ตารางและฟิลด์ที่ใช้ในระบบนี้:</p>
+      <table>
+        <tr>
+          <th>ตาราง/View</th>
+          <th>Field</th>
+          <th>ใช้ทำอะไร</th>
+        </tr>
+        <tr>
+          <td><code>public_results</code> (VIEW)</td>
+          <td><code>gun_start_time</code></td>
+          <td>เวลาปล่อยตัวตามระยะ — ใช้สำหรับ Scanner และ Manual BIB</td>
+        </tr>
+        <tr>
+          <td><code>public_results</code> (VIEW)</td>
+          <td><code>checked_in_at</code></td>
+          <td>เวลาที่เช็คอินจริง — ใช้สำหรับ Admin CheckIn</td>
+        </tr>
+        <tr>
+          <td><code>public_results</code> (VIEW)</td>
+          <td><code>checkin</code></td>
+          <td>Timestamp เช็คอิน (legacy fallback)</td>
+        </tr>
+        <tr>
+          <td><code>public_results</code> (VIEW)</td>
+          <td><code>distance</code></td>
+          <td>ระยะทางตัวเลข (เช่น 5, 10) — ใช้ค้นหา gun_start_time จากคนอื่นในระยะเดียวกัน</td>
+        </tr>
+        <tr>
+          <td><code>public_results</code> (VIEW)</td>
+          <td><code>cat_name</code></td>
+          <td>ชื่อรุ่น (เช่น "Soft Rock") — fallback สำรองสำหรับ gun_start_time</td>
+        </tr>
+      </table>
+      <p style="color:#718096; font-size:0.88rem;">⚠️ ถ้า runner แต่ละคนไม่มี <code>gun_start_time</code> ในแถวของตัวเอง ระบบจะค้นหาจาก runner คนอื่นที่ระยะทางเดียวกันแทน</p>
+    </div>
+
+    <!-- Section 6: Broadcast Channels -->
+    <div class="card">
+      <h2>📡 ช่องทางการส่งข้อมูล (Broadcast Transport)</h2>
+      <div class="flow-box">
+        <div class="flow-item">
+          <div class="label">Supabase Realtime</div>
+          <code>rohn_monitor_stream</code><br/>
+          ส่งข้ามอุปกรณ์ / ข้ามต้นทาง
+        </div>
+        <div class="flow-item">
+          <div class="label">BroadcastChannel</div>
+          <code>rohn_monitor_channel</code><br/>
+          ส่งระหว่าง Tab เดียวกัน (same-origin)
+        </div>
+        <div class="flow-item">
+          <div class="label">window.postMessage</div>
+          fallback สำหรับ popup / child window
+        </div>
+      </div>
+      <p>field <code>source</code> ใน payload คือตัวตัดสินว่าจะแสดง <strong>"Check in"</strong> หรือ <strong>"Start"</strong> บน Monitor</p>
+    </div>
+
+    <!-- Section 7: ปัญหาที่ยังค้างอยู่ -->
+    <div class="card warn">
+      <h2>⚠️ สิ่งที่ยังค้างอยู่ (Known Issues)</h2>
+      <ol>
+        <li><strong>Race condition ของ checked_in_at</strong>: ถ้า DB ยังไม่ commit ข้อมูล ณ เวลาที่ broadcast ส่งออก อาจแสดงเวลาปัจจุบันแทนแทนเวลาเช็คอินจริง (edge case, ยอมรับได้สำหรับงาน live)</li>
+        <li><strong>public_results view</strong>: ต้องตรวจสอบว่า view นี้มี column <code>checked_in_at</code> และ <code>checkin</code> จริงๆ หรือไม่ ด้วย Supabase SQL query</li>
+        <li><strong>Port auto-detection</strong>: การตรวจ port แบบ dynamic ใช้ได้แค่ใน local dev — production ใช้ vercel domain แยกกัน</li>
+      </ol>
+    </div>
+
+    <!-- Section 8: ขั้นตอนถัดไป -->
+    <div class="card">
+      <h2>🚀 ขั้นตอนถัดไป (Next Steps)</h2>
+      <ul>
+        <li>ตรวจสอบ view <code>public_results</code> ว่ามี <code>checked_in_at</code> และ <code>checkin</code> ครบหรือเปล่า</li>
+        <li>พิจารณาเพิ่ม column <code>gun_start_time</code> ใน CATEGORIES table (ตาม DatabaseFlow.jsx) เพื่อให้ resolve ได้ง่ายกว่า</li>
+        <li>เพิ่ม end-to-end test สำหรับ flow Admin CheckIn → Monitor broadcast</li>
+      </ul>
+    </div>
+
+    <footer>
+      <p>สร้างโดย Antigravity AI &nbsp;|&nbsp; โปรเจกต์ ROHN TrailTime &nbsp;|&nbsp; 10 กันยายน 2569</p>
+    </footer>
+  </div>
+</body>
+</html>
