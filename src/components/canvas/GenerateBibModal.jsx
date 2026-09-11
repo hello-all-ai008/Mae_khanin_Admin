@@ -10,6 +10,7 @@ export default function GenerateBibModal({ onClose, dimensions, layers }) {
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
   const [categories, setCategories] = useState([]);
+  const [catColorMap, setCatColorMap] = useState({});
   const [selectedCat, setSelectedCat] = useState('');
   
   const [runners, setRunners] = useState([]);
@@ -33,8 +34,11 @@ export default function GenerateBibModal({ onClose, dimensions, layers }) {
   useEffect(() => {
     if (!selectedEventId) return;
     async function fetchData() {
-      const { data: catData } = await supabase.from('categories').select('name').eq('event_id', selectedEventId);
-      if (catData) setCategories(catData.map(c => c.name));
+      const { data: catData } = await supabase.from('categories').select('name, color').eq('event_id', selectedEventId);
+      if (catData) {
+        setCategories(catData.map(c => c.name));
+        setCatColorMap(Object.fromEntries(catData.map(c => [c.name, c.color])));
+      }
       
       const { data: runData, error: runError } = await fetchAllRows((from, to) =>
         supabase
@@ -219,7 +223,7 @@ export default function GenerateBibModal({ onClose, dimensions, layers }) {
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Select Category</label>
           <select className="search" style={{ width: '100%' }} value={selectedCat} onChange={e => setSelectedCat(e.target.value)} disabled={isGenerating}>
             <option value="">ทั้งหมด (All)</option>
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            {categories.map(c => <option key={c} value={c} style={{ backgroundColor: catColorMap[c] || '#3b82f6', color: '#fff' }}>{c}</option>)}
           </select>
         </div>
 

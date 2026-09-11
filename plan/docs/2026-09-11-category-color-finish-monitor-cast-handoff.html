@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Category Color Rollout + Finish-Scan Cast — ส่งต่อทีม</title>
+<style>
+  :root{
+    --bg:#efe9e0; --bg-alt:#e6ded1; --surface:#f7f2e9; --surface-2:#fbf8f2;
+    --ink:#3a342b; --ink-soft:#6b6153; --line:#d8cfbe;
+    --accent:#8a6d4b; --accent-2:#5f7a6a; --amber:#b8853a;
+    --danger:#a85c4a; --danger-bg:#f3e3dd; --ok-bg:#e7ede4; --ok:#4f7a5a;
+    --shadow: 0 2px 10px rgba(58,52,43,0.08), 0 8px 24px rgba(58,52,43,0.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Sarabun","Noto Sans Thai","Segoe UI",system-ui,sans-serif;line-height:1.65;padding:0 0 64px;}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px;}
+  header.hero{background:linear-gradient(135deg,#4a4436,#5f5847 55%,#6b6350);color:#f3ede1;padding:44px 0 36px;margin-bottom:36px;}
+  header.hero .eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:#d8cba9;margin-bottom:10px;}
+  header.hero h1{margin:0 0 10px;font-size:clamp(21px,3vw,28px);font-weight:700;}
+  header.hero p{margin:4px 0;color:#e6ddc9;font-size:14.5px;}
+  header.hero .sessions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+  header.hero .sessions span{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:999px;padding:5px 12px;font-size:12.5px;font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+
+  section{margin-bottom:34px;}
+  h2.section-title{font-size:20px;margin:0 0 16px;padding-bottom:10px;border-bottom:2px solid var(--line);display:flex;align-items:center;gap:10px;}
+  h2.section-title .num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;flex:none;}
+  h3.sub-title{font-size:15.5px;margin:22px 0 10px;color:var(--ink);}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;box-shadow:var(--shadow);margin-bottom:18px;}
+  .card h3{margin:0 0 4px;font-size:17px;}
+  .card .meta{color:var(--ink-soft);font-size:13px;margin-bottom:16px;}
+  .card .meta code{background:var(--bg-alt);padding:1px 6px;border-radius:5px;font-size:12px;}
+  .card p{font-size:14px;margin:8px 0;}
+  .card ul{font-size:14px;margin:8px 0;padding-left:20px;}
+  .card li{margin-bottom:6px;}
+  .card code{background:var(--bg-alt);padding:1px 6px;border-radius:5px;font-size:12.5px;font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;margin-right:6px;margin-bottom:6px;}
+  .tag.done{background:var(--ok-bg);color:var(--ok);border:1px solid #a9c2ab;}
+  .tag.open{background:var(--danger-bg);color:var(--danger);}
+  .tag.new{background:#f6e9d3;color:#7a5322;border:1px solid #e0b98a;}
+  .tag.info{background:#e3e9f0;color:#3d5a8a;border:1px solid #b7c6dd;}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:680px){.grid-2{grid-template-columns:1fr;}}
+
+  .callout{border-radius:12px;padding:18px 20px;border:1px solid #e0b98a;background:#f6e9d3;}
+  .callout.ok{border-color:#a9c2ab;background:var(--ok-bg);}
+  .callout.info{border-color:#b7c6dd;background:#e3e9f0;}
+  .callout h4{margin:0 0 10px;font-size:15px;color:#7a5322;}
+  .callout.ok h4{color:#3f5f47;}
+  .callout.info h4{color:#3d5a8a;}
+  .callout ul{margin:0;padding-left:20px;font-size:14px;}
+  .callout li{margin-bottom:6px;}
+  .callout p{font-size:14px;margin:0 0 8px;}
+
+  table.simple{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px;}
+  table.simple th, table.simple td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;}
+  table.simple th{color:var(--ink-soft);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;}
+  .scroll-x{overflow-x:auto;}
+
+  /* mockup: category pills */
+  .pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .cat-pill{display:inline-flex;align-items:center;font-size:12.5px;font-weight:700;color:#fff;padding:5px 14px;border-radius:999px;}
+
+  /* mockup: leaderboard card */
+  .lb-mock{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .lb-mock .lb-name{font-weight:700;}
+  .lb-mock .lb-badge{font-size:11.5px;font-weight:700;color:#fff;padding:3px 10px;border-radius:999px;}
+
+  /* mockup: monitor screen */
+  .monitor-mock{background:#0f172a;border-radius:14px;padding:28px 20px;margin-top:14px;text-align:center;color:#fff;}
+  .monitor-mock .m-bib{font-size:38px;font-weight:800;margin-bottom:6px;}
+  .monitor-mock .m-name{font-size:18px;margin-bottom:10px;}
+  .monitor-mock .m-pill{display:inline-block;font-size:12px;font-weight:700;color:#fff;padding:4px 14px;border-radius:999px;margin-bottom:10px;}
+  .monitor-mock .m-status{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.05em;padding:6px 18px;border-radius:999px;margin-top:8px;}
+  .monitor-mock .m-rank{font-size:12px;color:#94a3b8;margin-top:6px;}
+
+  /* mockup: dashboard table */
+  .dash-mock{overflow-x:auto;margin-top:14px;}
+  table.dash{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border-radius:8px;overflow:hidden;}
+  table.dash th{background:var(--bg-alt);padding:8px 10px;text-align:left;font-size:11.5px;color:var(--ink-soft);}
+  table.dash td{padding:8px 10px;border-bottom:1px solid var(--line);}
+  .status-chip{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;}
+  .status-chip.fin{background:var(--ok-bg);color:var(--ok);}
+  .status-chip.dnf{background:var(--danger-bg);color:var(--danger);}
+  .status-chip.in{background:#fde68a;color:#92400e;}
+
+  /* mockup: summary cards */
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+  @media (max-width:500px){.summary-grid{grid-template-columns:1fr;}}
+  .summary-card{border-radius:10px;padding:12px 14px;font-size:12.5px;}
+  .summary-card .s-title{font-weight:700;margin-bottom:6px;}
+  .summary-card .s-stats{display:flex;gap:10px;color:var(--ink-soft);font-size:11.5px;}
+
+  /* mockup: git commit chips */
+  .commit-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .commit-chip{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;}
+  .commit-chip code{font-family:ui-monospace,monospace;font-weight:700;color:var(--accent);}
+
+  footer{text-align:center;color:var(--ink-soft);font-size:12.5px;margin-top:40px;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Mae Khanin Admin · ROHN-RUNNER · ส่งต่อทีม 2026-09-11</div>
+    <h1>Category Color ครบทุกจุด + Finish Scan ขึ้นจอ Monitor</h1>
+    <p>ช่วงเวลาทำงาน 2026-09-11 เช้า (2 เซสชันคู่ขนาน คนละ repo) · ระบบที่แตะ: Mae_khanin_Admin, ROHN-RUNNER, Supabase (kjtbfzsgnsvkfjgayuys)</p>
+    <div class="sessions">
+      <span>38331560 · 09:41–12:11</span>
+      <span>5d0bc6a1 · 09:41–11:30</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <div class="callout ok">
+      <h4>✅ ทุกอย่าง commit แล้ว, ตรวจสอบสด</h4>
+      <p>ทั้ง 2 เซสชันจบโดยตั้งใจไม่ commit (ก้องขอรอรวม commit กับงานค้างอื่น) — เช็คสดตอนนี้พบว่าทุกอย่าง commit ครบแล้ว</p>
+      <div class="commit-chips">
+        <div class="commit-chip">Admin <code>6a8f606</code> — category color 5 จุด</div>
+        <div class="commit-chip">Admin <code>6ac852e</code> — FinishLine cast</div>
+        <div class="commit-chip">ROHN-RUNNER <code>eb6d098</code> — leaderboard/monitor cat_color</div>
+        <div class="commit-chip">ROHN-RUNNER <code>85274d9</code> — dashboard + finish display + rank</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num">1</span>เซสชัน 38331560 (ROHN-RUNNER) — Category Color ทั้ง 3 หน้า</h2>
+
+    <div class="card">
+      <h3>1.1 บั๊กที่เจอสด: /leaderboard ขึ้น 401 หลัง migration <span class="tag done">FIXED</span></h3>
+      <p>View <code>public_results</code> ใช้ <code>security_invoker=true</code> — Postgres เช็คสิทธิ์ของ role ที่ query จริง ไม่ใช่แค่สิทธิ์ของ view ตาราง <code>categories</code> ไม่เคยให้สิทธิ์ <code>anon</code> เลย</p>
+      <p><strong>แก้:</strong> migration เพิ่ม GRANT SELECT + policy ให้ anon อ่าน categories ได้ — ยืนยันด้วย curl ตรงๆ ได้ 200 พร้อม cat_color</p>
+    </div>
+
+    <div class="card">
+      <h3>1.2 เพิ่มสีตามรุ่นในทั้ง 3 หน้า <span class="tag done">FIXED · committed</span></h3>
+      <h4 style="font-size:13px;color:var(--ink-soft);margin:14px 0 6px;">/leaderboard</h4>
+      <div class="lb-mock">
+        <span class="lb-name">สมชาย ใจดี</span>
+        <span class="lb-badge" style="background:#8b5cf6;">10 KM : Hard Rock</span>
+      </div>
+
+      <h4 style="font-size:13px;color:var(--ink-soft);margin:18px 0 6px;">/monitor — ใส่สีทั้ง BIB, pill, กรอบสถานะ (ตามที่ก้องขอเพิ่ม)</h4>
+      <div class="monitor-mock">
+        <div class="m-bib" style="color:#8b5cf6;text-shadow:0 0 18px rgba(139,92,246,.6);">1501</div>
+        <div class="m-name">สมชาย ใจดี</div>
+        <div class="m-pill" style="background:#8b5cf6;">10 KM : Hard Rock</div>
+        <div><span class="m-status" style="background:rgba(139,92,246,.18);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);">CHECK IN</span></div>
+      </div>
+
+      <h4 style="font-size:13px;color:var(--ink-soft);margin:18px 0 6px;">/dashboard — รวม column, ลบ Checkpoints, เพิ่ม Net Time</h4>
+      <div class="dash-mock">
+        <table class="dash">
+          <tr><th>BIB</th><th>ชื่อ</th><th>ระยะ</th><th>Status</th><th>Start</th><th>Net Time</th></tr>
+          <tr><td>1501</td><td>สมชาย ใจดี</td><td><span class="lb-badge" style="background:#8b5cf6;">10 KM</span></td><td><span class="status-chip fin">Finished</span></td><td>06:00:00</td><td>00:52:14</td></tr>
+          <tr><td>1490</td><td>สมหญิง มีสุข</td><td><span class="lb-badge" style="background:#f59e0b;">5 KM</span></td><td><span class="status-chip in">In Race</span></td><td>06:00:00</td><td>—</td></tr>
+        </table>
+      </div>
+
+      <h4 style="font-size:13px;color:var(--ink-soft);margin:18px 0 6px;">Summary card — จากแถบสีบางๆ → กรอบเต็ม + พื้นหลังจาง</h4>
+      <div class="summary-grid">
+        <div class="summary-card" style="background:rgba(139,92,246,.08);border:2px solid #8b5cf6;">
+          <div class="s-title" style="color:#8b5cf6;">10 KM</div>
+          <div class="s-stats"><span>FIN 12</span><span>IN 40</span><span>DNS 0</span><span>DNF 1</span></div>
+        </div>
+        <div class="summary-card" style="background:rgba(245,158,11,.08);border:2px solid #f59e0b;">
+          <div class="s-title" style="color:#f59e0b;">5 KM</div>
+          <div class="s-stats"><span>FIN 5</span><span>IN 20</span><span>DNS 0</span><span>DNF 0</span></div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--ink-soft);margin-top:10px;">ตัวเลข FIN/IN/DNS/DNF ตั้งใจใช้สีตามสถานะเหมือนเดิม ไม่ใช้สีตามรุ่น</p>
+    </div>
+
+    <div class="card">
+      <h3>1.3 ยังไม่เคยเห็นของจริง <span class="tag info">รอ race day</span></h3>
+      <p>ตอนทดสอบ event มีนักวิ่ง 1082/1082 ยังเป็น "Pre-registered" ทั้งหมด (ยังไม่ถึงวันแข่ง) — โค้ดสีผ่าน DB + unit test + build หมดแล้ว แต่ยังไม่เคยเห็นสีขึ้นจริงบนจอ แนะนำเช็คตา 30 วินาทีตอนนักวิ่งคนแรกเข้าเส้นชัยจริง</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num">2</span>เซสชัน 5d0bc6a1 (Mae_khanin_Admin) — ปิด gap สี + Finish Scan ขึ้นจอ Monitor</h2>
+
+    <div class="card">
+      <h3>2.1 ปิด gap สีที่เหลือ 5 จุด <span class="tag done">FIXED · committed</span></h3>
+      <div class="pill-row">
+        <span class="cat-pill" style="background:#8b5cf6;">OverallDashboard tab</span>
+        <span class="cat-pill" style="background:#f59e0b;">LiveLeaderboard toggle</span>
+        <span class="cat-pill" style="background:#10b981;">CheckpointsSetup dropdown</span>
+        <span class="cat-pill" style="background:#3b82f6;">RunnersList filter</span>
+        <span class="cat-pill" style="background:#ef4444;">GenerateBibModal</span>
+      </div>
+      <p style="margin-top:12px;">Builder → Verifier 2 รอบ — รอบแรก verifier เข้าใจผิดว่า migration file เป็นของที่แอบสร้างนอกขอบเขต เช็ค timestamp ไฟล์แล้วพบว่ามีอยู่ก่อนแล้วจริง (builder พูดถูก) รอบ 2 ผ่าน test 94/94 build clean</p>
+    </div>
+
+    <div class="card">
+      <h3>2.2 Finish Scan ขึ้นจอ Monitor แบบ Real-time <span class="tag new">ฟีเจอร์ใหม่ · committed</span></h3>
+      <p>เดิม <code>/check-in</code> ส่งขึ้นจอ Monitor อยู่แล้ว — รอบนี้เพิ่ม <code>/finish-line</code> ให้ทำแบบเดียวกัน สแกน finish จริงครั้งแรก (ไม่ใช่ rescan) จะส่งขึ้นจอทันที</p>
+      <div class="monitor-mock">
+        <div class="m-bib">1501</div>
+        <div class="m-name">สมชาย ใจดี</div>
+        <div class="m-pill" style="background:#8b5cf6;">10 KM : Hard Rock</div>
+        <div><span class="m-status" style="background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.4);">FINISH</span></div>
+        <div class="m-rank">อันดับรุ่น #3 • อันดับรวม #12 · Net Time 00:52:14</div>
+      </div>
+      <p style="margin-top:12px;font-size:13px;color:var(--ink-soft);">รูปแบบตามที่ก้องเลือก: เหมือนหน้า Check-in เดิม แค่เปลี่ยนป้ายเป็น "Finish" + โชว์ Net Time + อันดับ</p>
+      <p style="font-size:13px;color:var(--danger);"><strong>Verifier เจอ scope creep:</strong> builder อ้างว่าสไตล์สี BIB/กรอบสถานะ "มีอยู่แล้ว" แต่ diff จริงพบว่าเพิ่มใหม่รอบนี้ และมีผลกับสถานะ Check-in/Start ด้วย ไม่ใช่แค่ Finish ตามขอบเขต — ไม่ใช่บั๊กฟังก์ชัน แค่เกินขอบเขตที่ขอ ถามก้องแล้วเลือก "เก็บไว้"</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="callout info">
+      <h4>ℹ️ ปิดประเด็นเก่า: A1/A2 checkpoint ไม่ใช่บั๊ก</h4>
+      <p>เอกสารก่อนหน้า (2026-09-10) เคยแจ้งเตือนว่า migration ผูก A1/A2 เข้า checkpoint ใช้ชื่อตารางผิด (<code>checkpoints</code> พหูพจน์ vs <code>checkpoint</code> เอกพจน์จริง) — ตอนนี้ไม่ต้องแก้แล้ว เพราะ<strong>ก้องถอด station A1/A2 ออกเองโดยตั้งใจ</strong> วันแข่ง 12-13 ก.ย. ใช้แค่ Start/Finish 2 จุด จะกลับมาเช็คเรื่องนี้อีกทีตอนก้องเพิ่ม A1/A2 กลับเข้ามา</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title"><span class="num">3</span>รายการค้าง เรียงตามความสำคัญ</h2>
+    <div class="scroll-x">
+    <table class="simple">
+      <tr><th>#</th><th>รายการ</th><th>สถานะ</th></tr>
+      <tr><td>1</td><td>เช็คตาด้วยตาจริงตอนนักวิ่งคนแรกเข้าเส้นชัย (สีทั้ง 3 หน้า)</td><td><span class="tag info">รอ race day</span></td></tr>
+      <tr><td>2</td><td>ไฟล์ backup runner re-import ใน scratchpad — ย้ายไปเก็บถาวรหรือยัง?</td><td><span class="tag open">ไม่แน่ใจ</span></td></tr>
+      <tr><td>3</td><td>Audit #2/#3 (error ไม่โชว์ UI, loadStations fallback เงียบ)</td><td><span class="tag open">ยังไม่แก้</span> ไม่บล็อกวันแข่ง</td></tr>
+      <tr><td>4</td><td>Leaderboard scale จอ 2K/4K/8K จริง</td><td><span class="tag open">ยังไม่ทดสอบจริง</span></td></tr>
+      <tr><td>5</td><td>ของเล็กๆ ที่เหลือ (URL ฝังตายตัว, ไฟล์ใหญ่เกิน, aria-label)</td><td><span class="tag open">ไม่บล็อก</span></td></tr>
+      <tr><td>6</td><td>เมื่อก้องเพิ่ม A1/A2 กลับมา ต้องเช็ค migration checkpoint binding อีกครั้ง</td><td><span class="tag info">รอก้อง</span></td></tr>
+    </table>
+    </div>
+  </section>
+
+  <footer>สรุปจากการอ่าน transcript ดิบของ 2 เซสชัน + ตรวจ git log/diff จริงของทั้ง 2 repo วันที่ 2026-09-11</footer>
+</div>
+
+</body>
+</html>

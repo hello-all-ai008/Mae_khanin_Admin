@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { assertWriteOk } from '../lib/supabaseResult';
 
@@ -247,6 +247,11 @@ export default function EditRunnerModal({
       setIsCustomNat(false);
       setCustomNat('');
     }
+    // Intentionally re-runs only when the modal opens for a given runner (isOpen, runnerId) —
+    // this is a one-shot form reset from the runner's snapshot at open time, not a live sync.
+    // Adding the individual runner.* fields would re-run this on every RaceContext update while
+    // the modal is open, silently discarding whatever the operator has typed so far.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, runnerId]);
 
   // Check duplicate BIB in real-time (excluding the current runner)
@@ -512,7 +517,11 @@ export default function EditRunnerModal({
                 <option value={formData.cat_name}>{formData.cat || formData.cat_name} (ข้อมูลเดิม)</option>
               )}
               {dbCategories.map(c => (
-                <option key={c.name} value={c.name}>
+                <option
+                  key={c.name}
+                  value={c.name}
+                  style={{ backgroundColor: c.color || catColorMap[c.name] || '#3b82f6', color: '#fff' }}
+                >
                   {c.distance_km ? `${c.distance_km} ${c.unit || 'KM'} : ` : ''}{c.name}
                 </option>
               ))}

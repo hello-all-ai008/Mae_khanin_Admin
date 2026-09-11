@@ -391,7 +391,7 @@ export default function RunnersList() {
           style={{ width: '150px', padding: '8px 10px', fontSize: '13px' }}
         >
           <option value="">ทุกระยะ ({categories.length})</option>
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          {categories.map(c => <option key={c} value={c} style={{ backgroundColor: catColorMap[c] || '#3b82f6', color: '#fff' }}>{c}</option>)}
         </select>
       </div>
 
