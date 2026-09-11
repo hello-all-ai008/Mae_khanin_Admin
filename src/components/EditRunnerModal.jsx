@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { assertWriteOk } from '../lib/supabaseResult';
 
-export default function EditRunnerModal({ isOpen, onClose, runner, onSave, eventId }) {
+export default function EditRunnerModal({ isOpen, onClose, runner, onSave, eventId, catColorMap = {} }) {
   const [formData, setFormData] = useState({
     bib: '',
     name: '',
@@ -132,7 +132,7 @@ export default function EditRunnerModal({ isOpen, onClose, runner, onSave, event
               <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 600 }}>หมวดหมู่ (Category)</label>
               <select className="search" name="cat" value={formData.cat} onChange={handleChange} required style={{ width: '100%', padding: '8px' }}>
                 <option value="">เลือกหมวดหมู่</option>
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                {categories.map(c => <option key={c} value={c} style={{ backgroundColor: catColorMap[c] || '#3b82f6', color: '#fff' }}>{c}</option>)}
               </select>
             </div>
           </div>

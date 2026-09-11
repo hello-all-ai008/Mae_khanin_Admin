@@ -312,7 +312,7 @@ export default function CheckpointsSetup({ eventId }) {
           >
             {categories.length === 0 && <option value="">(ยังไม่มีระยะทางในระบบ)</option>}
             {categories.map(c => (
-              <option key={c.id} value={c.id}>{c.name} ({c.distance_km} {c.unit})</option>
+              <option key={c.id} value={c.id} style={{ backgroundColor: c.color || '#3b82f6', color: '#fff' }}>{c.name} ({c.distance_km} {c.unit})</option>
             ))}
           </select>
         </div>

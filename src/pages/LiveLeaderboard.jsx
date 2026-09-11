@@ -602,25 +602,28 @@ function parseAgeGroupMin(label) {
               >
                 ALL
               </button>
-              {distances.map(d => (
-                <button
-                  key={d}
-                  onClick={() => setSelectedDistance(d)}
-                  style={{
-                    background: selectedDistance === d ? 'var(--ink)' : 'transparent',
-                    color: selectedDistance === d ? '#fff' : 'var(--ink)',
-                    border: 'none',
-                    borderRadius: '24px',
-                    padding: '6px 16px',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {d}
-                </button>
-              ))}
+              {distances.map(d => {
+                const dColor = categories.find(c => c.name === d)?.color || '#3b82f6';
+                return (
+                  <button
+                    key={d}
+                    onClick={() => setSelectedDistance(d)}
+                    style={{
+                      background: selectedDistance === d ? dColor : 'transparent',
+                      color: selectedDistance === d ? '#fff' : dColor,
+                      border: selectedDistance === d ? 'none' : `1px solid ${dColor}`,
+                      borderRadius: '24px',
+                      padding: '6px 16px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
             </div>
           )}
 

@@ -405,9 +405,9 @@ export default function OverallDashboard() {
               onClick={() => setCategoryFilter(c.name)}
               style={{
                 border: '1px solid',
-                borderColor: categoryFilter === c.name ? 'var(--ink)' : 'var(--line)',
-                background: categoryFilter === c.name ? 'var(--ink)' : 'var(--bg-soft)',
-                color: categoryFilter === c.name ? '#fff' : 'var(--ink-2)',
+                borderColor: c.color || '#3b82f6',
+                background: categoryFilter === c.name ? (c.color || '#3b82f6') : 'var(--bg-soft)',
+                color: categoryFilter === c.name ? '#fff' : (c.color || '#3b82f6'),
                 borderRadius: '8px',
                 padding: '6px 14px',
                 fontSize: '13px',
