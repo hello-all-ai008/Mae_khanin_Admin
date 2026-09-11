@@ -257,8 +257,34 @@ export function RaceProvider({ children }) {
     });
   }, [stationClearedAt]);
 
-  // ── Offline & Preload Data State ──
-  const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+  // ── Network Mode (Auto / Manual Offline) & Preload Data State ──
+  const [networkMode, setNetworkModeState] = useState(() => {
+    return localStorage.getItem('trail_network_mode') || 'auto'; // 'auto' | 'offline'
+  });
+  const networkModeRef = useRef(networkMode);
+  networkModeRef.current = networkMode;
+
+  const [isBrowserOnline, setIsBrowserOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  // Effective online status: false if manually forced offline, else browser status
+  const isOnline = networkMode === 'offline' ? false : isBrowserOnline;
+
+  const setNetworkMode = useCallback((mode) => {
+    const nextMode = mode === 'offline' ? 'offline' : 'auto';
+    setNetworkModeState(nextMode);
+    networkModeRef.current = nextMode;
+    localStorage.setItem('trail_network_mode', nextMode);
+    if (nextMode === 'offline') {
+      addToast('📴 สลับเป็นโหมด ออฟไลน์ — ข้อมูลจะถูกบันทึกลงในเครื่อง และรอส่งเมื่อเปิดโหมด Auto', true);
+    } else {
+      addToast('🌐 สลับเป็นโหมด Auto — ระบบจะซิงค์ข้อมูลกับ Database อัตโนมัติเมื่อมีเน็ต', false);
+    }
+  }, [addToast]);
+
+  const toggleNetworkMode = useCallback(() => {
+    setNetworkMode(networkModeRef.current === 'offline' ? 'auto' : 'offline');
+  }, [setNetworkMode]);
+
   const [isPreloading, setIsPreloading] = useState(false);
   const [preloadProgress, setPreloadProgress] = useState(0);
   const [preloadStatusText, setPreloadStatusText] = useState('');
@@ -301,12 +327,16 @@ export function RaceProvider({ children }) {
   // Online / Offline Network Listeners
   useEffect(() => {
     const handleOnline = () => {
-      setIsOnline(true);
-      addToast('🌐 เชื่อมต่ออินเทอร์เน็ตแล้ว — กำลังเริ่มซิงค์ข้อมูลในพื้นหลัง...', false);
+      setIsBrowserOnline(true);
+      if (networkModeRef.current !== 'offline') {
+        addToast('🌐 เชื่อมต่ออินเทอร์เน็ตแล้ว — กำลังเริ่มซิงค์ข้อมูลในพื้นหลัง...', false);
+      }
     };
     const handleOffline = () => {
-      setIsOnline(false);
-      addToast('⚠️ สัญญาณเน็ตขาดหาย — ระบบสลับเข้าโหมดออฟไลน์อัตโนมัติ (ยังสแกนได้ตามปกติ)', true);
+      setIsBrowserOnline(false);
+      if (networkModeRef.current !== 'offline') {
+        addToast('⚠️ สัญญาณเน็ตขาดหาย — ระบบสลับเข้าโหมดออฟไลน์อัตโนมัติ (ยังสแกนได้ตามปกติ)', true);
+      }
     };
 
     window.addEventListener('online', handleOnline);
@@ -315,7 +345,7 @@ export function RaceProvider({ children }) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [addToast]);
 
   // Staff & Scanner Operator State.
   //
@@ -621,7 +651,7 @@ export function RaceProvider({ children }) {
 
   // ── Background Queue Worker (Non-blocking Asynchronous Synchronization) ──
   const processNextInQueue = useCallback(async () => {
-    if (isProcessingQueueRef.current || !navigator.onLine) return;
+    if (isProcessingQueueRef.current || !navigator.onLine || networkModeRef.current === 'offline') return;
 
     let currentQueue = [];
     try {
@@ -746,7 +776,7 @@ export function RaceProvider({ children }) {
         } catch {
           remaining = [];
         }
-        if (remaining.length > 0 && navigator.onLine) {
+        if (remaining.length > 0 && navigator.onLine && networkModeRef.current !== 'offline') {
           processNextInQueue();
         } else {
           setIsSyncingQueue(false);
@@ -758,6 +788,10 @@ export function RaceProvider({ children }) {
   const syncPendingQueue = async () => {
     if (pendingSyncQueue.length === 0) {
       addToast('ไม่มีข้อมูลค้างส่ง ข้อมูลเป็นปัจจุบันแล้ว ✓', false);
+      return;
+    }
+    if (networkModeRef.current === 'offline') {
+      addToast('⚠️ ระบบถูกตั้งเป็นโหมดออฟไลน์ — กรุณากดสลับเป็นโหมด Auto เพื่อส่งข้อมูลขึ้น Database', true);
       return;
     }
     if (!navigator.onLine) {
@@ -778,7 +812,7 @@ export function RaceProvider({ children }) {
   // Periodic heartbeat watchdog (every 4 seconds) to ensure all pending items are sent
   useEffect(() => {
     const timer = setInterval(() => {
-      if (navigator.onLine && !isProcessingQueueRef.current) {
+      if (navigator.onLine && networkModeRef.current !== 'offline' && !isProcessingQueueRef.current) {
         let q = [];
         try {
           const s = localStorage.getItem('trail_pending_sync_queue');
@@ -1389,6 +1423,10 @@ export function RaceProvider({ children }) {
       assignNewBibs,
       // Offline & Preload Cache & Background Sync API
       isOnline,
+      isBrowserOnline,
+      networkMode,
+      setNetworkMode,
+      toggleNetworkMode,
       isPreloading,
       preloadProgress,
       preloadStatusText,

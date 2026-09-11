@@ -145,6 +145,9 @@ export default function RunnersList() {
     if (typeof updateRunner === 'function') {
       updateRunner(updatedRunner);
     }
+    if (preloadEventData && selectedEventId) {
+      preloadEventData(selectedEventId, true).catch(console.warn);
+    }
     addToast('อัปเดตข้อมูลนักวิ่งสำเร็จ', false);
   };
 
@@ -243,7 +246,9 @@ export default function RunnersList() {
 
   const filtered = runners
     .filter(r => {
-      const matchSearch = search ? (r.bib?.includes(search) || r.name?.toLowerCase().includes(search.toLowerCase())) : true;
+      const matchSearch = search
+        ? (r.bib?.includes(search) || r.name?.toLowerCase().includes(search.toLowerCase()) || r.age_group?.toLowerCase().includes(search.toLowerCase()))
+        : true;
       const matchCat = catFilter ? r.cat === catFilter : true;
       return matchSearch && matchCat;
     })
@@ -285,7 +290,13 @@ export default function RunnersList() {
       ) : null
     },
     { key: 'gender', label: 'Gen.', defaultWidth: 180 },
-    { key: 'age', label: 'Age', defaultWidth: 180 },
+    {
+      key: 'age_group',
+      label: 'Age Group',
+      defaultWidth: 200,
+      valueGetter: (r) => r.age_group || r.age || '—',
+      render: (val, r) => val || r.age_group || r.age || '—'
+    },
     { key: 'nat', label: 'Nat.', defaultWidth: 180 },
     {
       key: 'status',
@@ -401,9 +412,11 @@ export default function RunnersList() {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         runner={selectedRunner}
+        existingRunners={runners}
+        existingCategories={categories}
+        catColorMap={catColorMap}
         onSave={handleSaveRunner}
         eventId={selectedEventId}
-        catColorMap={catColorMap}
       />
     </div>
   );
