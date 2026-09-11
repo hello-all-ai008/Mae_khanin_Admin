@@ -1,17 +1,18 @@
-import { useState, useMemo } from 'react';
-import { 
-  RefreshCw, 
-  CheckCircle2, 
-  WifiOff, 
-  Trash2, 
-  Settings, 
-  ChevronDown, 
-  ChevronUp, 
-  Trophy, 
+import { useState, useMemo, useEffect, useRef } from 'react';
+import {
+  RefreshCw,
+  CheckCircle2,
+  WifiOff,
+  Trash2,
+  Settings,
+  ChevronDown,
+  ChevronUp,
+  Trophy,
   Flag,
   AlertTriangle
 } from 'lucide-react';
 import { useRace } from '../context/RaceContext';
+import { supabase } from '../lib/supabaseClient';
 import LedBoard from '../components/LedBoard';
 import ScannerInput from '../components/ScannerInput';
 import ScanSyncBadge from '../components/ScanSyncBadge';
@@ -46,6 +47,22 @@ export default function FinishLine() {
   const [isSetupOpen, setIsSetupOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(true);
 
+  // Persistent Supabase Realtime channel for cross-device / cross-origin monitor casting
+  const monitorChannelRef = useRef(null);
+
+  useEffect(() => {
+    const channel = supabase.channel('rohn_monitor_stream', {
+      config: { broadcast: { ack: false } }
+    });
+    channel.subscribe();
+    monitorChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      monitorChannelRef.current = null;
+    };
+  }, []);
+
   // Database-backed Finish Line stats according to DatabaseFlow.jsx
   const stats = useMemo(() => {
     const cleanRunners = (runners || []).filter(r => r.bib !== 'RUNNER_CONFIG' && !String(r.bib || '').startsWith('__'));
@@ -76,22 +93,85 @@ export default function FinishLine() {
     return ev?.name || 'งานวิ่งปัจจุบัน';
   }, [events, selectedEventId]);
 
+  const castToMonitor = (targetMonitorId, runnerData, totalTime, firstTime) => {
+    if (!targetMonitorId || targetMonitorId === 'none' || !runnerData) return;
+
+    const eventPayload = {
+      type: 'ROHN_MONITOR_CAST',
+      source: 'rohn_admin_finish',
+      monitorId: targetMonitorId,
+      bib: runnerData.bib || '',
+      name: runnerData.name || '',
+      distance: (runnerData.distance || runnerData.cat || '').toString().toUpperCase().replace(/\s+/g, ''),
+      ageGroup: runnerData.age_group || runnerData.ageGroup || runnerData.age || '-',
+      finishTime: totalTime,
+      finishAt: firstTime,
+      timestamp: Date.now()
+    };
+
+    // 1. Supabase Realtime Broadcast (Works across different origins, browsers, and devices)
+    try {
+      if (monitorChannelRef.current) {
+        monitorChannelRef.current.send({
+          type: 'broadcast',
+          event: 'monitor_cast',
+          payload: eventPayload
+        });
+      }
+    } catch (e) {
+      console.warn('Supabase monitor broadcast failed:', e);
+    }
+
+    if (selectedEventId) {
+      try {
+        const evChannel = supabase.channel(`results:${selectedEventId}`);
+        evChannel.send({
+          type: 'broadcast',
+          event: 'monitor_cast',
+          payload: eventPayload
+        }).catch(() => {});
+      } catch (e) {}
+    }
+
+    // 2. LocalStorage & BroadcastChannel (Fast same-origin fallback)
+    try {
+      localStorage.setItem('react_cast_event', JSON.stringify(eventPayload));
+      localStorage.setItem('rohn_monitor_cast', JSON.stringify(eventPayload));
+    } catch (e) {}
+
+    try {
+      const bc1 = new BroadcastChannel('rohn_monitor_channel');
+      bc1.postMessage(eventPayload);
+      bc1.close();
+    } catch (e) {}
+
+    try {
+      const bc2 = new BroadcastChannel('react_cast_event');
+      bc2.postMessage(eventPayload);
+      bc2.close();
+    } catch (e) {}
+  };
+
   const handleScan = (bib, preResolvedRunner = null) => {
     try {
       const result = processScan('Finish', bib, null, preResolvedRunner);
-      
+
       if (!result.success) {
-        setLedState({ 
-          runner: result.runner || preResolvedRunner || { bib: String(bib || '—'), name: 'NOT FOUND', nat: '', age: '', cat: '' }, 
-          message: result.message || 'NOT FOUND', 
-          warn: true 
+        setLedState({
+          runner: result.runner || preResolvedRunner || { bib: String(bib || '—'), name: 'NOT FOUND', nat: '', age: '', cat: '' },
+          message: result.message || 'NOT FOUND',
+          warn: true
         });
       } else {
-        setLedState({ 
-          runner: result.runner, 
-          message: result.message, 
-          warn: false 
+        setLedState({
+          runner: result.runner,
+          message: result.message,
+          warn: false
         });
+        if (!result.isRescan) {
+          const targetMonitorId = localStorage.getItem('rohn_checkin_monitor_id') || '1';
+          castToMonitor(targetMonitorId, result.runner, result.totalTime, result.firstTime);
+        }
       }
     } catch (e) {
       console.error('FinishLine handleScan error:', e);
