@@ -7,6 +7,7 @@ import ScannerInput from '../components/ScannerInput';
 import ScanSyncBadge from '../components/ScanSyncBadge';
 import StationSetupModal from '../components/StationSetupModal';
 import MobileScanResultCard from '../components/MobileScanResultCard';
+import NetworkModeToggle from '../components/NetworkModeToggle';
 
 const safeFormatTime = (ts) => {
   if (!ts) return '—';
@@ -33,7 +34,8 @@ export default function CheckIn() {
     clearStationScanLog,
     showConfirm,
     pendingSyncQueue,
-    isOnline
+    isOnline,
+    networkMode
   } = useRace();
   const [ledState, setLedState] = useState({ runner: null, message: '', warn: false });
   const [monitorId, setMonitorId] = useState(() => {
@@ -363,8 +365,10 @@ export default function CheckIn() {
           </span>
         </div>
 
-        {/* Action Buttons: Setup & History Toggle */}
+        {/* Action Buttons: Network Mode, Setup & History Toggle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <NetworkModeToggle />
+
           <button
             type="button"
             onClick={() => setIsSetupOpen(true)}
@@ -526,13 +530,13 @@ export default function CheckIn() {
                     ) : (
                       <span className="db-sync-badge offline" style={{ fontSize: '11px', padding: '3px 8px' }}>
                         <WifiOff size={11} />
-                        ออฟไลน์ ({pendingSyncQueue.length})
+                        {networkMode === 'offline' ? 'โหมดออฟไลน์' : 'ออฟไลน์'} ({pendingSyncQueue.length})
                       </span>
                     )
                   ) : (
                     <span className="db-sync-badge synced" style={{ fontSize: '11px', padding: '3px 8px' }}>
                       <CheckCircle2 size={11} />
-                      ซิงค์คลาวด์ 100%
+                      {networkMode === 'offline' ? 'ออฟไลน์ (พร้อมสแกน)' : 'ซิงค์คลาวด์ 100%'}
                     </span>
                   )}
                 </div>

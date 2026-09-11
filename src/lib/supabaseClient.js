@@ -23,22 +23,22 @@ const SUPABASE_ANON_KEY = requireEnv('VITE_SUPABASE_ANON_KEY');
 
 // Custom safe fetch wrapper to guarantee no invalid non-ISO-8859-1 headers ever reach browser fetch
 const safeFetch = (input, init = {}) => {
-  if (init && init.headers) {
-    const cleanHeaders = {};
-    if (init.headers instanceof Headers) {
-      init.headers.forEach((value, key) => {
-        cleanHeaders[key] = sanitize(value);
-      });
-    } else if (typeof init.headers === 'object') {
-      for (const [k, v] of Object.entries(init.headers)) {
-        if (typeof v === 'string') {
-          cleanHeaders[k] = sanitize(v);
-        } else {
-          cleanHeaders[k] = v;
+  try {
+    if (init && init.headers) {
+      const cleanHeaders = {};
+      if (init.headers instanceof Headers) {
+        init.headers.forEach((value, key) => {
+          cleanHeaders[key] = typeof value === 'string' ? sanitize(value) : value;
+        });
+      } else if (typeof init.headers === 'object') {
+        for (const [k, v] of Object.entries(init.headers)) {
+          cleanHeaders[k] = typeof v === 'string' ? sanitize(v) : v;
         }
       }
+      return fetch(input, { ...init, headers: cleanHeaders });
     }
-    init.headers = cleanHeaders;
+  } catch (err) {
+    console.warn('safeFetch header sanitization error:', err);
   }
   return fetch(input, init);
 };

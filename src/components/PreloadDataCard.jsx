@@ -23,7 +23,9 @@ export default function PreloadDataCard({ eventId }) {
     categories,
     checkpoints,
     currentOperator,
-    isOnline, 
+    isOnline,
+    networkMode,
+    toggleNetworkMode,
     isPreloading, 
     preloadProgress, 
     preloadStatusText, 
@@ -144,20 +146,30 @@ export default function PreloadDataCard({ eventId }) {
           </button>
 
           {/* Network Status */}
-          <span style={{ 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: '5px', 
-            fontSize: '12px', 
-            fontWeight: 600, 
-            padding: '4px 10px', 
-            borderRadius: '20px', 
-            background: isOnline ? '#ecfdf5' : '#fee2e2', 
-            color: isOnline ? '#059669' : '#b91c1c',
-            border: isOnline ? '1px solid #a7f3d0' : '1px solid #fca5a5'
-          }}>
-            {isOnline ? <><Wifi size={13} /> ออนไลน์</> : <><WifiOff size={13} /> ออฟไลน์</>}
-          </span>
+          <button
+            type="button"
+            onClick={toggleNetworkMode}
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '5px', 
+              fontSize: '12px', 
+              fontWeight: 600, 
+              padding: '4px 10px', 
+              borderRadius: '20px', 
+              background: networkMode === 'offline' ? '#fee2e2' : (isOnline ? '#ecfdf5' : '#fffbeb'), 
+              color: networkMode === 'offline' ? '#b91c1c' : (isOnline ? '#059669' : '#b45309'),
+              border: networkMode === 'offline' ? '1px solid #fca5a5' : (isOnline ? '1px solid #a7f3d0' : '1px solid #fde68a'),
+              cursor: 'pointer'
+            }}
+            title="คลิกเพื่อสลับโหมด Auto / ออฟไลน์"
+          >
+            {networkMode === 'offline' ? (
+              <><WifiOff size={13} /> ออฟไลน์</>
+            ) : (
+              <><Wifi size={13} /> Auto ({isOnline ? 'ออนไลน์' : 'รอเน็ต'})</>
+            )}
+          </button>
 
         </div>
 
