@@ -581,13 +581,7 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
           />
         </div>
         <div className="eslip-foot-timing" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--ink-2, #64748b)', fontWeight: 600 }}>
-          <span>Timing System by</span>
-          <img 
-            src={logoRohnLabel} 
-            alt="ROHN" 
-            className="eslip-foot-logo-label"
-            style={{ height: '32px', width: 'auto', objectFit: 'contain' }} 
-          />
+          <span>Timing System by ROHN</span>
         </div>
         <span className="eslip-foot-note" style={{ fontSize: '10px', color: 'var(--ink-2, #64748b)', fontStyle: 'italic' }}>* Provisional Result ( Subject to change)</span>
       </div>

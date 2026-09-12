@@ -393,8 +393,8 @@
     margin: 0 auto !important;
     padding: 0 !important;
     transform: none !important;
-    width: 72mm !important;
-    max-width: 72mm !important;
+    width: 70mm !important;
+    max-width: 70mm !important;
     height: auto !important;
     max-height: none !important;
     min-height: 0 !important;
@@ -404,17 +404,17 @@
     break-after: avoid !important;
   }
 
-  /* The slip itself: clean natural portrait receipt flow at 72mm width without outer frame/border */
+  /* The slip itself: clean natural portrait receipt flow at 70mm width with safe margins */
   .eslip {
     display: block !important;
     position: static !important;
-    width: 72mm !important;
-    max-width: 72mm !important;
+    width: 70mm !important;
+    max-width: 70mm !important;
     height: auto !important;
     max-height: none !important;
     min-height: 0 !important;
     margin: 0 auto !important;
-    padding: 1.5mm 0 !important;
+    padding: 1.5mm 3mm 1.5mm 2mm !important;
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;
@@ -543,6 +543,7 @@
     font-size: 13.5px !important;
     font-weight: 800 !important;
     text-align: right !important;
+    padding-right: 1mm !important;
   }
 
   /* Stat cards - high contrast solid black border for thermal print */
