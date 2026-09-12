@@ -398,11 +398,13 @@
     height: auto !important;
     max-height: none !important;
     min-height: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
   }
 
-  /* The slip itself: clean natural portrait receipt flow at 72mm width */
+  /* The slip itself: clean natural portrait receipt flow at 72mm width without outer frame/border */
   .eslip {
     display: block !important;
     position: static !important;
@@ -412,10 +414,10 @@
     max-height: none !important;
     min-height: 0 !important;
     margin: 0 auto !important;
-    padding: 3.5mm 3mm !important;
+    padding: 1.5mm 0 !important;
     box-shadow: none !important;
-    border: 1.5px solid #000000 !important;
-    border-radius: 4px !important;
+    border: none !important;
+    border-radius: 0 !important;
     overflow: visible !important;
     box-sizing: border-box !important;
     color: #000000 !important;
@@ -480,11 +482,12 @@
 
   .eslip .head img,
   .eslip-head-logo {
-    height: 52px !important;
-    max-height: 52px !important;
+    height: 68px !important;
+    max-height: 68px !important;
+    max-width: 190px !important;
     width: auto !important;
     object-fit: contain !important;
-    margin-bottom: 3px !important;
+    margin-bottom: 4px !important;
   }
 
   .eslip .head span {
@@ -606,18 +609,20 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 12px !important;
+    gap: 14px !important;
   }
 
   .eslip-foot-logo-mk {
-    height: 32px !important;
-    max-height: 32px !important;
+    height: 46px !important;
+    max-height: 46px !important;
+    max-width: 120px !important;
     width: auto !important;
   }
 
   .eslip-foot-logo-rohn {
-    height: 44px !important;
-    max-height: 44px !important;
+    height: 62px !important;
+    max-height: 62px !important;
+    max-width: 180px !important;
     width: auto !important;
   }
 
@@ -632,8 +637,8 @@
   }
 
   .eslip-foot-logo-label {
-    height: 18px !important;
-    max-height: 18px !important;
+    height: 26px !important;
+    max-height: 26px !important;
     width: auto !important;
   }
 
