@@ -414,6 +414,9 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
 
   const cleanGender = formatEnglishLabel(runner.gender);
   const cleanAgeGroup = formatEnglishLabel(runner.age_group || runner.ageGroup || runner.age);
+  const eslipUrl = runner?.bib
+    ? `https://rohn-runner.vercel.app/eslip/${encodeURIComponent(runner.bib)}`
+    : 'https://rohn-runner.vercel.app/eslip';
 
   return (
     <div className="eslip">
@@ -590,6 +593,9 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
           />
         </div>
         <span className="eslip-foot-note" style={{ fontSize: '10px', color: 'var(--ink-2, #64748b)', fontStyle: 'italic' }}>* Provisional Result ( Subject to change)</span>
+        <div className="eslip-foot-url">
+          {eslipUrl}
+        </div>
       </div>
     </div>
   );

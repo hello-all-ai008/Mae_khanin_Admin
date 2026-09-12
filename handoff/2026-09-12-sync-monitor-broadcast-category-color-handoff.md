@@ -165,3 +165,18 @@ erDiagram
     - Category color dot hidden in print (`.eslip-cat-dot { display: none !important; }`).
     - Stat boxes render with white background and solid black borders `1.2px solid #000000 !important`.
     - Synchronized across both `Rohn-Admin` and `Rohn-Runner`.
+
+### 5.3 Natural Slip Height Fit, In-Slip URL & Browser Header Elimination
+
+1. **Browser Headers & Footers Elimination:**
+   - The top-left date (`9/12/26, 7:02 PM`), top-right title (`ROHN Runner`), and bottom URL/page number (`1/1`) seen in thermal roll prints are injected by the browser's **"Headers and footers" (หัวกระดาษและท้ายกระดาษ)** print option, which also forces 15-20mm artificial top/bottom margins.
+   - Programmatically in `ESlipModal.jsx`, `handlePrint` now sets `document.title = ''` before invoking `window.print()`, preventing "ROHN Runner" from appearing in the header.
+   - User instruction: In the Chrome print preview modal, uncheck **"Headers and footers"** (เอาติ๊กถูกที่ "หัวกระดาษและท้ายกระดาษ" ออก) to eliminate all browser headers/footers and paper expansion.
+
+2. **Natural Content Height (`size: 80mm auto`):**
+   - Updated `@media print` in both `Rohn-Admin/src/components/ESlip.css` and `Rohn-Runner/src/components/ESlip.css` to `@page { size: 80mm auto; margin: 0mm; }`.
+   - Changed container heights from fixed `150mm`/`147mm` to `height: auto !important; max-height: none !important; min-height: 0 !important; overflow: visible !important;`. The thermal printer now cuts/feeds exactly to the content length (~11.5cm - 12.5cm) with no trailing white space.
+
+3. **In-Slip E-Slip URL Integration:**
+   - Moved the e-slip link directly inside the slip frame at the very bottom inside `.foot`.
+   - Rendered as `<div className="eslip-foot-url">{eslipUrl}</div>` with dashed border separator, formatted in monospace font and pure black high-contrast print styling.
