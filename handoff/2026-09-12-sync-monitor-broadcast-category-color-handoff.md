@@ -192,3 +192,17 @@ erDiagram
    - Explicitly configured `@page { size: 80mm 210mm; margin: 0mm; }`.
    - Set `.eslip` printable width to `72mm` (matching the 72.1mm printable area width).
    - Increased element proportions (logo height to 48px, row fonts to 10.5px, stat boxes padding to 3.5px / val font to 13.5px/14.5px) for clear, crisp, and comfortable receipt presentation without empty voids.
+
+### 5.5 Removal of Top-Left Date & Bottom URL, Typography Scaling
+
+1. **Date and URL Removal:**
+   - Removed `.eslip-print-time` (`Printed: ...`) from top-left.
+   - Removed `.eslip-foot-url` (`https://rohn-runner.vercel.app/eslip/...`) from the bottom.
+   - Explicitly set `display: none !important;` in CSS so neither element appears on screen or printout.
+   - Preserved `document.title = ''` print hook in `ESlipModal.jsx` to prevent browser header/footer leakage.
+
+2. **Typography & Readability Boost:**
+   - Increased row font sizes to `12px` (label) / `12.5px` (bold value) with `line-height: 1.35` and `padding: 1.5px 0`.
+   - Increased stat card numbers to `15.5px` (Start/Net Time) and `16.5px` (Overall & Age Group ranks) with `10px` labels.
+   - Enlarged header logo to `52px` and footer logos to `32px` / `44px`.
+   - Synchronized across both `Rohn-Admin` and `Rohn-Runner`.

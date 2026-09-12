@@ -420,9 +420,6 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
 
   return (
     <div className="eslip">
-      <div className="eslip-print-time">
-        Printed: {printTime}
-      </div>
       <div className="head" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <img
           src={logoBaanPong}
@@ -593,9 +590,6 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
           />
         </div>
         <span className="eslip-foot-note" style={{ fontSize: '10px', color: 'var(--ink-2, #64748b)', fontStyle: 'italic' }}>* Provisional Result ( Subject to change)</span>
-        <div className="eslip-foot-url">
-          {eslipUrl}
-        </div>
       </div>
     </div>
   );

@@ -475,44 +475,36 @@
     border: 1.5px solid #000000 !important;
   }
 
-  /* Print date firmly locked in top right inside slip border */
+  /* Print date hidden as requested */
   .eslip-print-time {
-    position: absolute !important;
-    top: 3.5mm !important;
-    right: 3.5mm !important;
-    font-size: 8px !important;
-    color: #000000 !important;
-    -webkit-text-fill-color: #000000 !important;
-    font-weight: 700 !important;
-    line-height: 1 !important;
-    z-index: 5 !important;
+    display: none !important;
   }
 
   .eslip .head {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    padding-bottom: 3.5px !important;
-    margin-bottom: 3.5px !important;
+    padding-bottom: 4px !important;
+    margin-bottom: 4px !important;
     border-bottom: 1.2px solid #000000 !important;
     flex-shrink: 0 !important;
   }
 
   .eslip .head img,
   .eslip-head-logo {
-    height: 48px !important;
-    max-height: 48px !important;
+    height: 52px !important;
+    max-height: 52px !important;
     width: auto !important;
     object-fit: contain !important;
     margin-bottom: 3px !important;
   }
 
   .eslip .head span {
-    font-size: 12.5px !important;
+    font-size: 14px !important;
     font-weight: 800 !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    line-height: 1.2 !important;
+    line-height: 1.25 !important;
   }
 
   /* Middle body container: comfortable natural list */
@@ -520,14 +512,14 @@
     display: flex !important;
     flex-direction: column !important;
     justify-content: flex-start !important;
-    gap: 1.5px !important;
+    gap: 2px !important;
     flex: 0 1 auto !important;
     min-height: 0 !important;
     width: 100% !important;
   }
 
   .eslip .hr {
-    margin: 3.5px 0 !important;
+    margin: 4px 0 !important;
     border: none !important;
     border-top: 1.2px solid #000000 !important;
     flex-shrink: 0 !important;
@@ -537,9 +529,9 @@
     display: flex !important;
     justify-content: space-between !important;
     align-items: baseline !important;
-    padding: 1.2px 0 !important;
-    font-size: 10.5px !important;
-    line-height: 1.25 !important;
+    padding: 1.5px 0 !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
   }
@@ -547,6 +539,7 @@
   .eslip .row span:first-child {
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
+    font-size: 12px !important;
     font-weight: 600 !important;
   }
 
@@ -554,6 +547,7 @@
   .eslip .row span:last-child {
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
+    font-size: 12.5px !important;
     font-weight: 800 !important;
   }
 
@@ -561,8 +555,8 @@
   .eslip-stat-grid,
   .eslip [style*="gridTemplateColumns"],
   .eslip [style*="grid-template-columns"] {
-    margin: 3.5px 0 !important;
-    gap: 4px !important;
+    margin: 4px 0 !important;
+    gap: 4.5px !important;
     flex-shrink: 0 !important;
   }
 
@@ -570,31 +564,31 @@
   .eslip [style*="background"] {
     background: #ffffff !important;
     border: 1.2px solid #000000 !important;
-    padding: 3.5px 3px !important;
-    border-radius: 4px !important;
+    padding: 4px 3px !important;
+    border-radius: 5px !important;
   }
 
   .eslip-stat-label {
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    font-size: 8.5px !important;
+    font-size: 10px !important;
     font-weight: 700 !important;
-    margin-bottom: 1.5px !important;
-    line-height: 1.1 !important;
+    margin-bottom: 2px !important;
+    line-height: 1.15 !important;
   }
 
   .eslip-stat-val {
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    font-size: 13.5px !important;
-    line-height: 1.15 !important;
+    font-size: 15.5px !important;
+    line-height: 1.2 !important;
     font-weight: 800 !important;
   }
 
   .eslip-rank-val {
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    font-size: 14.5px !important;
+    font-size: 16.5px !important;
     font-weight: 800 !important;
   }
 
@@ -605,14 +599,14 @@
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
     font-weight: 900 !important;
-    font-size: 14.5px !important;
+    font-size: 16.5px !important;
   }
 
   .eslip .foot {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    margin-top: 3.5px !important;
+    margin-top: 4px !important;
     gap: 3px !important;
     flex-shrink: 0 !important;
   }
@@ -621,58 +615,49 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 10px !important;
+    gap: 12px !important;
   }
 
   .eslip-foot-logo-mk {
-    height: 28px !important;
-    max-height: 28px !important;
+    height: 32px !important;
+    max-height: 32px !important;
     width: auto !important;
   }
 
   .eslip-foot-logo-rohn {
-    height: 38px !important;
-    max-height: 38px !important;
+    height: 44px !important;
+    max-height: 44px !important;
     width: auto !important;
   }
 
   .eslip-foot-timing {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 5px !important;
-    font-size: 9.5px !important;
+    gap: 6px !important;
+    font-size: 11px !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
     font-weight: 700 !important;
   }
 
   .eslip-foot-logo-label {
-    height: 16px !important;
-    max-height: 16px !important;
+    height: 18px !important;
+    max-height: 18px !important;
     width: auto !important;
   }
 
   .eslip-foot-note {
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    font-size: 8px !important;
+    font-size: 9px !important;
     font-weight: 600 !important;
     font-style: normal !important;
-    line-height: 1 !important;
+    line-height: 1.1 !important;
   }
 
+  /* Bottom URL hidden as requested */
   .eslip-foot-url {
-    font-size: 8.5px !important;
-    color: #000000 !important;
-    -webkit-text-fill-color: #000000 !important;
-    font-weight: 700 !important;
-    font-family: var(--mono, monospace) !important;
-    border-top: 1.2px dashed #000000 !important;
-    margin-top: 3px !important;
-    padding-top: 3px !important;
-    width: 100% !important;
-    text-align: center !important;
-    word-break: break-all !important;
+    display: none !important;
   }
 }
 
