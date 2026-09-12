@@ -52,15 +52,18 @@ export default function ESlipModal({ runner, overallRank, catRank, stations = []
       }} 
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '12px', 
-        alignItems: 'center', 
-        width: '100%', 
-        maxWidth: '380px',
-        margin: 'auto'
-      }}>
+      <div 
+        className="eslip-modal-card"
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '12px', 
+          alignItems: 'center', 
+          width: '100%', 
+          maxWidth: '380px',
+          margin: 'auto'
+        }}
+      >
         
         {/* Render the ESlip component */}
         <ESlip runner={runner} overallRank={overallRank} catRank={catRank} stations={stations} runners={runners} categories={categories} />

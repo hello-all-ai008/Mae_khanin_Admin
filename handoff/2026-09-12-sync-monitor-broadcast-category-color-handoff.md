@@ -180,3 +180,15 @@ erDiagram
 3. **In-Slip E-Slip URL Integration:**
    - Moved the e-slip link directly inside the slip frame at the very bottom inside `.foot`.
    - Rendered as `<div className="eslip-foot-url">{eslipUrl}</div>` with dashed border separator, formatted in monospace font and pure black high-contrast print styling.
+
+### 5.4 Calibration for 80(72.1) * 210 mm Paper Roll & Top Whitespace Removal
+
+1. **Top Whitespace Pinning (y=0):**
+   - Eliminated vertical flex centering during print by adding `className="eslip-modal-card"` and styling `.modal-bg.eslip-modal-portal` as `position: absolute !important; top: 0 !important; left: 0 !important; margin: 0 !important; padding: 0 !important;`.
+   - Explicitly forced `margin-top: 0 !important; padding-top: 0 !important; top: 0 !important;` on `.eslip-modal-card` and `.eslip` so printing begins immediately at the top edge of the paper roll.
+   - Recommended Chrome print setting: set **Margins (ระยะขอบ)** to **None (ไม่มี)**.
+
+2. **Calibrated Dimensions for 80(72.1) * 210 mm:**
+   - Explicitly configured `@page { size: 80mm 210mm; margin: 0mm; }`.
+   - Set `.eslip` printable width to `72mm` (matching the 72.1mm printable area width).
+   - Increased element proportions (logo height to 48px, row fonts to 10.5px, stat boxes padding to 3.5px / val font to 13.5px/14.5px) for clear, crisp, and comfortable receipt presentation without empty voids.
