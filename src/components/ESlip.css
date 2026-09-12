@@ -45,7 +45,6 @@
   display: block;
   margin-left: auto;
   margin-right: auto;
-  mix-blend-mode: multiply;
 }
 
 .eslip .row {
@@ -339,24 +338,24 @@
   }
 }
 
-/* Print styles - calibrated for Thermal Slip Printers (80mm width) fitting 80(72.1) * 210 mm */
+/* Print styles - calibrated for Thermal Slip Printers (80mm width) */
 @media print {
   @page {
-    size: 80mm 210mm; /* Calibrated for 80(72.1) * 210 mm thermal roll print */
+    size: portrait; /* Standard portrait roll print prevents horizontal split */
     margin: 0mm; /* 0 margin prevents blank header/footer and unnecessary top offset */
   }
 
   html, body {
     margin: 0 !important;
     padding: 0 !important;
-    width: 80mm !important;
-    max-width: 80mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    overflow: visible !important; /* CRITICAL: prevents accidental 2nd sheet from printer drivers */
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -368,13 +367,10 @@
     display: none !important;
   }
 
-  /* Modal backdrop becomes transparent and pinned to the very top (y=0) */
+  /* Modal backdrop becomes transparent and statically positioned in natural flow */
   .modal-bg.eslip-modal-portal {
     display: block !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
+    position: static !important;
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
@@ -393,12 +389,9 @@
   .modal-bg.eslip-modal-portal .eslip-modal-card,
   .modal-bg.eslip-modal-portal > div {
     display: block !important;
-    position: relative !important;
-    top: 0 !important;
+    position: static !important;
     margin: 0 auto !important;
-    margin-top: 0 !important;
     padding: 0 !important;
-    padding-top: 0 !important;
     transform: none !important;
     width: 72mm !important;
     max-width: 72mm !important;
@@ -409,21 +402,17 @@
     break-after: avoid !important;
   }
 
-  /* The slip itself: calibrated to 72mm printable width, starts at top, beautifully proportioned */
+  /* The slip itself: clean natural portrait receipt flow at 72mm width */
   .eslip {
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    position: relative !important;
-    top: 0 !important;
+    display: block !important;
+    position: static !important;
     width: 72mm !important;
     max-width: 72mm !important;
     height: auto !important;
     max-height: none !important;
     min-height: 0 !important;
     margin: 0 auto !important;
-    margin-top: 0 !important;
-    padding: 3.5mm 3.2mm !important;
+    padding: 3.5mm 3mm !important;
     box-shadow: none !important;
     border: 1.5px solid #000000 !important;
     border-radius: 4px !important;
@@ -449,15 +438,14 @@
     box-shadow: none !important;
   }
 
-  /* Pure crisp black & white conversion with 100% pure white background (no dark/gray box) */
+  /* Pure crisp black & white conversion without blend mode (no black block artifacts!) */
   .eslip img,
   .eslip-head-logo,
   .eslip-foot-logo-mk,
   .eslip-foot-logo-rohn,
   .eslip-foot-logo-label {
-    filter: grayscale(100%) brightness(115%) contrast(140%) !important;
-    -webkit-filter: grayscale(100%) brightness(115%) contrast(140%) !important;
-    mix-blend-mode: multiply !important;
+    filter: grayscale(100%) !important;
+    -webkit-filter: grayscale(100%) !important;
     background: transparent !important;
     border-radius: 0 !important;
   }
@@ -500,7 +488,7 @@
   }
 
   .eslip .head span {
-    font-size: 14px !important;
+    font-size: 15px !important;
     font-weight: 800 !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
@@ -529,8 +517,8 @@
     display: flex !important;
     justify-content: space-between !important;
     align-items: baseline !important;
-    padding: 1.5px 0 !important;
-    font-size: 12px !important;
+    padding: 2px 0 !important;
+    font-size: 13px !important;
     line-height: 1.35 !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
@@ -539,16 +527,19 @@
   .eslip .row span:first-child {
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
     font-weight: 600 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
   }
 
   .eslip .row b,
   .eslip .row span:last-child {
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    font-size: 12.5px !important;
+    font-size: 13.5px !important;
     font-weight: 800 !important;
+    text-align: right !important;
   }
 
   /* Stat cards - high contrast solid black border for thermal print */
@@ -556,7 +547,7 @@
   .eslip [style*="gridTemplateColumns"],
   .eslip [style*="grid-template-columns"] {
     margin: 4px 0 !important;
-    gap: 4.5px !important;
+    gap: 5px !important;
     flex-shrink: 0 !important;
   }
 
@@ -571,7 +562,7 @@
   .eslip-stat-label {
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    font-size: 10px !important;
+    font-size: 11px !important;
     font-weight: 700 !important;
     margin-bottom: 2px !important;
     line-height: 1.15 !important;
@@ -580,7 +571,7 @@
   .eslip-stat-val {
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    font-size: 15.5px !important;
+    font-size: 16.5px !important;
     line-height: 1.2 !important;
     font-weight: 800 !important;
   }
@@ -588,8 +579,8 @@
   .eslip-rank-val {
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    font-size: 16.5px !important;
-    font-weight: 800 !important;
+    font-size: 17.5px !important;
+    font-weight: 900 !important;
   }
 
   .eslip .eslip-net-val,
@@ -599,7 +590,7 @@
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
     font-weight: 900 !important;
-    font-size: 16.5px !important;
+    font-size: 17.5px !important;
   }
 
   .eslip .foot {
@@ -634,7 +625,7 @@
     display: inline-flex !important;
     align-items: center !important;
     gap: 6px !important;
-    font-size: 11px !important;
+    font-size: 12px !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
     font-weight: 700 !important;
@@ -649,7 +640,7 @@
   .eslip-foot-note {
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    font-size: 9px !important;
+    font-size: 10px !important;
     font-weight: 600 !important;
     font-style: normal !important;
     line-height: 1.1 !important;

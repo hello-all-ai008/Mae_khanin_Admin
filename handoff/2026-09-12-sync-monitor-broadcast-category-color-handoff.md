@@ -202,7 +202,24 @@ erDiagram
    - Preserved `document.title = ''` print hook in `ESlipModal.jsx` to prevent browser header/footer leakage.
 
 2. **Typography & Readability Boost:**
-   - Increased row font sizes to `12px` (label) / `12.5px` (bold value) with `line-height: 1.35` and `padding: 1.5px 0`.
-   - Increased stat card numbers to `15.5px` (Start/Net Time) and `16.5px` (Overall & Age Group ranks) with `10px` labels.
+   - Increased row font sizes to `13px` (label) / `13.5px` (bold value) with `white-space: nowrap !important;` and `flex-shrink: 0 !important;`.
+   - Increased stat card numbers to `16.5px` (Start/Net Time) and `17.5px` (Overall & Age Group ranks) with `11px` labels.
    - Enlarged header logo to `52px` and footer logos to `32px` / `44px`.
    - Synchronized across both `Rohn-Admin` and `Rohn-Runner`.
+
+### 5.6 Thermal Print Portrait Flow, Zero-Artifact Black Box Fix & Chrome Print Settings
+
+1. **Resolution of Landscape / Column Fragmentation:**
+   - Replacing `@page { size: 80mm 210mm; }` and `position: absolute` with `@page { size: portrait; margin: 0mm; }` and `position: static !important;`.
+   - Set slip width to exactly `72mm` (matching the 72.1mm printable roll width).
+   - This prevents thermal printer drivers from interpreting the 210mm dimension as Landscape or wrapping words into split columns (`Ch` / `eck-in Scan`).
+
+2. **Elimination of Solid Black Rectangle Artifact:**
+   - Thermal printers use 1-bit monochrome dithering. `mix-blend-mode: multiply` with transparent PNGs was translated by printer drivers as opaque black (0x00 ink).
+   - Completely removed all `mix-blend-mode: multiply` declarations from screen and print CSS. Replaced with pure `filter: grayscale(100%)` and transparent background.
+
+3. **Chrome Print Settings Guidance:**
+   - **หัวกระดาษและท้ายกระดาษ (Headers and footers):** Must be unchecked to prevent Chrome from injecting the browser date, page title, and URL.
+   - **ระยะขอบ (Margins):** None (ไม่มี).
+   - **การวางแนว (Orientation):** Portrait (แนวตั้ง).
+

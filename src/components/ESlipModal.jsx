@@ -20,6 +20,24 @@ export default function ESlipModal({ runner, overallRank, catRank, stations = []
     };
   }, [runner, onClose]);
 
+  // Ensure title is completely empty during print (even if triggered via Ctrl+P)
+  useEffect(() => {
+    let savedTitle = document.title;
+    const handleBefore = () => {
+      savedTitle = document.title;
+      document.title = '';
+    };
+    const handleAfter = () => {
+      document.title = savedTitle || 'ROHN Runner';
+    };
+    window.addEventListener('beforeprint', handleBefore);
+    window.addEventListener('afterprint', handleAfter);
+    return () => {
+      window.removeEventListener('beforeprint', handleBefore);
+      window.removeEventListener('afterprint', handleAfter);
+    };
+  }, []);
+
   if (!runner) return null;
 
   const handlePrint = () => {

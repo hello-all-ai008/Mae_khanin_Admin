@@ -421,6 +421,31 @@
     </ul>
   </section>
 
+  <!-- Section 6: การแก้ไขการพิมพ์สลิปไม่แตกคอลัมน์ (Portrait Flow) และขจัดกล่องดำทึบ (Zero-Artifact Thermal Print) -->
+  <section class="card">
+    <h2><span class="badge badge-success">6</span> การแก้ไขการพิมพ์สลิป: จัดวางแนวตั้ง (Portrait Flow), ลบกล่องดำทึบ, ขยายตัวอักษร และซ่อนหัว/ท้ายกระดาษ</h2>
+    <p>
+      จากการทดสอบพิมพ์จริงบนกระดาษม้วนความร้อน 80(72.1) * 210 mm พบปัญหาพิมพ์แล้วข้อความถูกตัดแบ่งครึ่งสองคอลัมน์ และมีกล่องดำทึบที่ตำแหน่งโลโก้ จึงได้ปรับปรุงโครงสร้าง CSS และการตั้งค่า Browser Print ดังนี้:
+    </p>
+
+    <div class="card" style="background: #f8fafc; border-left: 4px solid #3b82f6; margin: 16px 0;">
+      <h3 style="margin-top: 0; color: #1d4ed8;">การแก้ไขเชิงเทคนิค (Technical Resolutions)</h3>
+      <ul style="margin: 0; padding-left: 20px;">
+        <li><strong>แก้ไขการจัดหน้าแตกคอลัมน์ (Landscape / Split-Column Fix):</strong> ปรับ <code>@page { size: portrait; margin: 0mm; }</code> และเปลี่ยน Container เป็น <code>position: static !important</code> กว้าง 72mm พอดีกับพื้นที่พิมพ์ของหัวพิมพ์ความร้อน (72.1mm) ไม่หลุดแนวตั้งและไม่แบ่งคอลัมน์</li>
+        <li><strong>ขจัดแถบสี่เหลี่ยมดำทึบ (No Black Box Artifact):</strong> ยกเลิกการใช้ <code>mix-blend-mode: multiply</code> ทั้งหมด เนื่องจากหัวพิมพ์ความร้อนแบบ 1-bit Monochrome จะแปลงค่าความโปร่งใสแบบ Multiply เป็นสีดำทึบ (0x00) เปลี่ยนมาใช้ <code>filter: grayscale(100%)</code> พื้นหลังโปร่งใสปกติ ทำให้พิมพ์โลโก้ได้คมชัดไม่มีกล่องดำ</li>
+        <li><strong>ลบวันที่และลิงก์ออกทั้งหมด:</strong> ลบ <code>.eslip-print-time</code> และ <code>.eslip-foot-url</code> ออกจากตัวสลิป พร้อมดักจับ <code>beforeprint</code> เคลียร์ <code>document.title = ''</code> ป้องกันบราวเซอร์พิมพ์ชื่อเว็บ</li>
+        <li><strong>ขยายขนาดตัวอักษร (Typography Boost):</strong> ปรับขนาดตัวหนังสือทุกจุดให้อ่านง่าย ชัดเจน (ชื่อแถว 13px ไม่ตัดคำ, ค่าแถว 13.5px ตัวหนาพิเศษ, ค่าสถิติ 16.5px, อันดับ 17.5px)</li>
+      </ul>
+    </div>
+
+    <h3>คำแนะนำการตั้งค่าในหน้าต่างพิมพ์ของ Chrome (Recommended Settings)</h3>
+    <ul>
+      <li><strong>หัวกระดาษและท้ายกระดาษ (Headers and footers):</strong> เอาเครื่องหมายถูกออก (Uncheck) เพื่อไม่ให้บราวเซอร์พิมพ์วันที่มุมซ้ายบนและ URL ด้านล่าง</li>
+      <li><strong>ระยะขอบ (Margins):</strong> เลือก "ไม่มี" (None)</li>
+      <li><strong>การวางแนว (Orientation):</strong> เลือก "แนวตั้ง" (Portrait)</li>
+    </ul>
+  </section>
+
 </div>
 
 </body>
