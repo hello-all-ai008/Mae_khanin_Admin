@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุปงานประจำวัน: Realtime Monitor Broadcast, Category Colors, Auto-Routing & Database Flow (12 ก.ย. 2026)</title>
+<style>
+  :root {
+    --bg: #efe9e0; --bg-alt: #e6ded1; --surface: #f7f2e9; --surface-2: #fbf8f2;
+    --ink: #3a342b; --ink-soft: #6b6153; --line: #d8cfbe;
+    --accent: #2563eb; --accent-soft: #eff6ff; --green: #16a34a; --green-soft: #f0fdf4;
+    --amber: #b45309; --amber-soft: #fef3c7; --danger: #dc2626; --danger-soft: #fef2f2;
+    --purple: #7c3aed; --purple-soft: #f5f3ff;
+    --shadow: 0 2px 10px rgba(58,52,43,0.08), 0 8px 24px rgba(58,52,43,0.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Sarabun", "Noto Sans Thai", "Segoe UI", system-ui, sans-serif;
+    line-height: 1.65;
+    padding: 0 0 64px;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 20px; }
+  header.hero {
+    background: linear-gradient(135deg, #0f172a, #1e1b4b 60%, #1e293b);
+    color: #f8fafc;
+    padding: 44px 0 36px;
+    margin-bottom: 36px;
+    border-bottom: 4px solid var(--accent);
+  }
+  header.hero .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-size: 12.5px;
+    color: #93c5fd;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  header.hero h1 {
+    margin: 0 0 10px;
+    font-size: clamp(22px, 3.2vw, 30px);
+    font-weight: 800;
+    color: #ffffff;
+  }
+  header.hero p { margin: 4px 0; color: #cbd5e1; font-size: 14.5px; }
+  header.hero .meta-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  header.hero .meta-tags span {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 12.5px;
+    font-family: ui-monospace, Menlo, monospace;
+  }
+
+  section { margin-bottom: 36px; }
+  h2.section-title {
+    font-size: 21px;
+    margin: 0 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #1e293b;
+  }
+  h2.section-title .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    flex: none;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+  }
+  .card h3 { margin: 0 0 6px; font-size: 17.5px; color: #0f172a; }
+  .card p { font-size: 14.5px; margin: 8px 0; color: var(--ink); }
+  .card ul { font-size: 14.5px; margin: 8px 0; padding-left: 22px; }
+  .card li { margin-bottom: 6px; }
+  code {
+    background: var(--bg-alt);
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: ui-monospace, Menlo, monospace;
+    color: #b91c1c;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+  }
+  .tag.done { background: var(--green-soft); color: var(--green); border: 1px solid #86efac; }
+  .tag.warn { background: var(--amber-soft); color: var(--amber); border: 1px solid #fde68a; }
+  .tag.danger { background: var(--danger-soft); color: var(--danger); border: 1px solid #fca5a5; }
+  .tag.purple { background: var(--purple-soft); color: var(--purple); border: 1px solid #c4b5fd; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width:768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .callout {
+    border-radius: 12px;
+    padding: 18px 22px;
+    border: 1px solid var(--line);
+    margin-bottom: 18px;
+  }
+  .callout.info { border-color: #93c5fd; background: var(--accent-soft); }
+  .callout.warn { border-color: #fde68a; background: var(--amber-soft); }
+  .callout.ok { border-color: #86efac; background: var(--green-soft); }
+  .callout h4 { margin: 0 0 8px; font-size: 15.5px; }
+
+  table.styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin: 14px 0 24px;
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    border: 1px solid var(--line);
+  }
+  table.styled-table th, table.styled-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+    vertical-align: top;
+  }
+  table.styled-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  table.styled-table tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Executive Technical Handoff</div>
+    <h1>สรุปงานประจำวัน: Realtime Broadcast เส้นชัย, สี Category, Auto-Route และ Database Architecture</h1>
+    <p>ระบบบริหารจัดการงานวิ่ง Trail Running Hub (<code>Rohn-Admin</code> และ <code>Rohn-Runner</code>)</p>
+    <div class="meta-tags">
+      <span>📅 วันที่: 12 กันยายน 2026</span>
+      <span>🧪 ผลทดสอบ: Vitest 94/94 (Admin) & Node 9/9 (Runner) ผ่านฉลุย</span>
+      <span>⚡ Build: Vite Production ผ่าน 100% ทั้ง 2 ฝั่ง</span>
+      <span>🚀 สถานะ: ซิงค์และ Push เข้า GitHub (main + Tiw-dev) สมบูรณ์</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 1. สรุปผลงานที่ทำเสร็จในวันนี้ -->
+  <section>
+    <h2 class="section-title"><span class="num">1</span> สรุปงานทั้งหมดที่ทำเสร็จสิ้นวันนี้</h2>
+    
+    <div class="card">
+      <span class="tag done">✓ MERGED</span>
+      <h3>1.1 ดึงโค้ดและผสานข้อมูลจาก GitHub โดยยึดโค้ดในเครื่องเป็นหลัก (Local-First)</h3>
+      <p>ทำการดึงโค้ดล่าสุดจาก GitHub และผสานเข้ากับโค้ดในเครื่องอย่างปลอดภัย:</p>
+      <ul>
+        <li><b>Rohn-Admin (PR #12):</b> ดึงโค้ด Cast จาก FinishLine และการตั้งค่าสี Category โดยโค้ดในเครื่อง (ปุ่มสลับเน็ต Auto/ออฟไลน์ และระบบจัดรูปแบบ Category) ยังคงอยู่ครบ 100%</li>
+        <li><b>Rohn-Runner (PR #9):</b> รวมระบบสี Glow บน BIB และการแสดงอันดับเส้นชัยเข้ากับ Responsive Layout ที่ปรับแต่งไว้</li>
+        <li><b>สำรองข้อมูลขึ้น Branch Tiw-dev:</b> สำรองข้อมูลและ Push เข้า branch <code>Tiw-dev</code> บน GitHub เรียบร้อยทั้งสองโปรเจกต์</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="tag purple">★ NEW FEATURE</span>
+      <h3>1.2 ระบบยิงข้อมูลจากเส้นชัยขึ้นจอ Monitor แบบ Realtime (Finish Line to Monitor Cast)</h3>
+      <p>อัปเกรดหน้า <b>FinishLine.jsx</b> ให้รองรับการส่งข้อมูลขึ้นจอ Monitor ข้ามเครื่อง ข้ามเครือข่าย ผ่าน <b>Supabase Realtime Broadcast</b>:</p>
+      <ul>
+        <li>ส่งช่องสัญญาณ <code>rohn_monitor_stream</code> และ <code>results:${selectedEventId}</code> ควบคู่กับ BroadcastChannel ในเครื่อง</li>
+        <li>หน้าจอ Monitor ปรับสถานะเป็น <b>Finish</b> แสดงเวลา Net Time ของนักวิ่ง</li>
+        <li>คำนวณและแสดง <b>อันดับรุ่น (Category Rank)</b> และ <b>อันดับรวม (Overall Rank)</b> บนจอ Monitor ทันทีที่สแกนเข้าเส้นชัย</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="tag purple">★ NEW FEATURE</span>
+      <h3>1.3 ระบบสแกนเนอร์กระจายจออัตโนมัติตามระยะ (Scanner Auto-Route by Distance)</h3>
+      <p>เพิ่มฟังก์ชันใน <b>Scanner.jsx</b> และ <b>ScannerInput.jsx</b> ให้ระบบตรวจจับระยะทางของนักวิ่งแล้วยิงเข้าจอที่กำหนดอัตโนมัติ:</p>
+      <ul>
+        <li>กำหนดเงื่อนไข เช่น <code>10KM</code> =&gt; จอ 1, <code>5KM</code> =&gt; จอ 2 ได้อย่างยืดหยุ่น</li>
+        <li>มีสวิตช์เปิด-ปิดระบบ Auto-Route และเซฟเงื่อนไขลง <code>localStorage</code> อัตโนมัติ</li>
+        <li>ปรับขนาดโลโก้ผู้สนับสนุนและงานวิ่งบนจอ Monitor ให้เห็นชัดเจนบนจอใหญ่ (<code>clamp(45px, 5vw, 75px)</code>)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="tag done">✓ COMPLETED</span>
+      <h3>1.4 จัดรูปแบบคอลัมน์ Category และระบบ Dropdown ดึงจากฐานข้อมูลจริง</h3>
+      <ul>
+        <li><b>คอลัมน์ cat:</b> บันทึกในรูปแบบ <code>[ระยะ] KM : [ชื่อรุ่น]</code> (เช่น <code>5 KM : Soft Rock</code>) ตรงตามมาตรฐาน Excel</li>
+        <li><b>คอลัมน์ cat_name:</b> บันทึกเฉพาะชื่อรุ่นที่สะอาด (เช่น <code>Soft Rock</code>) แก้ไขปัญหาค่าที่เป็น <code>null</code> ในอดีต</li>
+        <li><b>คอลัมน์ distance & unit:</b> บันทึกระยะทางตัวเลข (เช่น <code>5</code>) และหน่วย <code>'KM'</code> ตัวพิมพ์ใหญ่</li>
+        <li><b>Dropdown อิง Database:</b> หน้า Import แบบ Manual และ EditRunnerModal ดึงหมวดหมู่, กลุ่มอายุ, สัญชาติ จาก DB พร้อมระบบเช็ค BIB ซ้ำและปุ่มแนะนำ BIB ถัดไป</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="tag done">✓ COMPLETED</span>
+      <h3>1.5 ปุ่มสลับโหมด Auto / ออฟไลน์ บนสถานีสแกน (NetworkModeToggle.jsx)</h3>
+      <ul>
+        <li>ติดตั้งปุ่มข้างปุ่ม "ตั้งค่า" ในหน้า <b>CheckIn</b>, <b>CheckPoint</b>, และ <b>FinishLine</b></li>
+        <li><b>Auto (เขียว):</b> ส่งข้อมูลขึ้น Supabase อัตโนมัติในพื้นหลัง</li>
+        <li><b>ออฟไลน์ (แดง):</b> บังคับตัดเน็ต บันทึกข้อมูลลงเครื่อง 100% ไม่ส่งข้อมูลออกภายนอก</li>
+        <li>เมื่อสลับกลับเป็น Auto ระบบจะทยอยส่งข้อมูลที่ค้างในคิวขึ้น Database ให้อัตโนมัติ</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 2. สิ่งที่ยังค้างอยู่ / ต้องระวัง -->
+  <section>
+    <h2 class="section-title"><span class="num">2</span> สิ่งที่ต้องติดตามและข้อควรระวัง (Watch Items & Pending Fixes)</h2>
+    
+    <div class="callout warn">
+      <h4>⚠️ 1. การล้างข้อมูลแถวเก่าในตาราง runners (Legacy Rows Cleanup)</h4>
+      <p>แถวนักวิ่งที่เคยเพิ่มเข้ามาก่อนหน้านี้บางรายการอาจยังมี <code>cat_name</code> เป็น <code>null</code> หรือมี <code>cat</code> ที่ไม่มีคำนำหน้าระยะทาง:</p>
+      <ul>
+        <li><b>แนวทาง:</b> สามารถรันสคริปต์ SQL Update ใน Supabase หรือใช้ฟังก์ชัน Admin Rebuild เพื่อดึงคำจาก <code>cat</code> มาใส่ใน <code>cat_name</code> ให้ครบถ้วน</li>
+      </ul>
+    </div>
+
+    <div class="callout info">
+      <h4>ℹ️ 2. ความสม่ำเสมอของชื่อตาราง Checkpoint</h4>
+      <p>ไฟล์ Migration เก่าบางไฟล์เขียนเป็นพหูพจน์ <code>checkpoints</code> แต่สถาปัตยกรรมหลักตาม <code>DatabaseFlow.jsx</code> ใช้ชื่อเอกพจน์คือ <b><code>checkpoint</code></b>:</p>
+      <ul>
+        <li><b>แนวทาง:</b> ให้ใช้ชื่อ <code>checkpoint</code> ตามโครงสร้างหลักเสมอในทุก Query ใหม่</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3. ผังข้อมูลและการอ้างอิงตาม DatabaseFlow.jsx -->
+  <section>
+    <h2 class="section-title"><span class="num">3</span> การอ้างอิงแหล่งข้อมูลในระบบ (อิงตาม DatabaseFlow.jsx)</h2>
+    
+    <p>ตารางข้อมูลอ้างอิงหลักที่ใช้ในการทำงานของระบบ Trail Running Hub มีดังนี้:</p>
+
+    <table class="styled-table">
+      <thead>
+        <tr>
+          <th>ข้อมูล / ความต้องการ</th>
+          <th>ตารางหลัก (Primary Table)</th>
+          <th>คอลัมน์ที่ใช้งาน</th>
+          <th>คำอธิบายและการนำไปใช้</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>ขอบเขตงานวิ่ง (Event Scope)</b></td>
+          <td><code>events</code></td>
+          <td><code>id, name, status</code></td>
+          <td>ใช้เป็นตัวกรองข้อมูลหลัก (Scope) ของระบบทั้งหมด</td>
+        </tr>
+        <tr>
+          <td><b>ชื่อหมวดหมู่สะอาด</b></td>
+          <td><code>runners</code> / <code>categories</code></td>
+          <td><code>runners.cat_name</code>, <code>categories.name</code></td>
+          <td>ชื่อประเภทการแข่งขันที่ไม่มีตัวเลขกิโล (เช่น <code>Soft Rock</code>)</td>
+        </tr>
+        <tr>
+          <td><b>ชื่อรุ่นเต็มพร้อมระยะ</b></td>
+          <td><code>runners</code></td>
+          <td><code>runners.cat</code></td>
+          <td>ข้อความรวมสำหรับแสดงผลหน้าเว็บและ Leaderboard <code>[ระยะ] KM : [ชื่อรุ่น]</code></td>
+        </tr>
+        <tr>
+          <td><b>ระยะทาง & หน่วย</b></td>
+          <td><code>runners</code> / <code>categories</code></td>
+          <td><code>distance</code> (float), <code>unit</code> (varchar)</td>
+          <td>ระยะทางตัวเลข (เช่น <code>5</code>, <code>10</code>) และหน่วย <code>'KM'</code> สำหรับจัดเงื่อนไข Auto-Route</td>
+        </tr>
+        <tr>
+          <td><b>สีประจำรุ่น (Category Color)</b></td>
+          <td><code>categories</code></td>
+          <td><code>color</code></td>
+          <td>รหัสสี Hex สำหรับการ์ดหน้า Monitor, แสง Glow และป้ายรุ่น</td>
+        </tr>
+        <tr>
+          <td><b>หมายเลข BIB</b></td>
+          <td><code>runners</code></td>
+          <td><code>bib</code></td>
+          <td>รหัสประจำตัวนักวิ่ง ต้องไม่ซ้ำกันในงานเดียวกัน (UNIQUE ต่อ <code>event_id</code>)</td>
+        </tr>
+        <tr>
+          <td><b>เพศ</b></td>
+          <td><code>runners</code></td>
+          <td><code>gender</code></td>
+          <td>เก็บเป็นภาษาอังกฤษตัวเต็ม: <code>'Male'</code> หรือ <code>'Female'</code></td>
+        </tr>
+        <tr>
+          <td><b>กลุ่มอายุ</b></td>
+          <td><code>runners</code></td>
+          <td><code>age_group</code> (สำรอง: <code>age</code>)</td>
+          <td>รุ่นอายุการแข่งขัน เช่น <code>20-29</code>, <code>30-39</code> สำหรับจัดอันดับรุ่น</td>
+        </tr>
+        <tr>
+          <td><b>จุดสแกนและเวลา Cutoff</b></td>
+          <td><code>stations</code> & <code>checkpoint</code></td>
+          <td><code>stations.type</code>, <code>checkpoint.cutoff_time</code></td>
+          <td>กำหนดสถานะจุดสแกน (START, CP, FINISH) และเวลาตัดตัว Cutoff</td>
+        </tr>
+        <tr>
+          <td><b>ประวัติการสแกนเวลา</b></td>
+          <td><code>scan_logs</code></td>
+          <td><code>runner_id, station_id, scan_time, scanned_by</code></td>
+          <td>บันทึกเวลาจริงที่สแกนผ่าน RPC ลง Database อย่างปลอดภัย</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+
+</body>
+</html>
