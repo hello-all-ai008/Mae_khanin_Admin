@@ -446,118 +446,120 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
         )}
       </div>
 
-      <div className="row">
-        <span>Name</span>
-        <b style={{ textAlign: 'right' }}>{runner.name || '—'}</b>
-      </div>
-      <div className="row">
-        <span>BIB</span>
-        <b>{runner.bib || '—'}</b>
-      </div>
-      <div className="row">
-        <span>Category</span>
-        <b style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: catColor, display: 'inline-block', flexShrink: 0 }}></span>
-          {formatCategoryDisplay(runner)}
-        </b>
-      </div>
-      <div className="row">
-        <span>Gender</span>
-        <b>{cleanGender}</b>
-      </div>
-      <div className="row">
-        <span>Age Group</span>
-        <b>{cleanAgeGroup}</b>
-      </div>
-
-      <div className="hr"></div>
-
-      <div className="row">
-        <span>Check-in Scan</span>
-        <span style={{ fontFamily: 'var(--mono, monospace)' }}>{fmtTime(runner.checkin || runner.checked_in_at)}</span>
-      </div>
-
-      {(runner.gun_start_time || runner.gunStartTime || runner.categoryStartTimeStr) && (
+      <div className="eslip-body">
         <div className="row">
-          <span>Start (Gun Time)</span>
-          <span style={{ fontFamily: 'var(--mono, monospace)' }}>{runner.categoryStartTimeStr || fmtTime(runner.gun_start_time || runner.gunStartTime)}</span>
+          <span>Name</span>
+          <b style={{ textAlign: 'right' }}>{runner.name || '—'}</b>
         </div>
-      )}
+        <div className="row">
+          <span>BIB</span>
+          <b>{runner.bib || '—'}</b>
+        </div>
+        <div className="row">
+          <span>Category</span>
+          <b style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: catColor, display: 'inline-block', flexShrink: 0 }}></span>
+            {formatCategoryDisplay(runner)}
+          </b>
+        </div>
+        <div className="row">
+          <span>Gender</span>
+          <b>{cleanGender}</b>
+        </div>
+        <div className="row">
+          <span>Age Group</span>
+          <b>{cleanAgeGroup}</b>
+        </div>
 
-      {/* Distance-specific Checkpoint Stations */}
-      {distanceStations.length > 0 ? (
-        <>
-          {distanceStations.map((st, idx) => {
-            const ts = runner.cps?.[st.id] ?? runner.cps?.[st.name] ?? runner.cps?.[`st_${st.id}`];
-            return (
-              <div className="row" key={st.id || `st_${idx}`}>
-                <span>{st.name || `Checkpoint ${idx + 1}`}</span>
-                <span style={{ fontFamily: 'var(--mono, monospace)' }}>{fmtTime(ts)}</span>
-              </div>
-            );
-          })}
-          {extraCpEntries.map(([cp, ts], idx) => {
+        <div className="hr"></div>
+
+        <div className="row">
+          <span>Check-in Scan</span>
+          <span style={{ fontFamily: 'var(--mono, monospace)' }}>{fmtTime(runner.checkin || runner.checked_in_at)}</span>
+        </div>
+
+        {(runner.gun_start_time || runner.gunStartTime || runner.categoryStartTimeStr) && (
+          <div className="row">
+            <span>Start (Gun Time)</span>
+            <span style={{ fontFamily: 'var(--mono, monospace)' }}>{runner.categoryStartTimeStr || fmtTime(runner.gun_start_time || runner.gunStartTime)}</span>
+          </div>
+        )}
+
+        {/* Distance-specific Checkpoint Stations */}
+        {distanceStations.length > 0 ? (
+          <>
+            {distanceStations.map((st, idx) => {
+              const ts = runner.cps?.[st.id] ?? runner.cps?.[st.name] ?? runner.cps?.[`st_${st.id}`];
+              return (
+                <div className="row" key={st.id || `st_${idx}`}>
+                  <span>{st.name || `Checkpoint ${idx + 1}`}</span>
+                  <span style={{ fontFamily: 'var(--mono, monospace)' }}>{fmtTime(ts)}</span>
+                </div>
+              );
+            })}
+            {extraCpEntries.map(([cp, ts], idx) => {
+              const sId = String(cp).toLowerCase();
+              const stationName = stations?.find(s => String(s.id).toLowerCase() === sId)?.name
+                || KNOWN_STATION_MAP[sId]
+                || (sId.length < 10 ? cp : null)
+                || `Checkpoint ${distanceStations.length + idx + 1}`;
+              return (
+                <div className="row" key={cp}>
+                  <span>{stationName}</span>
+                  <span style={{ fontFamily: 'var(--mono, monospace)' }}>{fmtTime(ts)}</span>
+                </div>
+              );
+            })}
+          </>
+        ) : (
+          cpEntries.map(([cp, ts], idx) => {
             const sId = String(cp).toLowerCase();
             const stationName = stations?.find(s => String(s.id).toLowerCase() === sId)?.name
               || KNOWN_STATION_MAP[sId]
               || (sId.length < 10 ? cp : null)
-              || `Checkpoint ${distanceStations.length + idx + 1}`;
+              || `Checkpoint ${idx + 1}`;
             return (
               <div className="row" key={cp}>
                 <span>{stationName}</span>
                 <span style={{ fontFamily: 'var(--mono, monospace)' }}>{fmtTime(ts)}</span>
               </div>
             );
-          })}
-        </>
-      ) : (
-        cpEntries.map(([cp, ts], idx) => {
-          const sId = String(cp).toLowerCase();
-          const stationName = stations?.find(s => String(s.id).toLowerCase() === sId)?.name
-            || KNOWN_STATION_MAP[sId]
-            || (sId.length < 10 ? cp : null)
-            || `Checkpoint ${idx + 1}`;
-          return (
-            <div className="row" key={cp}>
-              <span>{stationName}</span>
-              <span style={{ fontFamily: 'var(--mono, monospace)' }}>{fmtTime(ts)}</span>
+          })
+        )}
+
+        <div className="row">
+          <span>Finish</span>
+          <span style={{ fontFamily: 'var(--mono, monospace)', fontWeight: 600 }}>{fmtTime(runner.finish)}</span>
+        </div>
+
+        <div className="hr"></div>
+
+        <div className="eslip-stat-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', margin: '14px 0' }}>
+          <div className="eslip-stat-box" style={{ background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
+            <div className="eslip-stat-label" style={{ color: 'var(--ink-2, #64748b)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Start date</div>
+            <div className="eslip-stat-val" style={{ fontSize: '15px', fontWeight: 700, fontFamily: 'var(--mono)' }}>
+              {runner.start_date
+                ? fmtDate(runner.start_date)
+                : (startEpoch ? fmtDate(startEpoch) : fmtDate(Date.now()))}
             </div>
-          );
-        })
-      )}
-
-      <div className="row">
-        <span>Finish</span>
-        <span style={{ fontFamily: 'var(--mono, monospace)', fontWeight: 600 }}>{fmtTime(runner.finish)}</span>
-      </div>
-
-      <div className="hr"></div>
-
-      <div className="eslip-stat-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', margin: '14px 0' }}>
-        <div className="eslip-stat-box" style={{ background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
-          <div className="eslip-stat-label" style={{ color: 'var(--ink-2, #64748b)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Start date</div>
-          <div className="eslip-stat-val" style={{ fontSize: '15px', fontWeight: 700, fontFamily: 'var(--mono)' }}>
-            {runner.start_date
-              ? fmtDate(runner.start_date)
-              : (startEpoch ? fmtDate(startEpoch) : fmtDate(Date.now()))}
+          </div>
+          <div className="eslip-stat-box" style={{ background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
+            <div className="eslip-stat-label" style={{ color: 'var(--ink-2, #64748b)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Net Time (Start-Finish)</div>
+            <div className="eslip-stat-val eslip-net-val" style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'var(--mono)', color: 'var(--start, #3b82f6)' }}>
+              {netMs != null ? fmtDur(netMs) : '—'}
+            </div>
           </div>
         </div>
-        <div className="eslip-stat-box" style={{ background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
-          <div className="eslip-stat-label" style={{ color: 'var(--ink-2, #64748b)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Net Time (Start-Finish)</div>
-          <div className="eslip-stat-val eslip-net-val" style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'var(--mono)', color: 'var(--start, #3b82f6)' }}>
-            {netMs != null ? fmtDur(netMs) : '—'}
-          </div>
-        </div>
-      </div>
 
-      <div className="eslip-stat-grid" style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-        <div className="eslip-stat-box" style={{ flex: 1, background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
-          <div className="eslip-stat-label" style={{ fontSize: '11px', color: 'var(--ink-2, #64748b)' }}>Overall Rank</div>
-          <div className="eslip-stat-val eslip-rank-val" style={{ fontSize: '18px', fontWeight: 600 }}>{cleanOverall}</div>
-        </div>
-        <div className="eslip-stat-box" style={{ flex: 1, background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
-          <div className="eslip-stat-label" style={{ fontSize: '11px', color: 'var(--ink-2, #64748b)' }}>Age Group / กลุ่มอายุ</div>
-          <div className="eslip-stat-val eslip-rank-val" style={{ fontSize: '18px', fontWeight: 600 }}>{cleanCat}</div>
+        <div className="eslip-stat-grid" style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+          <div className="eslip-stat-box" style={{ flex: 1, background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
+            <div className="eslip-stat-label" style={{ fontSize: '11px', color: 'var(--ink-2, #64748b)' }}>Overall Rank</div>
+            <div className="eslip-stat-val eslip-rank-val" style={{ fontSize: '18px', fontWeight: 600 }}>{cleanOverall}</div>
+          </div>
+          <div className="eslip-stat-box" style={{ flex: 1, background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
+            <div className="eslip-stat-label" style={{ fontSize: '11px', color: 'var(--ink-2, #64748b)' }}>Age Group / กลุ่มอายุ</div>
+            <div className="eslip-stat-val eslip-rank-val" style={{ fontSize: '18px', fontWeight: 600 }}>{cleanCat}</div>
+          </div>
         </div>
       </div>
 

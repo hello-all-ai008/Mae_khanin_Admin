@@ -58,6 +58,11 @@
 - **Auto Mode:** Automatically synchronizes scans to Supabase in the background when connected; safely queues scans if offline.
 - **Offline Mode:** Suppresses outbound network requests; writes strictly to local IndexedDB and `trail_pending_sync_queue`. Flushes queued scans automatically once switched back to Auto.
 
+### 1.7 Thermal E-Slip Print Calibration for 14cm Paper (`ESlip.jsx` & `ESlip.css`)
+- **Target Paper Size:** Configured `@page { size: 80mm 140mm; margin: 0mm; }` so print preview and receipt printers recognize the exact 14cm (140mm) cut length.
+- **Single-Page Constraint (138mm):** Locked `.eslip` container to `138mm` height (providing a 1mm top/bottom safety buffer), preventing accidental second sheet ejection from thermal printer drivers.
+- **Aesthetic Vertical Distribution (`.eslip-body`):** Wrapped middle runner details and timing rows into `.eslip-body` with `justify-content: space-evenly`. Pins header logo to top and sponsor logos to bottom, evenly distributing content to beautifully fill the entire 14cm paper.
+
 ---
 
 ## 2. Current Blockers, Pending Tasks & Watch Items
