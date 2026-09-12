@@ -21,14 +21,15 @@
   - **Layer 2 (BroadcastChannel & LocalStorage):** Retains instant zero-latency same-browser window-to-window fallback.
 - **Live Finish Data Payload:** Transmits `bib`, `name`, `distance`, `ageGroup`, `finishTime` (net time), and `finishAt` timestamp.
 
-### 1.3 Monitor Finish Mode, Live Ranking & Animation Re-Keying (`Monitor.jsx`)
+### 1.3 Monitor Finish Mode, Live Ranking, Layout Optimization & Animation Re-Keying (`Monitor.jsx`)
 - **Status Badge Differentiation:**
   - `Start`: Displays gun start time / scheduled wave start.
   - `Check in`: Displays check-in timestamp.
   - `Finish`: Displays official net finish time.
 - **Live Leaderboard Ranking:** When a finish scan is received, `Monitor.jsx` computes and renders the runner's live standing:
   - `อันดับรุ่น #[catRank] • อันดับรวม #[overallRank]`
-- **Visual & Logo Calibration:** Numbers glow with the runner's specific category color (`catColor`), and sponsor/event logos (`Baan Pong`, `Mae Khaning`, `ROHN`) have been calibrated for large-screen visibility (`clamp(45px, 5vw, 75px)` and `clamp(55px, 6.5vw, 95px)`).
+- **Right Column Layout & Settings Clearance:** Added `paddingTop: '5rem'` to the right side display and structured the map/logo section with flex column alignment (`alignSelf: 'center'`). This eliminates visual overlap with the floating Settings/Controls toggle button at the top-right corner.
+- **Visual & Logo Calibration:** Numbers glow with the runner's specific category color (`catColor`), and sponsor/event logos (`Baan Pong`, `Mae Khaning`, `ROHN`) have been upscaled to `clamp(55px, 6vw, 90px)` and `clamp(65px, 7.5vw, 110px)` (responsive rule: `height: 60px !important`), arranged with `justify-content: space-around` and `marginTop: '1rem'` for prominent presentation.
 - **Guaranteed Entrance Animation & Re-render (`displayData.timestamp`):** Re-keyed the active runner display container from `castEvent?.timestamp` to `displayData.timestamp`. This ensures that every check-in or finish scan—including manual BIB entry and local events—reliably re-triggers the entrance CSS animation and progress timers without getting stuck or skipped.
 
 ### 1.4 Scanner Auto-Routing by Distance (`Scanner.jsx` & `ScannerInput.jsx`)

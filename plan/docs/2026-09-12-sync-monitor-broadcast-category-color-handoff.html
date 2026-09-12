@@ -219,14 +219,16 @@
 
     <div class="card">
       <span class="tag done">✓ COMPLETED</span>
-      <h3>1.4 ปรับปรุงการแสดงผลและ Animation บนจอ Monitor (Monitor.jsx)</h3>
-      <p>แก้ไขและปรับแต่งการทำงานของหน้าจอแสดงผลนักวิ่ง (<b>Monitor.jsx</b>) ให้เสถียรและสวยงามยิ่งขึ้น:</p>
+      <h3>1.4 ปรับปรุงการจัดวางหน้าจอ, ป้องกันปุ่มตั้งค่าทับซ้อน และ Animation บนจอ Monitor (Monitor.jsx)</h3>
+      <p>แก้ไขและปรับแต่งโครงสร้างหน้าจอแสดงผลนักวิ่ง (<b>Monitor.jsx</b>) ให้ลงตัว ใช้งานได้สมบูรณ์ในทุกขนาดหน้าจอ:</p>
       <ul>
+        <li><b>ป้องกันปุ่มตั้งค่าบังแผนที่ (Settings Button Clearance):</b> เพิ่ม <code>paddingTop: '5rem'</code> ให้กับพื้นที่ฝั่งขวา (แผนที่และโลโก้) พร้อมจัดโครงสร้างแบบ Flex Column (<code>alignSelf: 'center'</code>) เพื่อป้องกันไม่ให้ปุ่มลอย "ตั้งค่า / ปิดจอ" ที่มุมขวาบนลงมาบดบังหรือทับซ้อนกับภาพแผนที่เส้นทางวิ่ง</li>
         <li><b>Re-Keying Active Container:</b> เปลี่ยนการระบุคีย์อนิเมชันจาก <code>key={castEvent?.timestamp}</code> มาเป็น <code>key={displayData.timestamp || 'initial'}</code> เพื่อรับประกันว่าทุกครั้งที่มีการสแกนใหม่, การสลับรายชื่อนักวิ่ง, หรือการป้อน BIB ด้วยตนเอง (Manual BIB) หน้าจอจะเล่น CSS Entrance Animation และรีเซ็ตเวลานับถอยหลังใหม่อย่างแม่นยำ 100% ไม่ติดค้าง</li>
-        <li><b>ขยายขนาดโลโก้งานวิ่งและผู้สนับสนุน:</b> ปรับสเกล Responsive Logo ให้คมชัดและโดดเด่นบนจอโปรเจกเตอร์/ทีวีขนาดใหญ่:
+        <li><b>ขยายขนาดโลโก้งานวิ่งและผู้สนับสนุน:</b> ปรับสเกล Responsive Logo ให้ใหญ่ ชัดเจน และสมส่วนยิ่งขึ้นบนจอแสดงผลขนาดใหญ่:
           <ul>
-            <li>โลโก้บ้านโป่ง (Logo Baan Pong) &amp; แม่ขะนิง: ปรับเป็น <code>clamp(45px, 5vw, 75px)</code></li>
-            <li>โลโก้ ROHN Full: ปรับเป็น <code>clamp(55px, 6.5vw, 95px)</code></li>
+            <li>โลโก้บ้านโป่ง (Logo Baan Pong) &amp; แม่ขะนิง: ปรับเพิ่มเป็น <code>clamp(55px, 6vw, 90px)</code></li>
+            <li>โลโก้ ROHN Full: ปรับเพิ่มเป็น <code>clamp(65px, 7.5vw, 110px)</code></li>
+            <li>จัดระยะแบบ <code>justifyContent: 'space-around'</code> พร้อมเพิ่ม Padding และปรับความสูงบนจอขนาดเล็กเป็น <code>height: 60px !important</code></li>
           </ul>
         </li>
         <li><b>Category Color Glow:</b> หมายเลข BIB และข้อมูลนักวิ่งเรืองแสงตามสีประจำรุ่นการแข่งขัน (<code>catColor</code>) สอดคล้องกับฐานข้อมูล</li>
