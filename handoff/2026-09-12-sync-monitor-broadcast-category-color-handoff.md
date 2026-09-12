@@ -28,6 +28,11 @@
   - `Finish`: Displays official net finish time.
 - **Live Leaderboard Ranking:** When a finish scan is received, `Monitor.jsx` computes and renders the runner's live standing:
   - `อันดับรุ่น #[catRank] • อันดับรวม #[overallRank]`
+- **Vertical Stacked Metadata Hierarchy & Gender Display:**
+  - Replaced the horizontal wrapped row with a vertical column (`flexDirection: 'column'`, `gap: 8px`).
+  - **Category Pill:** Enlarged font size to `clamp(1.8rem, 3.2vw, 3.8rem)` displaying `${distance} : ${cat_name}` with dynamic category background color.
+  - **Gender Normalization & Display:** Added dedicated gender text (`Male` / `Female` via `isMale`/`isFemale` parsing) in `clamp(1.8rem, 3.2vw, 3.8rem)` font size and `600` weight.
+  - **Age Group Badge:** Enlarged to `clamp(1.8rem, 3.2vw, 3.8rem)` for clear legibility on large stadium and projector screens.
 - **Right Column Layout & Settings Clearance:** Added `paddingTop: '5rem'` to the right side display and structured the map/logo section with flex column alignment (`alignSelf: 'center'`). This eliminates visual overlap with the floating Settings/Controls toggle button at the top-right corner.
 - **Visual & Logo Calibration:** Numbers glow with the runner's specific category color (`catColor`), and sponsor/event logos (`Baan Pong`, `Mae Khaning`, `ROHN`) have been upscaled to `clamp(55px, 6vw, 90px)` and `clamp(65px, 7.5vw, 110px)` (responsive rule: `height: 60px !important`), arranged with `justify-content: space-around` and `marginTop: '1rem'` for prominent presentation.
 - **Guaranteed Entrance Animation & Re-render (`displayData.timestamp`):** Re-keyed the active runner display container from `castEvent?.timestamp` to `displayData.timestamp`. This ensures that every check-in or finish scan—including manual BIB entry and local events—reliably re-triggers the entrance CSS animation and progress timers without getting stuck or skipped.
