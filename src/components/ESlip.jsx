@@ -427,7 +427,7 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
           className="eslip-head-logo"
           style={{ height: '75px', maxWidth: '180px', width: 'auto', objectFit: 'contain', marginBottom: '8px' }}
         />
-        <span style={{ fontSize: '13px', fontWeight: 600 }}>Official e-Slip</span>
+        <span style={{ fontSize: '13px', fontWeight: 600 }}>2026</span>
         {runner.race_status === 'DNF' && (
           <span className="eslip-dnf-badge" style={{
             marginTop: '6px',
