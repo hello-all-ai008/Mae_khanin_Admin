@@ -143,19 +143,24 @@ erDiagram
 
 ---
 
-## 5. E-Slip 14cm Paper Length & High-Contrast Thermal Monochrome Calibration
+## 5. E-Slip 15cm Paper Length & High-Contrast Thermal Monochrome Calibration
 
 ### 5.1 Issue & Root Cause
-1. **Paper Length Overshooting:**
-   - Setting receipt container to `138mm` height with `flex: justify-content: space-evenly` pushed content to the outer boundary. When thermal printers feed physical margin (~3-5mm) before printing and feed to the guillotine cutter (~8-12mm) after printing, total paper length exceeded 140mm (14cm), causing cutter misalignment and paper waste.
+1. **Paper Length Measurement & Empty Void:**
+   - Previous compacting left excessive empty blank space below the content when previewing/printing on thermal roll paper, which measured up to 24cm due to driver default spooling without strict 15cm constraints.
+   - User requirement: produce a receipt with an exact length of ~15 cm (150mm), filling the slip proportionately without empty voids.
 2. **Faint/Dithered Colors on Thermal Print:**
    - Thermal heads cannot reproduce color or gray halftones. Slate hex colors (`#334155`, `#64748b`), category colors, blue net time, and color logos (`logoBaanPong`, `logoMaekhaning`, `logoRohn`) were dithered into faint sparse dot matrices, resulting in washed-out prints.
 
 ### 5.2 Solution Implemented
-1. **Compact Printable Height (~115mm - 120mm):**
-   - In `@media print`: Changed `.eslip` to `height: auto !important; max-height: 122mm !important; min-height: 0 !important;` with compact `padding: 2.5mm 3.5mm 2mm !important;`.
-   - `.eslip-body`: Changed to `justify-content: flex-start !important; gap: 1px !important;` without artificial stretching.
-   - Scaled down logo and stat box heights to leave 20-25mm safety buffer for printer hardware feed and cutting inside the 14cm boundary.
+1. **Calibrated 15cm Paper Dimensions & Even Spacing:**
+   - In `@media print`:
+     - `@page { size: 80mm 150mm; margin: 0mm; }`
+     - `html, body`: strictly locked to `width: 80mm; height: 150mm; max-height: 150mm; overflow: hidden;`
+     - `.modal-bg.eslip-modal-portal > div`: `height: 147mm;`
+     - `.eslip`: `height: 147mm; max-height: 147mm; display: flex; flex-direction: column; justify-content: space-between;`
+     - `.eslip-body`: `display: flex; flex-direction: column; justify-content: space-evenly; flex: 1 1 auto;`
+     - Proportioned header logo (`42px`), footer logos (`26px/36px`), and stat boxes (`padding: 3.5px 3px`) so the receipt content evenly and comfortably fills the entire 15cm page without empty white voids.
 2. **100% Pure Black & White Print Rendering:**
    - Force all text and borders to pure solid black `#000000 !important` and `-webkit-text-fill-color: #000000 !important`.
    - Applied `filter: grayscale(100%) contrast(200%) brightness(90%) !important;` to all logos, producing crisp, high-density black lines and clear white backgrounds.

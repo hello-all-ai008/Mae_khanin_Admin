@@ -384,24 +384,30 @@
     </table>
   </section>
 
-  <!-- Section 5: การปรับแต่งความยาว e-Slip ให้พอดีกระดาษ 14 cm และระบบพิมพ์ขาวดำ 100% สำหรับเครื่องพิมพ์ความร้อน -->
+  <!-- Section 5: การปรับแต่งความยาว e-Slip ให้พอดีกระดาษ 15 cm และระบบพิมพ์ขาวดำ 100% สำหรับเครื่องพิมพ์ความร้อน -->
   <section class="card">
-    <h2><span class="badge badge-success">5</span> การปรับแก้ e-Slip: ความยาวกระดาษ 14 cm และระบบพิมพ์ขาวดำคมชัด (Thermal Print)</h2>
+    <h2><span class="badge badge-success">5</span> การปรับแก้ e-Slip: ความยาวกระดาษ 15 cm (150 mm) และระบบพิมพ์ขาวดำคมชัด (Thermal Print)</h2>
     <p>
-      จากการทดสอบพิมพ์บนเครื่องพิมพ์ใบเสร็จความร้อน (Thermal Printer) ด้วยกระดาษความยาว 14 cm พบปัญหา 2 ประการหลัก ได้แก่ <strong>(1) ความยาวเกินขอบกระดาษ 14 cm</strong> และ <strong>(2) สีข้อความและโลโก้จางมองไม่ชัด</strong>
+      จากการทดสอบพิมพ์บนเครื่องพิมพ์ใบเสร็จความร้อน (Thermal Printer) ด้วยกระดาษม้วนต่อเนื่อง พบปัญหา <strong>(1) หน้าพรีวิวก่อนพิมพ์และกระดาษจริงวัดได้ยาวถึง 24 cm มีพื้นที่ว่างสีขาวด้านล่างเยอะเกินไป</strong> และ <strong>(2) สีข้อความและโลโก้จางมองไม่ชัด</strong> จึงได้ทำการปรับแต่งระบบการพิมพ์ให้ได้ความยาวสลิปรวมพอดีที่ <strong>15 cm</strong> และกระจายเนื้อหาเต็มแผ่นสวยงาม
     </p>
 
     <div class="card" style="background: #f8fafc; border-left: 4px solid #ef4444; margin: 16px 0;">
       <h3 style="margin-top: 0; color: #b91c1c;">สาเหตุของปัญหา (Root Cause)</h3>
       <ul style="margin: 0; padding-left: 20px;">
-        <li><strong>ความยาวกระดาษยาวเกินไป:</strong> การกำหนดความสูงสลิปไว้ที่ <code>138mm</code> ร่วมกับ <code>justify-content: space-evenly</code> เมื่อพิมพ์จริง ฮาร์ดแวร์เครื่องพิมพ์มีระยะ Feed หัวกระดาษ (~3mm) และระยะ Feed ไปยังใบมีดตัด (Guillotine Cutter ~8-12mm) ทำให้ความยาวกระดาษรวมกลายเป็น 150mm+ จึงยาวเกิน 14 cm</li>
+        <li><strong>ความยาวกระดาษ 24 cm และพื้นที่ว่างเยอะ:</strong> การกำหนดความสูงเป็น <code>height: auto</code> ทำให้ไดรเวอร์เครื่องพิมพ์ความร้อนหรือ Chrome ถือเป็นกระดาษม้วนยาวต่อเนื่อง (Roll Continuous 24–29.7 cm) ขณะที่ตัวเนื้อหาสลิปถูกบีบสั้นอยู่แค่ส่วนบน ทำให้เกิดพื้นที่ว่างสีขาวด้านล่างขนาดใหญ่</li>
         <li><strong>สีจางตอนปริ้น:</strong> หัวพิมพ์ความร้อนไม่สามารถพิมพ์เฉดสีหรือสีเทาได้ จึงใช้ระบบ Dithering (จุดไข่ปลาโปร่งๆ) แทน ทำให้สีเทา Slate (<code>#334155</code>, <code>#64748b</code>), สีน้ำเงิน Net Time และโลโก้กลายเป็นจุดจางๆ ดูไม่ชัดเจน</li>
       </ul>
     </div>
 
     <h3>แนวทางการแก้ไขที่ดำเนินการแล้ว (Implemented Fixes)</h3>
     <ul>
-      <li><strong>ปรับความสูงสลิปให้กะทัดรัด (Compact Height ~115mm - 120mm):</strong> ปรับ <code>.eslip</code> เป็น <code>max-height: 122mm !important</code> และ <code>height: auto !important</code> พร้อมลดระยะห่างระหว่างแถวและขนาดโลโก้ลง ทำให้มีระยะเผื่อขอบหัว-ท้าย (Safety Buffer) ~20mm สำหรับใบมีดตัดกระดาษได้พอดี 14 cm ไม่เลยหน้ากระดาษ</li>
+      <li><strong>ล็อกขนาดกระดาษและปรับความสูงสลิปให้พอดี 15 cm (150 mm):</strong>
+        <ul>
+          <li>กำหนดขนาดหน้าใน CSS เป็น <code>@page { size: 80mm 150mm; margin: 0mm; }</code></li>
+          <li>ล็อกความสูงของ <code>html, body</code> และ Container ให้เป็น <code>150mm !important</code> และซ่อนการเลื่อนเกินด้วย <code>overflow: hidden !important</code></li>
+          <li>ปรับ <code>.eslip</code> เป็น <code>height: 147mm !important</code> (เว้นระยะขอบปลอดภัยบน-ล่าง 3mm) พร้อมใช้ <code>justify-content: space-evenly</code> ใน <code>.eslip-body</code> ทำให้เนื้อหาทุกแถว ทั้งข้อมูลนักวิ่ง จุดเช็คพอยต์ เวลาสุทธิ และอันดับ ถูกจัดเรียงกระจายอย่างสมดุลเต็มแผ่น 15 cm โดยไม่มีพื้นที่ว่างโหวงเหวงด้านล่าง</li>
+        </ul>
+      </li>
       <li><strong>ระบบพิมพ์ขาวดำแท้ 100% (Pure Monochrome Black & White):</strong>
         <ul>
           <li>บังคับตัวอักษรและเส้นขอบทุกจุดเป็นสีดำสนิท <code>color: #000000 !important</code>, <code>-webkit-text-fill-color: #000000 !important</code> และ <code>border-color: #000000 !important</code></li>
