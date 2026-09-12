@@ -429,7 +429,7 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
         />
         <span style={{ fontSize: '13px', fontWeight: 600 }}>Official e-Slip</span>
         {runner.race_status === 'DNF' && (
-          <span style={{
+          <span className="eslip-dnf-badge" style={{
             marginTop: '6px',
             display: 'inline-block',
             fontSize: '11px',
@@ -458,7 +458,7 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
         <div className="row">
           <span>Category</span>
           <b style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: catColor, display: 'inline-block', flexShrink: 0 }}></span>
+            <span className="eslip-cat-dot" style={{ width: '10px', height: '10px', borderRadius: '3px', background: catColor, display: 'inline-block', flexShrink: 0 }}></span>
             {formatCategoryDisplay(runner)}
           </b>
         </div>

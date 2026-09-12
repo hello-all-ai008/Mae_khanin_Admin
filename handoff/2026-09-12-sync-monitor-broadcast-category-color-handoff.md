@@ -140,3 +140,25 @@ erDiagram
    - `Rohn-Runner`: Vite build completed in 893ms without errors.
 4. **Git Remote Synchronization:**
    - Both `main` and `Tiw-dev` branches verified, merged, and pushed to GitHub.
+
+---
+
+## 5. E-Slip 14cm Paper Length & High-Contrast Thermal Monochrome Calibration
+
+### 5.1 Issue & Root Cause
+1. **Paper Length Overshooting:**
+   - Setting receipt container to `138mm` height with `flex: justify-content: space-evenly` pushed content to the outer boundary. When thermal printers feed physical margin (~3-5mm) before printing and feed to the guillotine cutter (~8-12mm) after printing, total paper length exceeded 140mm (14cm), causing cutter misalignment and paper waste.
+2. **Faint/Dithered Colors on Thermal Print:**
+   - Thermal heads cannot reproduce color or gray halftones. Slate hex colors (`#334155`, `#64748b`), category colors, blue net time, and color logos (`logoBaanPong`, `logoMaekhaning`, `logoRohn`) were dithered into faint sparse dot matrices, resulting in washed-out prints.
+
+### 5.2 Solution Implemented
+1. **Compact Printable Height (~115mm - 120mm):**
+   - In `@media print`: Changed `.eslip` to `height: auto !important; max-height: 122mm !important; min-height: 0 !important;` with compact `padding: 2.5mm 3.5mm 2mm !important;`.
+   - `.eslip-body`: Changed to `justify-content: flex-start !important; gap: 1px !important;` without artificial stretching.
+   - Scaled down logo and stat box heights to leave 20-25mm safety buffer for printer hardware feed and cutting inside the 14cm boundary.
+2. **100% Pure Black & White Print Rendering:**
+   - Force all text and borders to pure solid black `#000000 !important` and `-webkit-text-fill-color: #000000 !important`.
+   - Applied `filter: grayscale(100%) contrast(200%) brightness(90%) !important;` to all logos, producing crisp, high-density black lines and clear white backgrounds.
+   - Category color dot hidden in print (`.eslip-cat-dot { display: none !important; }`).
+   - Stat boxes render with white background and solid black borders `1.2px solid #000000 !important`.
+   - Synchronized across both `Rohn-Admin` and `Rohn-Runner`.

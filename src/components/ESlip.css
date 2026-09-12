@@ -328,19 +328,21 @@
 /* Print styles - calibrated for Thermal Slip Printers (80mm width) and exact 14cm (140mm) paper length */
 @media print {
   @page {
-    size: 80mm 140mm; /* Exactly 80mm width and 140mm (14cm) length */
-    margin: 0mm; /* 0 margin prevents blank header/footer and extra feed on slip rolls */
+    size: 80mm 140mm; /* Exactly 80mm width and 140mm (14cm) length boundary */
+    margin: 0mm; /* 0 margin prevents blank header/footer and extra feed */
   }
 
   html, body {
     margin: 0 !important;
     padding: 0 !important;
     width: 80mm !important;
-    height: 140mm !important;
-    max-height: 140mm !important;
-    min-height: 140mm !important;
+    max-width: 80mm !important;
+    height: auto !important;
+    max-height: 135mm !important;
+    min-height: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
     overflow: hidden !important; /* CRITICAL: prevents accidental 2nd sheet from printer drivers */
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -356,14 +358,14 @@
   /* Modal backdrop becomes transparent and statically centered */
   .modal-bg.eslip-modal-portal {
     display: flex !important;
-    align-items: center !important;
+    align-items: flex-start !important;
     justify-content: center !important;
     position: static !important;
     width: 80mm !important;
     max-width: 80mm !important;
-    height: 140mm !important;
-    max-height: 140mm !important;
-    min-height: 140mm !important;
+    height: auto !important;
+    max-height: 135mm !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     background: transparent !important;
@@ -377,38 +379,39 @@
   .modal-bg.eslip-modal-portal > div {
     display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     margin: 0 auto !important;
     padding: 0 !important;
     transform: none !important;
     width: 76mm !important;
     max-width: 76mm !important;
-    height: 138mm !important;
-    max-height: 138mm !important;
-    min-height: 138mm !important;
+    height: auto !important;
+    max-height: 124mm !important;
+    min-height: 0 !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
   }
 
-  /* The slip itself: strictly 138mm height fitting 14cm paper cleanly with 1mm edge buffer */
+  /* The slip itself: compact ~115mm-120mm height to safely fit inside 14cm paper with hardware cut buffer */
   .eslip {
     display: flex !important;
     flex-direction: column !important;
-    justify-content: space-between !important;
+    justify-content: flex-start !important;
     position: relative !important; /* CRITICAL: locks Printed date inside this frame */
     width: 76mm !important;
     max-width: 76mm !important;
-    height: 138mm !important; /* 13.8cm height for 14cm paper */
-    max-height: 138mm !important;
-    min-height: 138mm !important;
+    height: auto !important;
+    max-height: 122mm !important;
+    min-height: 0 !important;
     margin: 0 auto !important;
-    padding: 3.5mm 3.5mm 3mm !important;
+    padding: 2.5mm 3.5mm 2mm !important;
     box-shadow: none !important;
-    border: 1px solid #1e293b !important;
-    border-radius: 6px !important;
+    border: 1.5px solid #000000 !important;
+    border-radius: 4px !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
     color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
     background: #ffffff !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
@@ -418,14 +421,48 @@
     break-after: avoid !important;
   }
 
+  /* Force pure solid black text and borders across all descendants */
+  .eslip * {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    border-color: #000000 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Pure crisp black & white conversion for all logos without faint gray dithering */
+  .eslip img,
+  .eslip-head-logo,
+  .eslip-foot-logo-mk,
+  .eslip-foot-logo-rohn,
+  .eslip-foot-logo-label {
+    filter: grayscale(100%) contrast(200%) brightness(90%) !important;
+    -webkit-filter: grayscale(100%) contrast(200%) brightness(90%) !important;
+    background: transparent !important;
+  }
+
+  /* Category color dot: hide in monochrome thermal print to avoid faint dither */
+  .eslip-cat-dot {
+    display: none !important;
+  }
+
+  /* DNF Badge in print: high contrast solid black border */
+  .eslip-dnf-badge {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    background: #ffffff !important;
+    border: 1.5px solid #000000 !important;
+  }
+
   /* Print date firmly locked in top right inside slip border */
   .eslip-print-time {
     position: absolute !important;
-    top: 3.5mm !important;
+    top: 2.5mm !important;
     right: 3.5mm !important;
     font-size: 7.5px !important;
-    color: #334155 !important;
-    font-weight: 600 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    font-weight: 700 !important;
     line-height: 1 !important;
     z-index: 5 !important;
   }
@@ -434,43 +471,44 @@
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    padding-bottom: 2.5px !important;
-    margin-bottom: 2.5px !important;
-    border-bottom: 1px dashed #334155 !important;
+    padding-bottom: 2px !important;
+    margin-bottom: 2px !important;
+    border-bottom: 1.2px solid #000000 !important;
     flex-shrink: 0 !important;
   }
 
   .eslip .head img,
   .eslip-head-logo {
-    height: 44px !important;
-    max-height: 44px !important;
+    height: 34px !important;
+    max-height: 34px !important;
     width: auto !important;
     object-fit: contain !important;
-    margin-bottom: 2px !important;
-    filter: contrast(115%) !important;
+    margin-bottom: 1.5px !important;
   }
 
   .eslip .head span {
-    font-size: 11.5px !important;
-    font-weight: 700 !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
     color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
     line-height: 1.15 !important;
   }
 
-  /* Middle body flex container: fills the 14cm paper height evenly without empty gaps */
+  /* Middle body container: compact list without forced stretch */
   .eslip-body {
     display: flex !important;
     flex-direction: column !important;
-    justify-content: space-evenly !important;
-    flex: 1 1 auto !important;
+    justify-content: flex-start !important;
+    gap: 1px !important;
+    flex: 0 1 auto !important;
     min-height: 0 !important;
     width: 100% !important;
   }
 
   .eslip .hr {
-    margin: 2.5px 0 !important;
+    margin: 2px 0 !important;
     border: none !important;
-    border-top: 1px dashed #334155 !important;
+    border-top: 1.2px solid #000000 !important;
     flex-shrink: 0 !important;
   }
 
@@ -479,55 +517,64 @@
     justify-content: space-between !important;
     align-items: baseline !important;
     padding: 0.5px 0 !important;
-    font-size: 10.5px !important;
-    line-height: 1.25 !important;
+    font-size: 10px !important;
+    line-height: 1.2 !important;
     color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
   }
 
   .eslip .row span:first-child {
-    color: #334155 !important;
-    font-weight: 500 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    font-weight: 600 !important;
   }
 
   .eslip .row b,
   .eslip .row span:last-child {
     color: #000000 !important;
-    font-weight: 700 !important;
+    -webkit-text-fill-color: #000000 !important;
+    font-weight: 800 !important;
   }
 
-  /* Stat cards (Start Date, Net Time, Overall Rank, Category Rank) - high contrast for thermal print */
+  /* Stat cards - high contrast solid black border for thermal print */
   .eslip-stat-grid,
   .eslip [style*="gridTemplateColumns"],
   .eslip [style*="grid-template-columns"] {
-    margin: 2.5px 0 !important;
-    gap: 4px !important;
+    margin: 2px 0 !important;
+    gap: 3.5px !important;
     flex-shrink: 0 !important;
   }
 
   .eslip-stat-box,
   .eslip [style*="background"] {
     background: #ffffff !important;
-    border: 1px solid #334155 !important;
-    padding: 3.5px 3px !important;
+    border: 1.2px solid #000000 !important;
+    padding: 2.5px 2px !important;
     border-radius: 4px !important;
   }
 
   .eslip-stat-label {
-    color: #334155 !important;
-    font-size: 8.5px !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    font-size: 8px !important;
+    font-weight: 700 !important;
     margin-bottom: 1px !important;
     line-height: 1.1 !important;
   }
 
   .eslip-stat-val {
-    font-size: 13.5px !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    font-size: 12.5px !important;
     line-height: 1.15 !important;
-    font-weight: 700 !important;
+    font-weight: 800 !important;
   }
 
   .eslip-rank-val {
-    font-size: 15px !important;
-    font-weight: 700 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    font-size: 13.5px !important;
+    font-weight: 800 !important;
   }
 
   .eslip .eslip-net-val,
@@ -535,7 +582,8 @@
   .eslip [style*="color: rgb(59, 130, 246)"],
   .eslip [style*="var(--start"] {
     color: #000000 !important;
-    font-weight: 800 !important;
+    -webkit-text-fill-color: #000000 !important;
+    font-weight: 900 !important;
   }
 
   .eslip .foot {
@@ -543,7 +591,7 @@
     flex-direction: column !important;
     align-items: center !important;
     margin-top: 2px !important;
-    gap: 2.5px !important;
+    gap: 2px !important;
     flex-shrink: 0 !important;
   }
 
@@ -551,41 +599,43 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 10px !important;
+    gap: 8px !important;
   }
 
   .eslip-foot-logo-mk {
-    height: 28px !important;
-    max-height: 28px !important;
+    height: 22px !important;
+    max-height: 22px !important;
     width: auto !important;
-    filter: contrast(115%) !important;
   }
 
   .eslip-foot-logo-rohn {
-    height: 38px !important;
-    max-height: 38px !important;
+    height: 30px !important;
+    max-height: 30px !important;
     width: auto !important;
-    filter: contrast(115%) !important;
   }
 
   .eslip-foot-timing {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 5px !important;
-    font-size: 10px !important;
-    color: #334155 !important;
-    font-weight: 600 !important;
+    gap: 4px !important;
+    font-size: 9px !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    font-weight: 700 !important;
   }
 
   .eslip-foot-logo-label {
-    height: 18px !important;
-    max-height: 18px !important;
+    height: 14px !important;
+    max-height: 14px !important;
     width: auto !important;
   }
 
   .eslip-foot-note {
-    color: #475569 !important;
-    font-size: 8px !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    font-size: 7.5px !important;
+    font-weight: 600 !important;
+    font-style: normal !important;
     line-height: 1 !important;
   }
 }
