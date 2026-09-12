@@ -21,18 +21,20 @@
   - **Layer 2 (BroadcastChannel & LocalStorage):** Retains instant zero-latency same-browser window-to-window fallback.
 - **Live Finish Data Payload:** Transmits `bib`, `name`, `distance`, `ageGroup`, `finishTime` (net time), and `finishAt` timestamp.
 
-### 1.3 Monitor Finish Mode & Live Ranking (`Monitor.jsx`)
+### 1.3 Monitor Finish Mode, Live Ranking & Animation Re-Keying (`Monitor.jsx`)
 - **Status Badge Differentiation:**
   - `Start`: Displays gun start time / scheduled wave start.
   - `Check in`: Displays check-in timestamp.
   - `Finish`: Displays official net finish time.
 - **Live Leaderboard Ranking:** When a finish scan is received, `Monitor.jsx` computes and renders the runner's live standing:
   - `อันดับรุ่น #[catRank] • อันดับรวม #[overallRank]`
-- **Visual Enhancements:** Numbers glow with the runner's specific category color (`catColor`), and sponsor/event logos (`Baan Pong`, `Mae Khaning`, `ROHN`) have been calibrated for large-screen visibility (`clamp(45px, 5vw, 75px)`).
+- **Visual & Logo Calibration:** Numbers glow with the runner's specific category color (`catColor`), and sponsor/event logos (`Baan Pong`, `Mae Khaning`, `ROHN`) have been calibrated for large-screen visibility (`clamp(45px, 5vw, 75px)` and `clamp(55px, 6.5vw, 95px)`).
+- **Guaranteed Entrance Animation & Re-render (`displayData.timestamp`):** Re-keyed the active runner display container from `castEvent?.timestamp` to `displayData.timestamp`. This ensures that every check-in or finish scan—including manual BIB entry and local events—reliably re-triggers the entrance CSS animation and progress timers without getting stuck or skipped.
 
 ### 1.4 Scanner Auto-Routing by Distance (`Scanner.jsx` & `ScannerInput.jsx`)
 - **Automated Screen Directing:** Operators scanning at multi-distance events can now route runners to designated monitors automatically based on distance (e.g., `10KM` -> Monitor 1, `5KM` -> Monitor 2).
 - **Interactive Configuration:** Operators can toggle Auto-Route on/off and configure custom distance mapping rules with `localStorage` persistence (`rohn_routing_rules`, `rohn_auto_route_enabled`).
+- **Target Monitor Sync:** Ensures that when Auto-Route is active, the success message and cast event payload both accurately target the dynamically routed monitor ID.
 
 ### 1.5 Category Data Format Standardization & Database-Backed Entry
 - **Category Data Format:**

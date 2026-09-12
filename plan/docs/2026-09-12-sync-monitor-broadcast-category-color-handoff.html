@@ -212,14 +212,30 @@
       <p>เพิ่มฟังก์ชันใน <b>Scanner.jsx</b> และ <b>ScannerInput.jsx</b> ให้ระบบตรวจจับระยะทางของนักวิ่งแล้วยิงเข้าจอที่กำหนดอัตโนมัติ:</p>
       <ul>
         <li>กำหนดเงื่อนไข เช่น <code>10KM</code> =&gt; จอ 1, <code>5KM</code> =&gt; จอ 2 ได้อย่างยืดหยุ่น</li>
-        <li>มีสวิตช์เปิด-ปิดระบบ Auto-Route และเซฟเงื่อนไขลง <code>localStorage</code> อัตโนมัติ</li>
-        <li>ปรับขนาดโลโก้ผู้สนับสนุนและงานวิ่งบนจอ Monitor ให้เห็นชัดเจนบนจอใหญ่ (<code>clamp(45px, 5vw, 75px)</code>)</li>
+        <li>มีสวิตช์เปิด-ปิดระบบ Auto-Route และเซฟเงื่อนไขลง <code>localStorage</code> อัตโนมัติ (<code>rohn_routing_rules</code>, <code>rohn_auto_route_enabled</code>)</li>
+        <li>ซิงก์เป้าหมายหมายเลขจอ (Monitor ID) ตรงกันทั้งข้อความแจ้งเตือนและสัญญาณ Cast Event ไปยังหน้าจอเป้าหมาย</li>
       </ul>
     </div>
 
     <div class="card">
       <span class="tag done">✓ COMPLETED</span>
-      <h3>1.4 จัดรูปแบบคอลัมน์ Category และระบบ Dropdown ดึงจากฐานข้อมูลจริง</h3>
+      <h3>1.4 ปรับปรุงการแสดงผลและ Animation บนจอ Monitor (Monitor.jsx)</h3>
+      <p>แก้ไขและปรับแต่งการทำงานของหน้าจอแสดงผลนักวิ่ง (<b>Monitor.jsx</b>) ให้เสถียรและสวยงามยิ่งขึ้น:</p>
+      <ul>
+        <li><b>Re-Keying Active Container:</b> เปลี่ยนการระบุคีย์อนิเมชันจาก <code>key={castEvent?.timestamp}</code> มาเป็น <code>key={displayData.timestamp || 'initial'}</code> เพื่อรับประกันว่าทุกครั้งที่มีการสแกนใหม่, การสลับรายชื่อนักวิ่ง, หรือการป้อน BIB ด้วยตนเอง (Manual BIB) หน้าจอจะเล่น CSS Entrance Animation และรีเซ็ตเวลานับถอยหลังใหม่อย่างแม่นยำ 100% ไม่ติดค้าง</li>
+        <li><b>ขยายขนาดโลโก้งานวิ่งและผู้สนับสนุน:</b> ปรับสเกล Responsive Logo ให้คมชัดและโดดเด่นบนจอโปรเจกเตอร์/ทีวีขนาดใหญ่:
+          <ul>
+            <li>โลโก้บ้านโป่ง (Logo Baan Pong) &amp; แม่ขะนิง: ปรับเป็น <code>clamp(45px, 5vw, 75px)</code></li>
+            <li>โลโก้ ROHN Full: ปรับเป็น <code>clamp(55px, 6.5vw, 95px)</code></li>
+          </ul>
+        </li>
+        <li><b>Category Color Glow:</b> หมายเลข BIB และข้อมูลนักวิ่งเรืองแสงตามสีประจำรุ่นการแข่งขัน (<code>catColor</code>) สอดคล้องกับฐานข้อมูล</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="tag done">✓ COMPLETED</span>
+      <h3>1.5 จัดรูปแบบคอลัมน์ Category และระบบ Dropdown ดึงจากฐานข้อมูลจริง</h3>
       <ul>
         <li><b>คอลัมน์ cat:</b> บันทึกในรูปแบบ <code>[ระยะ] KM : [ชื่อรุ่น]</code> (เช่น <code>5 KM : Soft Rock</code>) ตรงตามมาตรฐาน Excel</li>
         <li><b>คอลัมน์ cat_name:</b> บันทึกเฉพาะชื่อรุ่นที่สะอาด (เช่น <code>Soft Rock</code>) แก้ไขปัญหาค่าที่เป็น <code>null</code> ในอดีต</li>
@@ -230,7 +246,7 @@
 
     <div class="card">
       <span class="tag done">✓ COMPLETED</span>
-      <h3>1.5 ปุ่มสลับโหมด Auto / ออฟไลน์ บนสถานีสแกน (NetworkModeToggle.jsx)</h3>
+      <h3>1.6 ปุ่มสลับโหมด Auto / ออฟไลน์ บนสถานีสแกน (NetworkModeToggle.jsx)</h3>
       <ul>
         <li>ติดตั้งปุ่มข้างปุ่ม "ตั้งค่า" ในหน้า <b>CheckIn</b>, <b>CheckPoint</b>, และ <b>FinishLine</b></li>
         <li><b>Auto (เขียว):</b> ส่งข้อมูลขึ้น Supabase อัตโนมัติในพื้นหลัง</li>
