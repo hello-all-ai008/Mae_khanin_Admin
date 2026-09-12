@@ -59,9 +59,22 @@
 - **Offline Mode:** Suppresses outbound network requests; writes strictly to local IndexedDB and `trail_pending_sync_queue`. Flushes queued scans automatically once switched back to Auto.
 
 ### 1.7 Thermal E-Slip Print Calibration for 14cm Paper (`ESlip.jsx` & `ESlip.css`)
-- **Target Paper Size:** Configured `@page { size: 80mm 140mm; margin: 0mm; }` so print preview and receipt printers recognize the exact 14cm (140mm) cut length.
-- **Single-Page Constraint (138mm):** Locked `.eslip` container to `138mm` height (providing a 1mm top/bottom safety buffer), preventing accidental second sheet ejection from thermal printer drivers.
-- **Aesthetic Vertical Distribution (`.eslip-body`):** Wrapped middle runner details and timing rows into `.eslip-body` with `justify-content: space-evenly`. Pins header logo to top and sponsor logos to bottom, evenly distributing content to beautifully fill the entire 14cm paper.
+- **Target Paper Specifications:** 80mm roll width with exact 14 cm (140 mm) cut/sheet length.
+- **Root Cause of Previous Print Issue:**
+  - `@page { size: auto; }` allowed browser print engines to use unpredictable driver defaults (e.g. 297mm receipt height).
+  - Print CSS had aggressively shrunk logo heights (to 28–40px) and row paddings (to 1px), yielding a total height of only **11.35 cm**, leaving an empty ~2.65 cm blank gap at the bottom before the 14 cm paper cut edge.
+- **Exact Dimension Locking:**
+  - **Paged Media Size:** Declared `@page { size: 80mm 140mm; margin: 0mm; }` to lock Chrome, Edge, and thermal printer drivers directly to the 80mm x 140mm paper dimension.
+  - **Boundary Enclosure:** `html, body` set to `width: 80mm !important; height: 140mm !important; max-height: 140mm !important; overflow: hidden !important;` to eliminate any chance of accidental 2nd page creation.
+  - **Portal Centering:** `.modal-bg.eslip-modal-portal` and child wrapper set to `height: 140mm !important;` with flex centering.
+  - **Slip Container (`138mm`):** `.eslip` locked to `height: 138mm !important; max-height: 138mm !important; min-height: 138mm !important;` leaving a 1mm top and bottom safety buffer. This prevents the printer cutter from clipping the border and guarantees single-sheet execution.
+- **Dynamic Content Distribution (`.eslip-body`):**
+  - Grouped all middle elements (5 runner info rows, station splits, and 2 stat grids) inside `<div className="eslip-body">`.
+  - Configured with `display: flex !important; flex-direction: column !important; justify-content: space-evenly !important; flex: 1 1 auto !important; min-height: 0 !important;`.
+  - **Top Anchor:** `.head` stays pinned to the top of the 14cm paper with Baan Pong Trail logo (`height: 44px !important;`) and "Official e-Slip" title.
+  - **Bottom Anchor:** `.foot` stays pinned to the bottom with Mae Khaning (`28px`), ROHN Full (`38px`), Timing System by ROHN (`18px`), and provisional result note.
+  - **Adaptive Spacing:** Regardless of whether a runner has 0, 2, or 5 checkpoints, the 33mm flex space distributes evenly across rows and stat boxes, completely filling the 14cm paper without dead space.
+- **Thermal Print Contrast Optimization:** High contrast black `#000000` text with bold values and `#334155` labels for crisp rendering on thermal print heads.
 
 ---
 
