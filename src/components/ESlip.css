@@ -45,6 +45,7 @@
   display: block;
   margin-left: auto;
   margin-right: auto;
+  mix-blend-mode: multiply;
 }
 
 .eslip .row {
@@ -144,6 +145,7 @@
   width: auto;
   object-fit: contain;
   border-radius: 4px;
+  mix-blend-mode: multiply;
 }
 .eslip-foot-logo-rohn {
   height: 58px;
@@ -430,15 +432,17 @@
     box-shadow: none !important;
   }
 
-  /* Pure crisp black & white conversion for all logos without faint gray dithering */
+  /* Pure crisp black & white conversion with 100% pure white background (no dark/gray box) */
   .eslip img,
   .eslip-head-logo,
   .eslip-foot-logo-mk,
   .eslip-foot-logo-rohn,
   .eslip-foot-logo-label {
-    filter: grayscale(100%) contrast(200%) brightness(90%) !important;
-    -webkit-filter: grayscale(100%) contrast(200%) brightness(90%) !important;
+    filter: grayscale(100%) brightness(115%) contrast(140%) !important;
+    -webkit-filter: grayscale(100%) brightness(115%) contrast(140%) !important;
+    mix-blend-mode: multiply !important;
     background: transparent !important;
+    border-radius: 0 !important;
   }
 
   /* Category color dot: hide in monochrome thermal print to avoid faint dither */

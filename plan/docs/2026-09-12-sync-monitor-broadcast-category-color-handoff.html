@@ -411,7 +411,7 @@
       <li><strong>ระบบพิมพ์ขาวดำแท้ 100% (Pure Monochrome Black & White):</strong>
         <ul>
           <li>บังคับตัวอักษรและเส้นขอบทุกจุดเป็นสีดำสนิท <code>color: #000000 !important</code>, <code>-webkit-text-fill-color: #000000 !important</code> และ <code>border-color: #000000 !important</code></li>
-          <li>ใส่ฟิลเตอร์แปลงภาพโลโก้ทุกจุดเป็นขาวดำความคมชัดสูง <code>filter: grayscale(100%) contrast(200%) brightness(90%) !important</code> เพื่อให้หัวพิมพ์เผาสีดำเข้มเต็มเม็ด ไม่มีจุดจาง</li>
+          <li>ใส่ฟิลเตอร์แปลงภาพโลโก้ขาวดำและกลืนพื้นหลังขาวสนิท <code>filter: grayscale(100%) brightness(115%) contrast(140%) !important</code> และ <code>mix-blend-mode: multiply !important</code> เพื่อให้พื้นหลังรูปภาพ JPEG กลายเป็นสีขาวสะอาด 100% ไม่มีกรอบสี่เหลี่ยมสีเทา/ดำ และเส้นสายตัวหนังสือดำสนิทคมชัด</li>
           <li>ซ่อนจุดสีกระดุมของหมวดหมู่ในการพิมพ์ (<code>.eslip-cat-dot { display: none !important; }</code>) เพื่อป้องกันจุดไข่ปลาสีเทา</li>
           <li>ปรับกล่อง Net Time, กล่องสถิติ และป้าย DNF ให้มีเส้นขอบดำชัดเจนและพื้นหลังขาวล้วน</li>
         </ul>

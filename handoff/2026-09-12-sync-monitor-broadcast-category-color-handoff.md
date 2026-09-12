@@ -161,9 +161,7 @@ erDiagram
      - `.eslip`: `height: 147mm; max-height: 147mm; display: flex; flex-direction: column; justify-content: space-between;`
      - `.eslip-body`: `display: flex; flex-direction: column; justify-content: space-evenly; flex: 1 1 auto;`
      - Proportioned header logo (`42px`), footer logos (`26px/36px`), and stat boxes (`padding: 3.5px 3px`) so the receipt content evenly and comfortably fills the entire 15cm page without empty white voids.
-2. **100% Pure Black & White Print Rendering:**
-   - Force all text and borders to pure solid black `#000000 !important` and `-webkit-text-fill-color: #000000 !important`.
-   - Applied `filter: grayscale(100%) contrast(200%) brightness(90%) !important;` to all logos, producing crisp, high-density black lines and clear white backgrounds.
-   - Category color dot hidden in print (`.eslip-cat-dot { display: none !important; }`).
-   - Stat boxes render with white background and solid black borders `1.2px solid #000000 !important`.
-   - Synchronized across both `Rohn-Admin` and `Rohn-Runner`.
+    - Applied `filter: grayscale(100%) brightness(115%) contrast(140%) !important;` and `mix-blend-mode: multiply !important;` to all logos, eliminating off-white/gray bounding box artifacts and ensuring the background remains 100% pure snow-white while keeping artwork and text deep black.
+    - Category color dot hidden in print (`.eslip-cat-dot { display: none !important; }`).
+    - Stat boxes render with white background and solid black borders `1.2px solid #000000 !important`.
+    - Synchronized across both `Rohn-Admin` and `Rohn-Runner`.
