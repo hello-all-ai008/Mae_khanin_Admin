@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุปงานประจำวัน: E-Slip Thermal Calibration, Rank Totals, Summary Report & Database Flow Alignment (13 ก.ย. 2026)</title>
+<style>
+  :root {
+    --bg: #f1f5f9; --bg-alt: #e2e8f0; --surface: #ffffff; --surface-2: #f8fafc;
+    --ink: #1e293b; --ink-soft: #64748b; --line: #cbd5e1;
+    --accent: #2563eb; --accent-soft: #eff6ff; --green: #10b981; --green-soft: #ecfdf5;
+    --amber: #f59e0b; --amber-soft: #fffbeb; --danger: #ef4444; --danger-soft: #fef2f2;
+    --purple: #8b5cf6; --purple-soft: #f5f3ff;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Sarabun", "Noto Sans Thai", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65;
+    padding: 0 0 64px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+  header.hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%);
+    color: #f8fafc;
+    padding: 44px 0 36px;
+    margin-bottom: 36px;
+    border-bottom: 4px solid var(--accent);
+  }
+  header.hero .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-size: 13px;
+    color: #93c5fd;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  header.hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(22px, 3.2vw, 32px);
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.3;
+  }
+  header.hero p { margin: 4px 0; color: #cbd5e1; font-size: 15px; }
+  header.hero .meta-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  header.hero .meta-tags span {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 12.5px;
+    font-family: ui-monospace, Menlo, monospace;
+    color: #e2e8f0;
+  }
+  .card {
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-top: 0;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--bg-alt);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1e3a8a;
+    margin-top: 22px;
+    margin-bottom: 10px;
+  }
+  ul, ol { padding-left: 24px; margin: 10px 0; }
+  li { margin-bottom: 8px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 14px;
+    background: var(--surface);
+  }
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    background: var(--bg-alt);
+    color: var(--ink);
+    font-weight: 700;
+  }
+  tr:nth-child(even) { background: var(--surface-2); }
+  code {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: var(--bg-alt);
+    color: #c026d3;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .badge-success { background: var(--green-soft); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+  .badge-warning { background: var(--amber-soft); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+  .badge-danger { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+  .badge-info { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(37,99,235,0.3); }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    margin-top: 14px;
+  }
+  .box {
+    padding: 18px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+  }
+  .alert-box {
+    padding: 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+    border-left: 4px solid;
+  }
+  .alert-danger { background: var(--danger-soft); border-color: var(--danger); color: #991b1b; }
+  .alert-warning { background: var(--amber-soft); border-color: var(--amber); color: #92400e; }
+  .alert-info { background: var(--accent-soft); border-color: var(--accent); color: #1e40af; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Trail Running Hub • System Technical Report</div>
+    <h1>สรุปผลการพัฒนาระบบ E-Slip Thermal Print, Rank Totals, Summary Report และการวิเคราะห์สถาปัตยกรรม Database Flow</h1>
+    <p>รายงานสรุปการทำงานประจำวันที่ 13 กันยายน 2026 และวิเคราะห์จุดติดขัดเชิงโครงสร้างตามมาตรฐาน DatabaseFlow.jsx</p>
+    <div class="meta-tags">
+      <span>📅 วันที่: 2026-09-13</span>
+      <span>📦 ระบบ: Rohn-Admin & Rohn-Runner</span>
+      <span>🖨️ Thermal Print: 80mm Roll</span>
+      <span>📊 Database: Supabase PostgreSQL</span>
+      <span>✅ Build & Test Status: PASS</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- SECTION 1: งานที่ทำทั้งหมดวันนี้ -->
+  <div class="card">
+    <h2>1. สรุปผลงานที่ดำเนินการเสร็จสิ้นในวันนี้ (13 ก.ย. 2026)</h2>
+
+    <h3>1.1 ปรับแต่งระบบพิมพ์สลิปอิเล็กทรอนิกส์ (Thermal E-Slip Calibration)</h3>
+    <ul>
+      <li><strong>แก้ไขปัญหาพื้นหลังโลโก้ดำด่างในหน้า Preview และตอนพิมพ์จริง:</strong>
+        <p>เดิมทีโลโก้บ้านโป่ง (Baan Pong) และแม่ขะนิง (Mae Khaning) มีการใช้ CSS <code>mix-blend-mode: multiply</code> ซึ่งเมื่อส่งคำสั่งพิมพ์ไปยังไดรเวอร์เครื่องพิมพ์ความร้อน (Thermal Receipt Printer) โหมดสี Monochrome จะแปลงพิกเซลโปร่งแสงให้กลายเป็นบล็อกสีดำเข้ม ได้ทำการลบ Multiply Blend ออก และใช้ฟิลเตอร์ <code>filter: grayscale(100%)</code> พร้อมบังคับพื้นหลังขาวสะอาด ทำให้รูปพิมพ์คมชัดสวยงาม</p>
+      </li>
+      <li><strong>ตัดข้อมูลส่วนเกินของเบราว์เซอร์ออกทั้งหมด (Zero Browser Header/Footer):</strong>
+        <p>ยกเลิก Header ด้านบนซ้าย (วันที่และเวลา), ด้านบนขวา (URL rohn-runner) และลิงก์ด้านล่างสุด โดยใช้คำสั่ง <code>@page { margin: 0 !important; }</code> และปรับ CSS ให้สลิปสะอาดเหมือนใบเสร็จจริง พร้อมนำ URL สลิปทางการ <code>rohn-runner.vercel.app/eslip/[bib]</code> ฝังลงในกรอบล่างสุดของตัวสลิป</p>
+      </li>
+      <li><strong>ปรับให้ขนาดสลิปพอดีกับเนื้อหาบนกระดาษม้วนต่อเนื่อง 80mm:</strong>
+        <p>ยกเลิกการล็อกความสูงแบบคงที่ (เช่น 140mm หรือ 210mm) ที่ทำให้เกิดพื้นที่ว่างด้านล่างมากเกินไป เปลี่ยนเป็น Natural Content Flow (<code>height: auto !important; max-height: none !important;</code>) สลิปจะยาวพอดีกับเนื้อหาการวิ่ง ไม่เหลือช่องว่าง และไม่ตัดขึ้นแผ่นที่สอง</p>
+      </li>
+      <li><strong>แก้ปัญหาสลิปชิดขอบกระดาษด้านขวา:</strong>
+        <p>ปรับสมดุล Padding เป็น <code>1.5mm 3mm 1.5mm 2mm !important</code> ภายในความกว้างสลิป <code>70mm</code> บนพื้นที่พิมพ์ <code>72.1mm</code> ทำให้ระยะขอบซ้ายและขวาอยู่กึ่งกลางพอดี ไม่เบียดขอบขวา</p>
+      </li>
+      <li><strong>ขยายขนาดตัวหนังสือและโลโก้ให้ชัดเจนอ่านง่าย:</strong>
+        <p>ปรับความสูงโลโก้หัวกระดาษเป็น <code>75px</code>, โลโก้แม่ขะนิงเป็น <code>46px</code>, โลโก้ ROHN เป็น <code>60px</code> พร้อมปรับขนาดตัวหนังสือในตารางเวลาและ Checkpoint ให้อ่านง่ายบนกระดาษความร้อน</p>
+      </li>
+      <li><strong>เปลี่ยนข้อความหัวสลิป:</strong>
+        <p>เปลี่ยนข้อความใต้โลโก้บ้านโป่งจากคำว่า <code>Official e-Slip</code> เป็นตัวเลขปี <code>2026</code> ตามที่ผู้ใช้งานกำหนด</p>
+      </li>
+      <li><strong>แสดงยอดจำนวนคนรวมใน Overall Rank และ Age Group (Rank / Total):</strong>
+        <p>อัปเดตช่องแสดงผลอันดับเป็น <code>&lt;อันดับ&gt; / &lt;จำนวนคนทั้งหมด&gt;</code> เช่น <code>1 / 767</code> ในอันดับรวม (Overall Rank) และ <code>1 / 85</code> ในรุ่นอายุ (Age Group) โดยคำนวณจากจำนวนผู้เข้าร่วมทั้งหมดในระยะนั้น (<code>allInDist</code> และ <code>allInCat</code>) กรอง BIB ทดสอบของระบบออก และตั้งค่า <code>white-space: nowrap !important;</code> ป้องกันข้อความตัดขึ้นบรรทัดใหม่</p>
+      </li>
+    </ul>
+
+    <h3>1.2 พัฒนาหน้ารายงานสรุปผลการแข่งขัน (SummaryReport.jsx ใน Rohn-Runner)</h3>
+    <ul>
+      <li><strong>ระบบพิมพ์หน้ารายงานเลือกได้ทั้งแนวตั้งและแนวนอน:</strong>
+        <p>เพิ่มปุ่มเลือก <code>Print (แนวตั้ง)</code> และ <code>Print (แนวนอน)</code> มีการ Inject CSS <code>@page { size: portrait / landscape; }</code> อัตโนมัติก่อนสั่งพิมพ์</p>
+      </li>
+      <li><strong>การ์ดสรุปสถานะนักวิ่งครบถ้วน:</strong>
+        <p>แสดงการ์ดสรุปผล 5 ช่อง: <code>Total Runners</code>, <code>Checked In</code>, <code>Finished</code>, <code>In Race</code>, และ <code>DNS / DNF</code> รวมกัน</p>
+      </li>
+      <li><strong>กราฟแท่งและสถิติเชื่อมโยงสีตามระยะทาง:</strong>
+        <p>ดึงสี <code>cat_color</code> ของแต่ละระยะมาใส่ในแท่งกราฟ BarChart พร้อมกำกับตัวเลขยอดรวมบนยอดแท่งด้วย <code>LabelList</code></p>
+      </li>
+    </ul>
+  </div>
+
+  <!-- SECTION 2: จุดที่ติดขัดในปัจจุบัน -->
+  <div class="card">
+    <h2>2. รายละเอียดปัญหาและจุดที่ติดขัดในปัจจุบัน (Current Technical Friction)</h2>
+
+    <div class="alert-box alert-warning">
+      <strong>⚠️ สรุปประเด็นสำคัญ:</strong> โครงสร้างฐานข้อมูลที่ใช้งานอยู่ในปัจจุบัน (Production Legacy) ยังเป็นแบบตารางเดี่ยว (Flat Table) และเก็บเวลาสแกนใน JSONB <code>cps</code> ซึ่งยังไม่สอดคล้องกับสถาปัตยกรรมเชิงสัมพันธ์แบบหลายงานวิ่ง (Multi-Event Relational Schema) ที่ถูกออกแบบไว้ในหน้า <code>DatabaseFlow.jsx</code>
+    </div>
+
+    <div class="grid-2">
+      <div class="box">
+        <h3 style="color: #b91c1c; margin-top: 0;">1. การจัดเก็บเวลาใน JSONB (runners.cps)</h3>
+        <p><strong>ปัญหา:</strong> ข้อมูลจุดสแกนถูกบันทึกในรูปแบบ Key-Value ในคอลัมน์ <code>runners.cps</code> (เช่น <code>{"checkin": ..., "st_1": ..., "finish": ...}</code>) ซึ่งมีรูปแบบ Key ไม่สม่ำเสมอในบางเรคคอร์ด ทำให้โค้ดฝั่งหน้าบ้านต้องเขียน Logic ตรวจสอบ Key สลับไปมาหลายชั้น แทนที่จะสามารถคิวรีจากตารางจุดตรวจได้โดยตรง</p>
+      </div>
+
+      <div class="box">
+        <h3 style="color: #b91c1c; margin-top: 0;">2. การคำนวณอันดับและจำนวนคนรวมใน Client Memory</h3>
+        <p><strong>ปัญหา:</strong> การคำนวณอันดับและยอดรวม <code>1 / 767</code> ในปัจจุบัน ต้องดึง Array ของนักวิ่งทั้งหมดในระยะนั้นมาวนลูปและเรียงลำดับ (Sort) ใน RAM ของเบราว์เซอร์ หากมีนักวิ่งจำนวนหลักพันถึงหลักหมื่นคน จะส่งผลต่อประสิทธิภาพการโหลด และหากมี BIB ระบบ (เช่น <code>RUNNER_CONFIG</code> หรือ <code>__...</code>) ปะปนมาจะทำให้ตัวหารผิดเพี้ยนหากไม่กรองทิ้ง</p>
+      </div>
+
+      <div class="box">
+        <h3 style="color: #b91c1c; margin-top: 0;">3. ความหน่วงระหว่าง public_results และ runners</h3>
+        <p><strong>ปัญหา:</strong> แอปพลิเคชันฝั่งนักวิ่ง (Rohn-Runner) อ่านข้อมูลจาก <code>public_results</code> ในขณะที่แอดมิน (Rohn-Admin) เขียนข้อมูลลงตาราง <code>runners</code> โดยตรง หากระบบ RPC Sync หรือ Rebuild ผลลัพธ์มีความล่าช้า นักวิ่งอาจเห็นผลการแข่งขันหรือสลิปไม่อัปเดตในทันที</p>
+      </div>
+
+      <div class="box">
+        <h3 style="color: #b91c1c; margin-top: 0;">4. ข้อมูลระยะทางและรุ่นอายุเป็นข้อความอิสระ (Raw Strings)</h3>
+        <p><strong>ปัญหา:</strong> ฟิลด์ <code>cat</code> และ <code>age_group</code> ถูกเก็บเป็น String (เช่น <code>"MKT10"</code>, <code>"10 KM : Hard Rock"</code>, <code>"ชาย 30-39"</code>) ขาด Foreign Key เชื่อมไปยังตาราง <code>CATEGORIES</code> ทำให้การจำแนกสีระยะทางและรุ่นอายุต้องพึ่งพา Regex Parser</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: แหล่งข้อมูลที่ควรจะใช้ อิงตาม DatabaseFlow.jsx -->
+  <div class="card">
+    <h2>3. แหล่งข้อมูลที่ควรจะใช้ อิงตามโครงสร้างใน DatabaseFlow.jsx</h2>
+    <p>เพื่อให้ระบบมีความเสถียร รองรับงานวิ่งขนาดใหญ่และหลายงานวิ่งพร้อมกัน (Multi-Event) ข้อมูลแต่ละส่วนควรถูกอ้างอิงจากตารางหลักตามที่ระบุไว้ใน <a href="file:///d:/Tiw/Project_Trail_Running_Hub/Rohn-Admin/src/pages/DatabaseFlow.jsx">DatabaseFlow.jsx</a> ดังนี้:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>หมวดหมู่ข้อมูล</th>
+          <th>แหล่งข้อมูลปัจจุบัน (Legacy)</th>
+          <th>แหล่งข้อมูลที่ถูกต้องตาม DatabaseFlow</th>
+          <th>โครงสร้างตารางและฟิลด์สำคัญ</th>
+          <th>ประโยชน์ที่จะได้รับเมื่อปรับใช้</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ข้อมูลงานวิ่ง (Event)</strong></td>
+          <td>Hardcode หรือระบุใน RaceContext ตัวเดียว</td>
+          <td><span class="badge badge-info">EVENTS</span></td>
+          <td><code>id</code> (PK UUID), <code>name</code>, <code>start_date</code>, <code>end_date</code>, <code>status</code></td>
+          <td>รองรับการจัดงานวิ่งหลายๆ งานในระบบเดียวกันโดยข้อมูลไม่ปะปนกัน</td>
+        </tr>
+        <tr>
+          <td><strong>โปรไฟล์นักวิ่ง (User Master)</strong></td>
+          <td>ซ้ำซ้อนในตาราง <code>runners</code> ทุกงาน</td>
+          <td><span class="badge badge-info">USERS</span></td>
+          <td><code>id</code> (PK UUID), <code>name</code>, <code>email</code>, <code>phone</code>, <code>gender</code>, <code>birth_date</code></td>
+          <td>นักวิ่งใช้โปรไฟล์เดียวสมัครได้ทุกงาน วันเกิดคำนวณรุ่นอายุอัตโนมัติถูกต้องแม่นยำ</td>
+        </tr>
+        <tr>
+          <td><strong>ข้อมูลการสมัครและบิบ (Registration)</strong></td>
+          <td>ตารางเดี่ยว <code>runners</code> ปะปนข้อมูลส่วนตัวและผลการแข่งขัน</td>
+          <td><span class="badge badge-info">RUNNERS</span></td>
+          <td><code>id</code> (PK), <code>event_id</code> (FK), <code>user_id</code> (FK), <code>category_id</code> (FK), <code>bib</code>, <code>rfid_tag</code>, <code>registration_status</code></td>
+          <td>แยกข้อมูลการสมัครออกจากโปรไฟล์หลัก ป้องกันเลข BIB ชนกัน และผูก Foreign Key ชัดเจน</td>
+        </tr>
+        <tr>
+          <td><strong>ระยะการแข่งขันและสี (Categories)</strong></td>
+          <td>String ตัดคำใน <code>cat</code> และ <code>cat_name</code></td>
+          <td><span class="badge badge-info">CATEGORIES</span></td>
+          <td><code>id</code> (PK), <code>event_id</code> (FK), <code>name</code>, <code>distance_km</code>, <code>unit</code>, <code>color</code></td>
+          <td>สีกราฟ สีแท็ก และระยะทางถูกควบคุมจากจุดเดียว ไม่ต้องเขียน Regex แปลงข้อมูล</td>
+        </tr>
+        <tr>
+          <td><strong>จุดตรวจและ Cutoff Time (Checkpoints)</strong></td>
+          <td>Array ฝังใน Config หรืออ่านจาก JSON</td>
+          <td><span class="badge badge-info">STATIONS</span> &amp; <span class="badge badge-info">CHECKPOINT</span></td>
+          <td><code>category_id</code> (FK), <code>station_id</code> (FK), <code>sequence_order</code>, <code>cutoff_time</code></td>
+          <td>กำหนดเส้นทางและเวลา Cutoff แยกตามแต่ละระยะวิ่งได้อย่างยืดหยุ่น</td>
+        </tr>
+        <tr>
+          <td><strong>ประวัติการสแกนเวลา (Scan Records)</strong></td>
+          <td>JSONB <code>runners.cps</code></td>
+          <td><span class="badge badge-info">SCAN_LOGS</span></td>
+          <td><code>id</code> (PK), <code>runner_id</code> (FK), <code>station_id</code> (FK), <code>scan_time</code>, <code>is_valid</code>, <code>scanned_by</code></td>
+          <td>เก็บประวัติการสแกนทุกครั้งอย่างโปร่งใส ตรวจสอบย้อนหลังได้ว่าใครเป็นผู้สแกนและเวลาใด</td>
+        </tr>
+        <tr>
+          <td><strong>รายชื่อเจ้าหน้าที่ผู้สแกน (Staff Directory)</strong></td>
+          <td>State ชั่วคราวในหน้าจอแอดมิน</td>
+          <td><span class="badge badge-info">STAFF</span></td>
+          <td><code>id</code> (PK), <code>event_id</code> (FK), <code>name</code>, <code>role</code>, <code>status</code></td>
+          <td>บันทึกชื่อ Marshal หรือเจ้าหน้าที่ที่จุดตรวจลงในสลิปและประวัติการสแกนได้ถูกต้อง</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 4: แผนงานและข้อแนะนำในลำดับถัดไป -->
+  <div class="card">
+    <h2>4. แผนงานและข้อแนะนำสำหรับก้าวถัดไป (Next Steps)</h2>
+    <ol>
+      <li><strong>สร้าง Database View / RPC คำนวณอันดับจากฐานข้อมูลโดยตรง:</strong>
+        <p>สร้างฟังก์ชัน <code>get_runner_ranks(runner_bib, event_id)</code> ใน PostgreSQL โดยใช้คำสั่ง <code>DENSE_RANK() OVER (...)</code> และ <code>COUNT(*) OVER (...)</code> เพื่อให้ได้ทั้งอันดับและจำนวนคนรวมแบบเรียลไทม์ โดยไม่ต้องดึง Array นักวิ่งทั้งหมดมาคำนวณบนเบราว์เซอร์</p>
+      </li>
+      <li><strong>เชื่อมโยง category_id ในตาราง runners:</strong>
+        <p>ทำการ Backfill ฟิลด์ <code>category_id</code> ในตาราง <code>runners</code> ให้ชี้ไปยังตาราง <code>categories</code> เพื่อให้การจัดกลุ่มและการคำนวณยอดคนในแต่ละระยะทางแม่นยำ 100%</p>
+      </li>
+      <li><strong>บันทึก Scan Event ลงใน scan_logs ควบคู่กับ cps:</strong>
+        <p>เมื่อเจ้าหน้าที่สแกนเวลาที่จุดตรวจ ให้ระบบส่งข้อมูลลงตาราง <code>scan_logs</code> พร้อมบันทึก <code>scanned_by</code> เพื่อเป็น Audit Trail และอัปเดต <code>runners.cps</code> สำหรับการอ่านผลลัพธ์แบบแคชที่รวดเร็ว</p>
+      </li>
+    </ol>
+  </div>
+
+</div>
+
+</body>
+</html>
