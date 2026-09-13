@@ -180,12 +180,18 @@ export function computeRunnerRanks(targetRunner, allRunners = []) {
   const targetDistKey = getDistKey(targetRunner);
   const targetBib = String(targetRunner.bib || '').trim();
 
-  // Filter finished runners in the same distance
-  const finishedInDist = (allRunners || []).filter(r => {
-    const fin = getFinEpoch(r);
-    if (!fin) return false;
+  // All runners in the same distance (all participants)
+  const allInDist = (allRunners || []).filter(r => {
+    if (!r) return false;
+    if (r.bib === 'RUNNER_CONFIG' || String(r.bib || '').startsWith('__')) return false;
     if (!targetDistKey) return true;
     return getDistKey(r) === targetDistKey;
+  });
+
+  // Filter finished runners in the same distance
+  const finishedInDist = allInDist.filter(r => {
+    const fin = getFinEpoch(r);
+    return Boolean(fin);
   });
 
   finishedInDist.sort((a, b) => {
@@ -226,6 +232,12 @@ export function computeRunnerRanks(targetRunner, allRunners = []) {
   const targetGender = getGenderKey(targetRunner.gender);
   const targetAge = getAgeKey(targetRunner);
 
+  const allInCat = allInDist.filter(r => {
+    if (targetGender && getGenderKey(r.gender) !== targetGender) return false;
+    if (targetAge && getAgeKey(r) !== targetAge) return false;
+    return true;
+  });
+
   const finishedInCat = finishedInDist.filter(r => {
     if (targetGender && getGenderKey(r.gender) !== targetGender) return false;
     if (targetAge && getAgeKey(r) !== targetAge) return false;
@@ -254,9 +266,19 @@ export function computeRunnerRanks(targetRunner, allRunners = []) {
     if (idx !== -1) catRank = idx + 1;
   }
 
-  return { 
-    overallRank: overallRank != null && overallRank !== '—' ? String(overallRank) : '—', 
-    catRank: catRank != null && catRank !== '—' ? String(catRank) : '—' 
+  const numOverall = typeof overallRank === 'number' ? overallRank : (parseInt(overallRank, 10) || 0);
+  const numCat = typeof catRank === 'number' ? catRank : (parseInt(catRank, 10) || 0);
+
+  const totalOverall = Math.max(allInDist.length, finishedInDist.length, numOverall);
+  const totalCat = Math.max(allInCat.length, finishedInCat.length, numCat);
+
+  return {
+    overallRank: overallRank != null && overallRank !== '—' ? String(overallRank) : '—',
+    catRank: catRank != null && catRank !== '—' ? String(catRank) : '—',
+    totalOverall,
+    totalCat,
+    overallDisplay: overallRank != null && overallRank !== '—' && totalOverall > 0 ? `${overallRank} / ${totalOverall}` : (overallRank != null ? String(overallRank) : '—'),
+    catDisplay: catRank != null && catRank !== '—' && totalCat > 0 ? `${catRank} / ${totalCat}` : (catRank != null ? String(catRank) : '—')
   };
 }
 
@@ -395,22 +417,29 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
   const raceContextRunners = race?.runners || [];
   const allRunners = propRunners && propRunners.length > 0 ? propRunners : raceContextRunners;
 
+  const autoRanks = runner?.finish
+    ? computeRunnerRanks(runner, allRunners)
+    : { overallRank: '—', catRank: '—', totalOverall: 0, totalCat: 0 };
+
   let cleanOverall = (overallRank != null && overallRank !== '' && overallRank !== '-' && overallRank !== '—')
     ? String(overallRank).replace(/^#\s*/, '')
-    : null;
+    : autoRanks.overallRank;
   let cleanCat = (catRank != null && catRank !== '' && catRank !== '-' && catRank !== '—')
     ? String(catRank).replace(/^#\s*/, '')
-    : null;
-
-  // If ranks were not provided or were '-', but runner has finish time, compute dynamically!
-  if ((!cleanOverall || !cleanCat) && runner?.finish) {
-    const autoRanks = computeRunnerRanks(runner, allRunners);
-    if (!cleanOverall) cleanOverall = autoRanks.overallRank;
-    if (!cleanCat) cleanCat = autoRanks.catRank;
-  }
+    : autoRanks.catRank;
 
   cleanOverall = cleanOverall || '—';
   cleanCat = cleanCat || '—';
+
+  // Format as "<rank> / <total>" as requested:
+  // "อยากให้ใส่ยอดจำนวนคนด้วยเป็น / ตามด้วย จำนวนใน overall และ age group"
+  const displayOverall = cleanOverall !== '—' && !cleanOverall.includes('/') && autoRanks.totalOverall > 0
+    ? `${cleanOverall} / ${autoRanks.totalOverall}`
+    : cleanOverall;
+
+  const displayCat = cleanCat !== '—' && !cleanCat.includes('/') && autoRanks.totalCat > 0
+    ? `${cleanCat} / ${autoRanks.totalCat}`
+    : cleanCat;
 
   const cleanGender = formatEnglishLabel(runner.gender);
   const cleanAgeGroup = formatEnglishLabel(runner.age_group || runner.ageGroup || runner.age);
@@ -554,11 +583,11 @@ export default function ESlip({ runner, overallRank, catRank, stations = [], run
         <div className="eslip-stat-grid" style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
           <div className="eslip-stat-box" style={{ flex: 1, background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
             <div className="eslip-stat-label" style={{ fontSize: '11px', color: 'var(--ink-2, #64748b)' }}>Overall Rank</div>
-            <div className="eslip-stat-val eslip-rank-val" style={{ fontSize: '18px', fontWeight: 600 }}>{cleanOverall}</div>
+            <div className="eslip-stat-val eslip-rank-val" style={{ fontSize: '16px', fontWeight: 600, whiteSpace: 'nowrap' }}>{displayOverall}</div>
           </div>
           <div className="eslip-stat-box" style={{ flex: 1, background: 'var(--bg-soft, #f7f8f9)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--line, #e6e9ed)' }}>
             <div className="eslip-stat-label" style={{ fontSize: '11px', color: 'var(--ink-2, #64748b)' }}>Age Group / กลุ่มอายุ</div>
-            <div className="eslip-stat-val eslip-rank-val" style={{ fontSize: '18px', fontWeight: 600 }}>{cleanCat}</div>
+            <div className="eslip-stat-val eslip-rank-val" style={{ fontSize: '16px', fontWeight: 600, whiteSpace: 'nowrap' }}>{displayCat}</div>
           </div>
         </div>
       </div>
