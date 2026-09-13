@@ -41,7 +41,8 @@
 - **Interactive Visualizations with Category Colors:**
   - Integrated Recharts `BarChart` and `PieChart` to display runner distribution per distance.
   - Mapped distances to official category colors (`cat_color`) from the database.
-  - Added direct numerical labels on top of bar chart columns using `LabelList`.
+### 1.3 Digital E-Slip Page Enhancements (`src/pages/ESlip.jsx` in Rohn-Runner)
+- **Direct Net Time Display:** Added a dedicated Net Time stat card alongside Official Gun Time on the runner's digital E-Slip landing page (`rohn-runner.vercel.app/eslip/:bib`). Computes net duration via `getRunnerNetTime(runner)` and formats as `HH:mm:ss`.
 
 ---
 
