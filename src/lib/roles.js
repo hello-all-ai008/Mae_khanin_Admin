@@ -49,6 +49,7 @@ const EVERY_ROLE = Object.values(ROLES);
 export const ROUTE_ACCESS = {
   '/dashboard': ADMIN_ONLY,
   '/leaderboard': ADMIN_ONLY,
+  '/print-eslip': EVERY_ROLE,
   '/events': ADMIN_ONLY,
   '/staff': ADMIN_ONLY,
   '/runners': ADMIN_ONLY,

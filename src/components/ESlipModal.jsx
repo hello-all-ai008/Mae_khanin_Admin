@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import ESlip from './ESlip';
 import { X, Printer } from 'lucide-react';
 
-export default function ESlipModal({ runner, overallRank, catRank, stations = [], runners = [], categories = [], onClose }) {
+export default function ESlipModal({ runner, overallRank, catRank, stations = [], runners = [], categories = [], onClose, autoPrint = false }) {
   // Handle escape key and attach print class to body
   useEffect(() => {
     if (!runner) return;
@@ -38,16 +38,26 @@ export default function ESlipModal({ runner, overallRank, catRank, stations = []
     };
   }, []);
 
-  if (!runner) return null;
-
-  const handlePrint = () => {
+  const handlePrint = React.useCallback(() => {
     const prevTitle = document.title;
     document.title = '';
     window.print();
     setTimeout(() => {
       document.title = prevTitle;
     }, 1000);
-  };
+  }, []);
+
+  // If autoPrint is enabled, trigger print dialog automatically after mount
+  useEffect(() => {
+    if (autoPrint && runner) {
+      const timer = setTimeout(() => {
+        handlePrint();
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [autoPrint, runner, handlePrint]);
+
+  if (!runner) return null;
 
   const modalContent = (
     <div 

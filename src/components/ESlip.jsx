@@ -266,9 +266,17 @@ export function computeRunnerRanks(targetRunner, allRunners = []) {
     if (idx !== -1) catRank = idx + 1;
   }
 
-  // Finished & All in same distance + same gender (Overall by Gender)
-  const allInGender = allInDist.filter(r => targetGender && getGenderKey(r.gender) === targetGender);
-  const finishedInGender = finishedInDist.filter(r => targetGender && getGenderKey(r.gender) === targetGender);
+  // Gender overall in distance
+  const allInGender = allInDist.filter(r => {
+    if (targetGender && getGenderKey(r.gender) !== targetGender) return false;
+    return true;
+  });
+
+  const finishedInGender = finishedInDist.filter(r => {
+    if (targetGender && getGenderKey(r.gender) !== targetGender) return false;
+    return true;
+  });
+
   finishedInGender.sort((a, b) => {
     const netA = getNetMs(a);
     const netB = getNetMs(b);
@@ -277,10 +285,10 @@ export function computeRunnerRanks(targetRunner, allRunners = []) {
   });
 
   let genderRank = '—';
-  const genIdx = finishedInGender.findIndex(r => String(r.bib || '').trim() === targetBib);
-  if (genIdx !== -1) {
-    genderRank = genIdx + 1;
-  } else if (targetBib && targetGender) {
+  const genderIdx = finishedInGender.findIndex(r => String(r.bib || '').trim() === targetBib);
+  if (genderIdx !== -1) {
+    genderRank = genderIdx + 1;
+  } else if (targetBib) {
     const withTarget = [...finishedInGender, targetRunner].sort((a, b) => {
       const netA = getNetMs(a);
       const netB = getNetMs(b);

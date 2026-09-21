@@ -22,12 +22,14 @@ import OverallDashboard from './pages/OverallDashboard';
 import LiveLeaderboard from './pages/LiveLeaderboard';
 import RunnerProgressControl from './pages/RunnerProgressControl';
 import RunnerPageConfig from './pages/RunnerPageConfig';
+import PrintESlip from './pages/PrintESlip';
 
 // Every authenticated route, in one place. Access per role is defined in
 // lib/roles.js and enforced again by RLS on the server.
 const APP_ROUTES = [
   { path: '/dashboard', element: <OverallDashboard /> },
   { path: '/leaderboard', element: <LiveLeaderboard /> },
+  { path: '/print-eslip', element: <PrintESlip /> },
   { path: '/events', element: <EventManager /> },
   { path: '/staff', element: <StaffManager /> },
   { path: '/runners', element: <RunnersList /> },

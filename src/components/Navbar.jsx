@@ -16,7 +16,8 @@ import {
   LayoutDashboard,
   Trophy,
   SlidersHorizontal,
-  MonitorPlay
+  MonitorPlay,
+  Printer
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRace } from '../context/RaceContext';
@@ -61,6 +62,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/dashboard', label: 'สรุปผลทั้งหมด', mobileLabel: 'สรุปผลทั้งหมด', Icon: LayoutDashboard },
       { to: '/leaderboard', label: 'Live Leaderboard', mobileLabel: 'Live Leaderboard', Icon: Trophy },
+      { to: '/print-eslip', label: 'พิมพ์ใบ E-Slip', mobileLabel: 'พิมพ์ E-Slip', Icon: Printer },
     ],
   },
   {
