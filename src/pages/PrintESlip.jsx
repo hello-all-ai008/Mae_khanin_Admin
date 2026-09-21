@@ -78,11 +78,46 @@ export default function PrintESlip() {
     }).slice(0, 6);
   }, [searchTerm, runners]);
 
-  // Compute ranks for the currently selected runner
+  // Default sample runner preview when no runner has been selected yet
+  const sampleRunner = useMemo(() => {
+    const firstFinisher = runners.find(r => r && (r.finish || r.cps?.finish) && r.bib !== 'RUNNER_CONFIG' && !String(r.bib || '').startsWith('__'));
+    if (firstFinisher) {
+      return {
+        ...firstFinisher,
+        isSamplePreview: true
+      };
+    }
+    return {
+      bib: '1001',
+      name: 'สมชาย ใจดี (Sample Runner)',
+      gender: 'ชาย (Male)',
+      age_group: '30-39 ปี (30–39 years)',
+      distance: '25 KM',
+      cat: '25 KM',
+      cat_name: '25 KM : Half Trail',
+      checkin: Date.now() - 14400000,
+      gun_start_time: Date.now() - 12600000,
+      start_date: Date.now() - 12600000,
+      finish: Date.now() - 1800000,
+      cps: {
+        start: Date.now() - 12600000,
+        a1: Date.now() - 9000000,
+        a2: Date.now() - 5400000,
+        finish: Date.now() - 1800000
+      },
+      race_status: 'FINISHER',
+      isSamplePreview: true
+    };
+  }, [runners]);
+
+  const activeDisplayRunner = selectedRunner || sampleRunner;
+  const isViewingSample = !selectedRunner;
+
+  // Compute ranks for the currently displayed runner
   const ranks = useMemo(() => {
-    if (!selectedRunner) return null;
-    return computeRunnerRanks(selectedRunner, runners);
-  }, [selectedRunner, runners]);
+    if (!activeDisplayRunner) return null;
+    return computeRunnerRanks(activeDisplayRunner, runners);
+  }, [activeDisplayRunner, runners]);
 
   // Select runner and handle auto-print if enabled
   const selectRunnerAndProcess = useCallback((runner, fromScan = false) => {
@@ -242,8 +277,22 @@ export default function PrintESlip() {
         </div>
       </div>
 
+      <style>{`
+        .print-eslip-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 380px;
+          gap: 24px;
+          align-items: start;
+        }
+        @media (max-width: 960px) {
+          .print-eslip-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
       {/* Main Layout Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: selectedRunner ? '1fr 380px' : '1fr', gap: '24px', alignItems: 'start' }}>
+      <div className="print-eslip-grid">
         
         {/* Left Column: Search & Runner Details */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -685,58 +734,102 @@ export default function PrintESlip() {
         </div>
 
         {/* Right Column: Live E-Slip Thermal Preview */}
-        {selectedRunner && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink-2, #64748b)', textTransform: 'uppercase' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink-2, #64748b)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Sparkles size={15} color="var(--start, #3b82f6)" />
                 ตัวอย่างสลิปความร้อน (Preview 80mm)
               </span>
+              {isViewingSample && (
+                <span style={{ 
+                  fontSize: '11px', 
+                  fontWeight: 700, 
+                  padding: '2px 8px', 
+                  borderRadius: '6px', 
+                  background: 'rgba(59, 130, 246, 0.12)', 
+                  color: 'var(--start, #3b82f6)',
+                  border: '1px solid rgba(59, 130, 246, 0.25)' 
+                }}>
+                  ตัวอย่าง (SAMPLE)
+                </span>
+              )}
+            </div>
+
+            {selectedRunner ? (
               <button
                 type="button"
                 onClick={handleManualPrint}
                 disabled={!selectedRunner.finish && !selectedRunner.cps?.finish}
                 style={{
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  background: 'var(--start, #3b82f6)',
+                  padding: '5px 12px',
+                  borderRadius: '8px',
+                  background: (selectedRunner.finish || selectedRunner.cps?.finish) ? 'var(--start, #3b82f6)' : '#94a3b8',
                   color: '#ffffff',
                   fontSize: '12px',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   border: 'none',
-                  cursor: 'pointer',
+                  cursor: (selectedRunner.finish || selectedRunner.cps?.finish) ? 'pointer' : 'not-allowed',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px'
+                  gap: '5px'
                 }}
               >
                 <Printer size={14} /> พิมพ์ทันที
               </button>
-            </div>
-
-            {/* Receipt Preview Box */}
-            <div 
-              style={{
-                background: '#ffffff',
-                border: '1px solid var(--line, #cbd5e1)',
-                borderRadius: '12px',
-                padding: '12px 10px',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-                display: 'flex',
-                justifyContent: 'center',
-                overflow: 'hidden'
-              }}
-            >
-              <ESlip 
-                runner={selectedRunner}
-                overallRank={ranks?.overallRank}
-                catRank={ranks?.catRank}
-                stations={checkpoints}
-                runners={runners}
-                categories={categories}
-              />
-            </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedRunner(sampleRunner);
+                  if (addToast) addToast('โหลดข้อมูลนักวิ่งตัวอย่างแล้ว กดพิมพ์เพื่อทดสอบเครื่องพิมพ์ได้');
+                }}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  background: 'var(--bg-soft, #f1f5f9)',
+                  color: 'var(--ink-2, #64748b)',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  border: '1px solid var(--line, #cbd5e1)',
+                  cursor: 'pointer'
+                }}
+              >
+                ทดสอบพิมพ์ตัวอย่าง
+              </button>
+            )}
           </div>
-        )}
+
+          {/* Receipt Preview Box */}
+          <div 
+            style={{
+              background: '#ffffff',
+              border: '1px solid var(--line, #cbd5e1)',
+              borderRadius: '12px',
+              padding: '12px 10px',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+              display: 'flex',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              position: 'relative'
+            }}
+          >
+            <ESlip 
+              runner={activeDisplayRunner}
+              overallRank={ranks?.overallRank}
+              catRank={ranks?.catRank}
+              stations={checkpoints}
+              runners={runners}
+              categories={categories}
+            />
+          </div>
+
+          {isViewingSample && (
+            <div style={{ textAlign: 'center', fontSize: '11.5px', color: 'var(--ink-2, #64748b)', padding: '0 4px', lineHeight: 1.4 }}>
+              💡 ค้นหาหมายเลข BIB หรือยิงสแกน Barcode เพื่อเปลี่ยนสลิปตัวอย่างเป็นข้อมูลจริงของนักวิ่งทันที
+            </div>
+          )}
+        </div>
 
       </div>
 
