@@ -266,19 +266,49 @@ export function computeRunnerRanks(targetRunner, allRunners = []) {
     if (idx !== -1) catRank = idx + 1;
   }
 
+  // Finished & All in same distance + same gender (Overall by Gender)
+  const allInGender = allInDist.filter(r => targetGender && getGenderKey(r.gender) === targetGender);
+  const finishedInGender = finishedInDist.filter(r => targetGender && getGenderKey(r.gender) === targetGender);
+  finishedInGender.sort((a, b) => {
+    const netA = getNetMs(a);
+    const netB = getNetMs(b);
+    if (netA !== netB) return netA - netB;
+    return (getFinEpoch(a) || 0) - (getFinEpoch(b) || 0);
+  });
+
+  let genderRank = '—';
+  const genIdx = finishedInGender.findIndex(r => String(r.bib || '').trim() === targetBib);
+  if (genIdx !== -1) {
+    genderRank = genIdx + 1;
+  } else if (targetBib && targetGender) {
+    const withTarget = [...finishedInGender, targetRunner].sort((a, b) => {
+      const netA = getNetMs(a);
+      const netB = getNetMs(b);
+      if (netA !== netB) return netA - netB;
+      return (getFinEpoch(a) || 0) - (getFinEpoch(b) || 0);
+    });
+    const idx = withTarget.findIndex(r => String(r.bib || '').trim() === targetBib);
+    if (idx !== -1) genderRank = idx + 1;
+  }
+
   const numOverall = typeof overallRank === 'number' ? overallRank : (parseInt(overallRank, 10) || 0);
   const numCat = typeof catRank === 'number' ? catRank : (parseInt(catRank, 10) || 0);
+  const numGender = typeof genderRank === 'number' ? genderRank : (parseInt(genderRank, 10) || 0);
 
   const totalOverall = Math.max(allInDist.length, finishedInDist.length, numOverall);
   const totalCat = Math.max(allInCat.length, finishedInCat.length, numCat);
+  const totalGender = Math.max(allInGender.length, finishedInGender.length, numGender);
 
   return {
     overallRank: overallRank != null && overallRank !== '—' ? String(overallRank) : '—',
     catRank: catRank != null && catRank !== '—' ? String(catRank) : '—',
+    genderRank: genderRank != null && genderRank !== '—' ? String(genderRank) : '—',
     totalOverall,
     totalCat,
+    totalGender,
     overallDisplay: overallRank != null && overallRank !== '—' && totalOverall > 0 ? `${overallRank} / ${totalOverall}` : (overallRank != null ? String(overallRank) : '—'),
-    catDisplay: catRank != null && catRank !== '—' && totalCat > 0 ? `${catRank} / ${totalCat}` : (catRank != null ? String(catRank) : '—')
+    catDisplay: catRank != null && catRank !== '—' && totalCat > 0 ? `${catRank} / ${totalCat}` : (catRank != null ? String(catRank) : '—'),
+    genderDisplay: genderRank != null && genderRank !== '—' && totalGender > 0 ? `${genderRank} / ${totalGender}` : (genderRank != null ? String(genderRank) : '—')
   };
 }
 
