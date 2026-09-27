@@ -61,6 +61,7 @@ export default function DatabaseFlow() {
                 EVENTS {
                     uuid id PK "รหัสงานวิ่ง"
                     string name "ชื่อของงานวิ่ง"
+                    string event_type "STANDARD (ปกติ) | LAP (นับรอบ) | START_FINISH"
                     date start_date
                     date end_date
                     string status "DRAFT|PUBLISHED|COMPLETED"
@@ -197,6 +198,7 @@ export default function DatabaseFlow() {
                   <tr><th>Field Name</th><th>Data Type</th><th>Description</th></tr>
                   <tr><td><span className="code">id</span></td><td>UUID (PK)</td><td>รหัสงานวิ่ง</td></tr>
                   <tr><td><span className="code">name</span></td><td>VARCHAR</td><td>ชื่องาน (เช่น &quot;Khao Yai Trail 2026&quot;)</td></tr>
+                  <tr><td><span className="code">event_type</span></td><td>VARCHAR</td><td>ประเภทงาน: STANDARD (Check-in, CP, Finish ปกติ), LAP (นับรอบ/สะสมรอบ), START_FINISH (ปล่อยตัว-เส้นชัย)</td></tr>
                   <tr><td><span className="code">start_date</span></td><td>DATE</td><td>วันที่เริ่มจัดงาน</td></tr>
                   <tr><td><span className="code">end_date</span></td><td>DATE</td><td>วันสิ้นสุดงาน</td></tr>
                   <tr><td><span className="code">status</span></td><td>ENUM</td><td>สถานะงาน (DRAFT, PUBLISHED, COMPLETED)</td></tr>
