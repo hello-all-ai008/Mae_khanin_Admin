@@ -5,23 +5,31 @@ import {
   X, 
   RefreshCcw, 
   ZoomIn, 
-  ZoomOut, 
   Flashlight, 
   FlashlightOff, 
-  QrCode, 
-  Barcode, 
-  Maximize2, 
-  Minimize2,
-  Sliders,
-  Sparkles,
   Volume2,
   VolumeX,
   UserCheck,
   CornerDownLeft
 } from 'lucide-react';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useRace } from '../context/RaceContext';
 import { normalizeScannedBib, smartFindRunner } from '../lib/bibUtils';
+import { useBarcodeScanner } from '../hooks/useBarcodeScanner';
+import { createScanGate } from '../lib/scanner/scanGate';
+import { warmUpDetector } from '../lib/scanner/detector';
+
+const SUCCESS_VIBRATE_MS = 60;
+const MIN_VIEWPORT_HEIGHT = '200px';
+const VIEW_SIZE_HEIGHTS = { compact: '260px', standard: '380px', large: '540px' };
+
+const CAMERA_ERROR_MESSAGES = {
+  permission: 'ไม่ได้รับอนุญาตให้ใช้กล้อง — กรุณาอนุญาตการเข้าถึงกล้องในการตั้งค่าเบราว์เซอร์ แล้วกด "ลองใหม่" (ยังพิมพ์เลข BIB ด้วยมือได้)',
+  'no-camera': 'ไม่พบกล้องบนอุปกรณ์นี้ (ยังพิมพ์เลข BIB ด้วยมือได้)',
+  busy: 'ไม่สามารถเปิดกล้องได้ อาจมีแอปอื่นกำลังใช้กล้องอยู่ — ปิดแอปนั้นแล้วกด "ลองใหม่"',
+  unsupported: 'เบราว์เซอร์นี้ไม่รองรับการใช้กล้อง (ต้องเปิดผ่าน HTTPS) — ยังพิมพ์เลข BIB ด้วยมือได้',
+  decoder: 'โหลดตัวอ่านบาร์โค้ด/QR ไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ตแล้วกด "ลองใหม่" (ยังพิมพ์เลข BIB ด้วยมือได้)',
+  unknown: 'เปิดกล้องไม่สำเร็จ — กด "ลองใหม่" หรือพิมพ์เลข BIB ด้วยมือ',
+};
 
 export default function ScannerInput({ onScan }) {
   const { currentOperator, currentStaff, runners, lastSyncedTime, categories } = useRace();
@@ -35,12 +43,6 @@ export default function ScannerInput({ onScan }) {
   const [facingMode, setFacingMode] = useState(() => {
     return localStorage.getItem('trail_camera_facing') || 'environment';
   });
-  
-  // Focus & Scanning Mode: 'center' (กึ่งกลาง - ค่าเริ่มต้น), 'full' (เต็มกล้อง), 'barcode' (1D wide), 'qr' (2D square)
-  const [scanMode, setScanMode] = useState(() => {
-    const saved = localStorage.getItem('trail_camera_scan_mode_v3');
-    return (saved && ['center', 'full', 'barcode', 'qr'].includes(saved)) ? saved : 'center';
-  });
 
   // View Size: 'auto' (เต็มจอ ไม่ครอปตัด - ค่าเริ่มต้น) | 'standard' (380px) | 'compact' (260px) | 'large' (540px)
   const [viewSize, setViewSize] = useState(() => {
@@ -48,33 +50,14 @@ export default function ScannerInput({ onScan }) {
     return (saved && ['auto', 'standard', 'compact', 'large'].includes(saved)) ? saved : 'auto';
   });
 
-  // Aspect Ratio: 'auto' (สัดส่วนธรรมชาติเต็มเลนส์ - ค่าเริ่มต้น) | '16:9' | '4:3' | '1:1'
-  const [aspectRatioMode, setAspectRatioMode] = useState(() => {
-    const saved = localStorage.getItem('trail_camera_aspect_ratio');
-    return (saved && ['auto', '16:9', '4:3', '1:1'].includes(saved)) ? saved : 'auto';
-  });
-
-  // Zoom Level (1x - 3.5x)
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [supportsHardwareZoom, setSupportsHardwareZoom] = useState(false);
-  const [minHardwareZoom, setMinHardwareZoom] = useState(1);
-  const [maxHardwareZoom, setMaxHardwareZoom] = useState(3);
-
-  // Torch / Flashlight
-  const [isTorchOn, setIsTorchOn] = useState(false);
-  const [supportsTorch, setSupportsTorch] = useState(false);
-
   // Sound Feedback
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // Advanced Controls Collapse
-  const [showControls, setShowControls] = useState(true);
-
-  const html5QrCodeRef = useRef(null);
-  const lastScanned = useRef('');
-  const isScanningRef = useRef(false);
+  const videoRef = useRef(null);
+  const overlayRef = useRef(null);
+  const scanGateRef = useRef(null);
+  if (scanGateRef.current === null) scanGateRef.current = createScanGate();
   const audioCtxRef = useRef(null);
-  const lastScanTimestampRef = useRef(0);
   const lastBeepTimeRef = useRef(0);
 
   // Keep fresh mutable references so camera scan callback never suffers from stale closure
@@ -83,6 +66,11 @@ export default function ScannerInput({ onScan }) {
 
   const onScanRef = useRef(onScan);
   onScanRef.current = onScan;
+
+  // Pre-load the wasm decoder while the network is still available (no-op when native detection works)
+  useEffect(() => {
+    warmUpDetector();
+  }, []);
 
   // Save persistent preferences
   useEffect(() => {
@@ -94,17 +82,9 @@ export default function ScannerInput({ onScan }) {
   }, [facingMode]);
 
   useEffect(() => {
-    localStorage.setItem('trail_camera_scan_mode_v3', scanMode);
-    localStorage.setItem('trail_camera_scan_mode', scanMode);
-  }, [scanMode]);
-
-  useEffect(() => {
     localStorage.setItem('trail_camera_view_size', viewSize);
   }, [viewSize]);
 
-  useEffect(() => {
-    localStorage.setItem('trail_camera_aspect_ratio', aspectRatioMode);
-  }, [aspectRatioMode]);
 
   // Play pleasant beep sound using Web Audio API with rate-limiting
   const playBeep = () => {
@@ -177,337 +157,95 @@ export default function ScannerInput({ onScan }) {
     }
   };
 
-  // Helper to inspect active video track capabilities
-  const inspectTrackCapabilities = () => {
+  // Called by the scanner hook once a code is confirmed (2D immediately, 1D after two matching reads)
+  const handleDetected = (decodedText) => {
+    if (!decodedText) return;
+    const cleanText = String(decodedText)
+      .replace(/[\u200B-\u200D\uFEFF\x00-\x1F\x7F]/g, '')
+      .trim();
+    if (!cleanText) return;
+
+    const now = Date.now();
+    const gate = scanGateRef.current;
+
+    // Global camera throttle: ignore frames within 750ms of previous scan
+    if (gate.isThrottled(now)) return;
+
+    // 1. Resolve runner using smartFindRunner against loaded runners via runnersRef
+    const currentRunners = runnersRef.current || runners || [];
+    const matchedRunner = smartFindRunner(cleanText, currentRunners);
+    const resolvedBib = matchedRunner?.bib
+      ? String(matchedRunner.bib).trim()
+      : (normalizeScannedBib(cleanText) || cleanText);
+
+    if (!resolvedBib) return;
+
+    // Same-bib debounce (2000ms matched / 1200ms unmatched)
+    const verdict = gate.accept({ now, bib: resolvedBib, matched: !!matchedRunner });
+    if (!verdict.accepted) return;
+
+    setLastDetected({
+      raw: cleanText,
+      bib: resolvedBib,
+      runner: matchedRunner,
+      matched: !!matchedRunner,
+      time: now
+    });
+
+    playBeep();
+
     try {
-      const videoElem = document.querySelector('#qr-reader video');
-      if (videoElem && videoElem.srcObject) {
-        const tracks = videoElem.srcObject.getVideoTracks();
-        if (tracks && tracks.length > 0) {
-          const track = tracks[0];
-          const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-          
-          if (capabilities.zoom) {
-            setSupportsHardwareZoom(true);
-            setMinHardwareZoom(capabilities.zoom.min || 1);
-            setMaxHardwareZoom(capabilities.zoom.max || 5);
-          } else {
-            setSupportsHardwareZoom(false);
-          }
-
-          if (capabilities.torch) {
-            setSupportsTorch(true);
-          } else {
-            setSupportsTorch(false);
-          }
-          return track;
-        }
+      if (onScanRef.current) {
+        onScanRef.current(resolvedBib, matchedRunner);
       }
-    } catch (err) {
-      console.warn('Track inspection error:', err);
+    } catch (scanErr) {
+      console.error('onScan execution error:', scanErr);
     }
-    return null;
-  };
 
-  // Apply zoom constraint or fallback to CSS scale
-  const applyZoom = async (newZoom) => {
-    setZoomLevel(newZoom);
     try {
-      const videoElem = document.querySelector('#qr-reader video');
-      if (videoElem && videoElem.srcObject) {
-        const tracks = videoElem.srcObject.getVideoTracks();
-        if (tracks && tracks.length > 0) {
-          const track = tracks[0];
-          const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-          if (capabilities.zoom) {
-            const clamped = Math.min(Math.max(newZoom, capabilities.zoom.min || 1), capabilities.zoom.max || 5);
-            await track.applyConstraints({ advanced: [{ zoom: clamped }] });
-            return;
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('Hardware zoom not supported or failed, using CSS scale:', err);
+      navigator.vibrate?.(SUCCESS_VIBRATE_MS);
+    } catch (vibrateErr) {
+      console.warn('Vibration failed:', vibrateErr);
     }
 
-    // CSS scaling fallback on video element
-    const videoElem = document.querySelector('#qr-reader video');
-    if (videoElem) {
-      videoElem.style.transform = newZoom > 1 ? `scale(${newZoom})` : 'none';
-      videoElem.style.transformOrigin = 'center center';
-      videoElem.style.transition = 'transform 0.2s ease-out';
-    }
+    setTimeout(() => gate.release(resolvedBib), verdict.clearDelayMs);
   };
 
-  // Apply Torch / Flashlight
-  const toggleTorch = async () => {
-    const nextState = !isTorchOn;
-    setIsTorchOn(nextState);
-    try {
-      const videoElem = document.querySelector('#qr-reader video');
-      if (videoElem && videoElem.srcObject) {
-        const tracks = videoElem.srcObject.getVideoTracks();
-        if (tracks && tracks.length > 0) {
-          const track = tracks[0];
-          await track.applyConstraints({ advanced: [{ torch: nextState }] });
-        }
-      }
-    } catch (err) {
-      console.warn('Torch toggle failed:', err);
-    }
+  const {
+    error: cameraError,
+    isReady: isCameraReady,
+    supportsTorch,
+    isTorchOn,
+    toggleTorch,
+    zoomLevel,
+    cssZoom,
+    setZoom: applyZoom,
+    focusAt,
+    retry: retryCamera,
+  } = useBarcodeScanner({
+    enabled: showCamera,
+    facingMode,
+    videoRef,
+    overlayRef,
+    onDetect: handleDetected,
+  });
+
+  const toggleCameraFacing = () => {
+    setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
   };
 
-  const getScanBox = (viewfinderWidth, viewfinderHeight, currentScanMode = scanMode) => {
-    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-    
-    if (currentScanMode === 'full') {
-      // 📱 เต็มกล้อง (Full Frame): สแกนครอบคลุม 96% ทั่วทั้งหน้าจอกล้อง
-      return { 
-        width: Math.max(Math.floor(viewfinderWidth * 0.96), 200), 
-        height: Math.max(Math.floor(viewfinderHeight * 0.96), 200) 
-      };
-    } else if (currentScanMode === 'barcode') {
-      // ▬ Barcode 1D: แถบแนวนอนยาว โฟกัสเฉพาะเส้นบาร์โค้ด
-      const width = Math.min(Math.floor(viewfinderWidth * 0.92), 480);
-      const height = Math.min(Math.floor(viewfinderHeight * 0.38), 150);
-      return { width: Math.max(width, 240), height: Math.max(height, 80) };
-    } else if (currentScanMode === 'qr') {
-      // ⬛ QR Code 2D: สี่เหลี่ยมจัตุรัสตรงกลาง
-      const edge = Math.min(Math.floor(minEdge * 0.72), 300);
-      return { width: Math.max(edge, 180), height: Math.max(edge, 180) };
-    } else {
-      // 🎯 ตรงกลาง (Center Focus): สี่เหลี่ยมกว้าง 84%
-      const width = Math.min(Math.floor(viewfinderWidth * 0.84), 440);
-      const height = Math.min(Math.floor(viewfinderHeight * 0.68), 320);
-      return { width, height };
-    }
+  // Tap-to-focus: map the tap to a normalized point inside the viewport
+  const handleViewportTap = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    focusAt((e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height);
   };
 
-  const getAspectRatioVal = (mode = aspectRatioMode) => {
-    if (mode === '16:9') return 1.777778;
-    if (mode === '4:3') return 1.333333;
-    if (mode === '1:1') return 1.0;
-    return undefined; // 'auto' -> use native full camera sensor ratio
-  };
-
-  const startScanner = (mode = facingMode, currentScanMode = scanMode, currentAspect = aspectRatioMode) => {
-    if (html5QrCodeRef.current && !isScanningRef.current) {
-      isScanningRef.current = true;
-
-      const aspectRatioVal = getAspectRatioVal(currentAspect);
-
-      // ── Clean & robust formats without noise-prone ITF, CODABAR, and CODE_93 ──
-      let formats = [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.DATA_MATRIX,
-        Html5QrcodeSupportedFormats.PDF_417
-      ];
-      if (currentScanMode === 'qr') {
-        formats = [
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.DATA_MATRIX,
-          Html5QrcodeSupportedFormats.PDF_417
-        ];
-      } else if (currentScanMode === 'barcode') {
-        formats = [
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E
-        ];
-      }
-
-      const scanConfig = {
-        fps: 20,
-        disableFlip: false,
-        formatsToSupport: formats,
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true
-        },
-        qrbox: (viewfinderWidth, viewfinderHeight) => 
-          getScanBox(viewfinderWidth, viewfinderHeight, currentScanMode)
-      };
-
-      if (aspectRatioVal) {
-        scanConfig.aspectRatio = aspectRatioVal;
-      }
-
-      html5QrCodeRef.current.start(
-        { facingMode: mode },
-        scanConfig,
-        (decodedText) => {
-          if (!decodedText) return;
-          const cleanText = String(decodedText)
-            .replace(/[\u200B-\u200D\uFEFF\x00-\x1F\x7F]/g, '')
-            .trim();
-          if (!cleanText) return;
-
-          const now = Date.now();
-          const timeSinceLast = now - lastScanTimestampRef.current;
-
-          // Global camera throttle: ignore frames within 750ms of previous scan
-          if (timeSinceLast < 750) return;
-
-          // 1. Resolve runner using smartFindRunner against loaded runners via runnersRef
-          const currentRunners = runnersRef.current || runners || [];
-          const matchedRunner = smartFindRunner(cleanText, currentRunners);
-          const resolvedBib = matchedRunner?.bib
-            ? String(matchedRunner.bib).trim()
-            : (normalizeScannedBib(cleanText) || cleanText);
-
-          if (!resolvedBib) return;
-
-          // Filter out optical noise: empty or single delimiter
-          if (!matchedRunner && resolvedBib.length < 1) return;
-
-          // If same bib was scanned within debounce window, ignore
-          const isSameBib = resolvedBib === lastScanned.current;
-          const minInterval = isSameBib ? (matchedRunner ? 2000 : 1200) : 750;
-          if (timeSinceLast < minInterval) return;
-
-          lastScanTimestampRef.current = now;
-          lastScanned.current = resolvedBib;
-
-          setLastDetected({
-            raw: cleanText,
-            bib: resolvedBib,
-            runner: matchedRunner,
-            matched: !!matchedRunner,
-            time: now
-          });
-
-          playBeep();
-
-          try {
-            if (onScanRef.current) {
-              onScanRef.current(resolvedBib, matchedRunner);
-            }
-          } catch (scanErr) {
-            console.error('onScan execution error:', scanErr);
-          }
-
-          const clearDelay = matchedRunner ? 2200 : 1200;
-          setTimeout(() => {
-            if (lastScanned.current === resolvedBib) {
-              lastScanned.current = '';
-            }
-          }, clearDelay);
-        },
-        () => {
-          // ignore scan frame errors
-        }
-      ).then(() => {
-        setTimeout(() => {
-          inspectTrackCapabilities();
-          if (zoomLevel > 1) {
-            applyZoom(zoomLevel);
-          }
-        }, 500);
-      }).catch(err => {
-        console.error("Camera start failed", err);
-        isScanningRef.current = false;
-      });
-    }
-  };
-
-  const stopScanner = async () => {
-    if (html5QrCodeRef.current && isScanningRef.current) {
-      try {
-        await html5QrCodeRef.current.stop();
-        isScanningRef.current = false;
-      } catch (err) {
-        console.error("Failed to stop scanner", err);
-      }
-    }
-  };
-
-  // Restart camera when scan mode or aspect ratio changes while open
-  const restartScanner = async (newMode = facingMode, newScanMode = scanMode, newAspect = aspectRatioMode) => {
-    if (showCamera) {
-      await stopScanner();
-      startScanner(newMode, newScanMode, newAspect);
-    }
-  };
-
-  useEffect(() => {
-    if (showCamera) {
-      html5QrCodeRef.current = new Html5Qrcode("qr-reader", { verbose: false });
-      startScanner(facingMode, scanMode, aspectRatioMode);
-    } else {
-      stopScanner().then(() => {
-        if (html5QrCodeRef.current) {
-          html5QrCodeRef.current.clear();
-          html5QrCodeRef.current = null;
-        }
-      });
-    }
-
-    return () => {
-      if (html5QrCodeRef.current) {
-        stopScanner().then(() => {
-          if (html5QrCodeRef.current) {
-            html5QrCodeRef.current.clear();
-          }
-        });
-      }
-    };
-  }, [showCamera]);
-
-  const toggleCameraFacing = async () => {
-    const newMode = facingMode === 'environment' ? 'user' : 'environment';
-    setFacingMode(newMode);
-    await restartScanner(newMode, scanMode, aspectRatioMode);
-  };
-
-  const handleScanModeChange = async (mode) => {
-    setScanMode(mode);
-    await restartScanner(facingMode, mode, aspectRatioMode);
-  };
-
-  const handleAspectRatioChange = async (aspect) => {
-    setAspectRatioMode(aspect);
-    await restartScanner(facingMode, scanMode, aspect);
-  };
-
-  // Calculate container max-height based on viewSize
-  const getViewHeight = () => {
-    switch (viewSize) {
-      case 'compact': return '260px';
-      case 'standard': return '380px';
-      case 'large': return '540px';
-      case 'auto': return 'none'; // เต็มความสูง ไม่ครอปตัด
-      default: return 'none';
-    }
-  };
+  const isFixedHeight = viewSize !== 'auto';
+  const viewHeight = VIEW_SIZE_HEIGHTS[viewSize];
 
   return (
     <div className="scan-wrapper" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-      <style>{`
-        #qr-reader, #qr-reader video, #qr-reader canvas {
-          width: 100% !important;
-          max-width: 100% !important;
-          height: auto !important;
-          object-fit: cover !important;
-          box-sizing: border-box !important;
-        }
-        #qr-reader__scan_region, #qr-reader__scan_region video {
-          width: 100% !important;
-          max-width: 100% !important;
-          box-sizing: border-box !important;
-        }
-        #qr-reader__dashboard {
-          width: 100% !important;
-          max-width: 100% !important;
-        }
-      `}</style>
       {/* ── Operator / Readiness Micro Status Bar ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '11.5px', color: 'var(--ink-2)', width: '100%', boxSizing: 'border-box', padding: '0 2px' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
@@ -690,120 +428,37 @@ export default function ScannerInput({ onScan }) {
       {/* ── Camera Viewfinder & Interactive Controls ── */}
       {showCamera && (
         <div style={{ marginTop: '14px', background: '#0f172a', borderRadius: '14px', overflow: 'hidden', border: '1px solid #334155', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-          {/* Top Control Bar: Mode & Viewport Controls */}
+          {/* Top Control Bar */}
           <div style={{ background: '#1e293b', padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid #334155', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-            
-            {/* Mode Switcher: Center (Default) / Full / Barcode 1D / QR Code 2D */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginRight: '2px' }}>มุมมอง:</span>
-              <button 
-                type="button"
-                onClick={() => handleScanModeChange('center')}
-                title="กรอบโฟกัสกึ่งกลางหน้าจอ (ค่าเริ่มต้น)"
-                style={{ 
-                  padding: '4px 8px', 
-                  fontSize: '11.5px', 
-                  borderRadius: '6px', 
-                  border: 'none', 
-                  cursor: 'pointer', 
-                  fontWeight: 700, 
-                  display: 'inline-flex', 
-                  alignItems: 'center', 
-                  gap: '4px', 
-                  background: scanMode === 'center' ? 'var(--start)' : '#334155', 
-                  color: scanMode === 'center' ? '#000' : '#e2e8f0',
-                  boxShadow: scanMode === 'center' ? '0 0 10px rgba(0, 255, 128, 0.3)' : 'none'
-                }}
-              >
-                <ScanLine size={12} /> กึ่งกลาง
-              </button>
-              <button 
-                type="button"
-                onClick={() => handleScanModeChange('full')}
-                title="สแกนเต็มกล้องทั้งหน้าจอ ไม่จำกัดกรอบแคบ (สแกนได้ทั้ง Barcode และ QR)"
-                style={{ 
-                  padding: '4px 8px', 
-                  fontSize: '11.5px', 
-                  borderRadius: '6px', 
-                  border: 'none', 
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  background: scanMode === 'full' ? 'var(--start)' : '#334155',
-                  color: scanMode === 'full' ? '#000' : '#e2e8f0',
-                  boxShadow: scanMode === 'full' ? '0 0 10px rgba(0, 255, 128, 0.3)' : 'none'
-                }}
-              >
-                <Maximize2 size={12} /> เต็มจอ
-              </button>
-              <button 
-                type="button"
-                onClick={() => handleScanModeChange('barcode')}
-                title="กรอบแนวนอนยาว เหมาะสำหรับเล็งเฉพาะเส้นบาร์โค้ด 1D"
-                style={{ 
-                  padding: '4px 8px', 
-                  fontSize: '11.5px', 
-                  borderRadius: '6px', 
-                  border: 'none', 
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  background: scanMode === 'barcode' ? 'var(--start)' : '#334155',
-                  color: scanMode === 'barcode' ? '#000' : '#e2e8f0'
-                }}
-              >
-                <Barcode size={13} /> 1D
-              </button>
-              <button 
-                type="button"
-                onClick={() => handleScanModeChange('qr')}
-                title="กรอบสี่เหลี่ยมจัตุรัส เหมาะสำหรับ QR Code 2D"
-                style={{ 
-                  padding: '4px 8px', 
-                  fontSize: '11.5px', 
-                  borderRadius: '6px', 
-                  border: 'none', 
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  background: scanMode === 'qr' ? 'var(--start)' : '#334155',
-                  color: scanMode === 'qr' ? '#000' : '#e2e8f0'
-                }}
-              >
-                <QrCode size={13} /> QR
-              </button>
-            </div>
+            <span style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 600, flex: 1, minWidth: 0 }}>
+              {isCameraReady ? 'พร้อมสแกน — เล็ง QR / บาร์โค้ดตรงไหนก็ได้ในภาพ' : (cameraError ? 'กล้องไม่พร้อมใช้งาน' : 'กำลังเปิดกล้อง…')}
+            </span>
 
-            {/* Right Tools: View Size & Aspect Ratio */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-              {/* Torch Button */}
-              <button 
-                type="button"
-                onClick={toggleTorch}
-                title={isTorchOn ? "ปิดไฟฉาย" : "เปิดไฟฉายช่วยสแกน"}
-                style={{ 
-                  padding: '4px 8px', 
-                  borderRadius: '6px', 
-                  border: 'none', 
-                  cursor: 'pointer',
-                  background: isTorchOn ? '#fef08a' : '#334155',
-                  color: isTorchOn ? '#854d0e' : '#cbd5e1',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '3px',
-                  fontSize: '11px',
-                  fontWeight: 600
-                }}
-              >
-                {isTorchOn ? <Flashlight size={13} /> : <FlashlightOff size={13} />}
-                <span>{isTorchOn ? 'ไฟเปิด' : 'ไฟฉาย'}</span>
-              </button>
+              {/* Torch Button (only when the device supports it) */}
+              {supportsTorch && (
+                <button 
+                  type="button"
+                  onClick={toggleTorch}
+                  title={isTorchOn ? "ปิดไฟฉาย" : "เปิดไฟฉายช่วยสแกน"}
+                  style={{ 
+                    padding: '4px 8px', 
+                    borderRadius: '6px', 
+                    border: 'none', 
+                    cursor: 'pointer',
+                    background: isTorchOn ? '#fef08a' : '#334155',
+                    color: isTorchOn ? '#854d0e' : '#cbd5e1',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '3px',
+                    fontSize: '11px',
+                    fontWeight: 600
+                  }}
+                >
+                  {isTorchOn ? <Flashlight size={13} /> : <FlashlightOff size={13} />}
+                  <span>{isTorchOn ? 'ไฟเปิด' : 'ไฟฉาย'}</span>
+                </button>
+              )}
 
               {/* View Size Toggle */}
               <button 
@@ -817,22 +472,57 @@ export default function ScannerInput({ onScan }) {
             </div>
           </div>
 
-          {/* Camera Viewport Canvas */}
+          {/* Camera Viewport: video + detection overlay share the same object-fit */}
           <div 
+            onClick={handleViewportTap}
             style={{ 
               position: 'relative', 
               width: '100%', 
               maxWidth: '100%',
-              maxHeight: getViewHeight(), 
+              height: isFixedHeight ? viewHeight : 'auto',
+              minHeight: MIN_VIEWPORT_HEIGHT,
               overflow: 'hidden', 
               background: '#000',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
               boxSizing: 'border-box'
             }}
           >
-            <div id="qr-reader" style={{ width: '100%', maxWidth: '100%', minHeight: '200px', border: 'none', overflow: 'hidden', boxSizing: 'border-box' }}></div>
+            <div
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: isFixedHeight ? '100%' : 'auto',
+                transform: cssZoom > 1 ? `scale(${cssZoom})` : 'none',
+                transformOrigin: 'center center',
+                transition: 'transform 0.2s ease-out'
+              }}
+            >
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                autoPlay
+                style={{ display: 'block', width: '100%', height: isFixedHeight ? '100%' : 'auto', minHeight: MIN_VIEWPORT_HEIGHT, objectFit: 'cover', background: '#000' }}
+              />
+              <canvas
+                ref={overlayRef}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
+              />
+            </div>
+
+            {cameraError && (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '16px', background: 'rgba(15, 23, 42, 0.92)', textAlign: 'center' }}>
+                <p style={{ margin: 0, fontSize: '13px', color: '#fca5a5', fontWeight: 600, lineHeight: 1.5 }}>
+                  {CAMERA_ERROR_MESSAGES[cameraError.kind] || CAMERA_ERROR_MESSAGES.unknown}
+                </p>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); retryCamera(); }}
+                  style={{ padding: '6px 16px', borderRadius: '8px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, fontSize: '12.5px', cursor: 'pointer' }}
+                >
+                  ลองใหม่
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Live Scanner Detection Badge */}
@@ -913,13 +603,12 @@ export default function ScannerInput({ onScan }) {
             </div>
           )}
 
-          {/* Bottom Zoom & Focus Slider Bar */}
+          {/* Bottom Zoom Bar */}
           <div style={{ background: '#1e293b', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', borderTop: '1px solid #334155', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flex: '1 1 auto', minWidth: 0 }}>
               <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                 <ZoomIn size={13} /> ซูม:
               </span>
-              
               {/* Preset Zoom Buttons */}
               <div style={{ display: 'flex', gap: '3px' }}>
                 {[1, 1.5, 2, 2.5].map((z) => (
@@ -957,40 +646,11 @@ export default function ScannerInput({ onScan }) {
                 {zoomLevel.toFixed(1)}x
               </span>
             </div>
-
-            {/* Aspect Ratio Selector */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>สัดส่วนเลนส์:</span>
-              {[
-                { id: 'auto', label: 'เต็มกล้อง' },
-                { id: '16:9', label: '16:9' },
-                { id: '4:3', label: '4:3' },
-                { id: '1:1', label: '1:1' }
-              ].map((asp) => (
-                <button 
-                  key={asp.id}
-                  type="button"
-                  onClick={() => handleAspectRatioChange(asp.id)}
-                  style={{ 
-                    padding: '2px 8px', 
-                    fontSize: '11px', 
-                    borderRadius: '4px', 
-                    border: 'none', 
-                    cursor: 'pointer', 
-                    fontWeight: 600,
-                    background: aspectRatioMode === asp.id ? 'var(--start)' : '#334155', 
-                    color: aspectRatioMode === asp.id ? '#000' : '#f8fafc' 
-                  }}
-                >
-                  {asp.label}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div style={{ padding: '6px 12px', background: '#0f172a', textAlign: 'center' }}>
             <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>
-              💡 <b>มุมมองกึ่งกลาง (Center):</b> ค่าเริ่มต้นเล็ง BIB กึ่งกลางจอเพื่อสแกนเร็วและแม่นยำ หรือเปลี่ยนเป็น <b>เต็มกล้อง / Barcode / QR</b> ได้ตามต้องการ | กด <b>1.5x / 2x</b> เพื่อสแกนจากระยะยืน
+              💡 <b>สแกนทั้งภาพ:</b> เล็ง QR หรือบาร์โค้ดตรงไหนก็ได้ ระบบจะวาดกรอบสีเขียวเมื่อเจอ | แตะที่ภาพเพื่อโฟกัส | กด <b>1.5x / 2x</b> เพื่อสแกนจากระยะยืน
             </p>
           </div>
         </div>

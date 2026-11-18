@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.111.0",
+    "barcode-detector": "3.2.4",
     "file-saver": "^2.0.5",
-    "html5-qrcode": "^2.3.8",
     "jsbarcode": "^3.12.3",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.1",
@@ -26,7 +26,8 @@
     "react-konva": "^19.2.5",
     "react-router-dom": "^7.18.1",
     "use-image": "^1.1.4",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zxing-wasm": "3.1.7"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",
