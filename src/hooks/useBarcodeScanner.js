@@ -95,6 +95,8 @@ export function useBarcodeScanner({ enabled, facingMode, videoRef, overlayRef, o
       stopStream(stream);
       stream = null;
       trackRef.current = null;
+      // No track means no hardware zoom in effect; a request made before the next start must not snap back to the old level.
+      hardwareZoomRef.current = 1;
       clearOverlay(overlayRef.current);
       if (videoRef.current) videoRef.current.srcObject = null;
       setIsReady(false);
